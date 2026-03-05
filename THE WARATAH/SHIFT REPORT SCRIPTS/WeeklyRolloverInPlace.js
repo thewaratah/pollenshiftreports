@@ -188,6 +188,9 @@ function performWeeklyRollover() {
     Logger.log(`❌ ERROR: ${error.message}`);
     Logger.log(error.stack);
 
+    // Notify Evan via Slack (works in trigger context where UI alerts don't)
+    notifyError_('performWeeklyRollover', error);
+
     try {
       SpreadsheetApp.getUi().alert(
         'Rollover Failed',
@@ -613,14 +616,22 @@ function sendRolloverNotifications_(summary, nextWeekStart, pdfFile, snapshotFil
 
   // 2. Send email
   try {
-    const emailRecipients = scriptProps.getProperty('WARATAH_EMAIL_RECIPIENTS') || 'evan@pollenhospitality.com';
+    const recipientsProp = scriptProps.getProperty('WARATAH_EMAIL_RECIPIENTS') || '';
+    let emailTo;
+    try {
+      const recipientsMap = JSON.parse(recipientsProp);
+      emailTo = Object.keys(recipientsMap).join(',');
+    } catch (parseErr) {
+      // Fallback: treat as comma-separated string or single address
+      emailTo = recipientsProp || 'evan@pollenhospitality.com';
+    }
     GmailApp.sendEmail(
-      emailRecipients,
+      emailTo,
       `Waratah Weekly Rollover - W.E. ${weekEndingFormatted}`,
       '',
       { htmlBody: emailBody }
     );
-    Logger.log('✅ Email sent to: ' + emailRecipients);
+    Logger.log('✅ Email sent to: ' + emailTo);
   } catch (e) {
     Logger.log(`⚠️ Email notification failed: ${e.message}`);
   }

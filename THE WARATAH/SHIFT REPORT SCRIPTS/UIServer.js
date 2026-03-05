@@ -122,35 +122,17 @@ function getRolloverPreview() {
 
 /**
  * Executes the weekly rollover from the React dialog (non-interactive).
- * Performs the same steps as weeklyRollover() but without ui.alert() calls,
- * since the React wizard already handles preview/confirmation.
+ * Wraps performWeeklyRollover() and returns a result object for the React UI.
+ * UI alerts inside performWeeklyRollover() are caught silently (try/catch on getUi).
  */
 function executeRollover() {
   try {
     var startTime = new Date();
-
-    // Find and validate current report
-    var current = findCurrentReport_Rollover_();
-    var summary = null;
-
-    if (current) {
-      summary = generateWeekSummary_Rollover_(current.spreadsheet);
-      archiveReport_Rollover_(current.file, current.weekEndDate);
-    }
-
-    // Create new week from template
-    var newSpreadsheet = duplicateAndRenameSheet();
-
-    // Send rollover notifications (email + Slack)
-    sendRolloverNotification_Rollover_(summary, current, newSpreadsheet);
-
+    performWeeklyRollover();
     var duration = ((new Date()) - startTime) / 1000;
-
     return {
       success: true,
-      message: 'Rollover completed in ' + duration.toFixed(1) + 's.',
-      newReportUrl: newSpreadsheet.getUrl(),
-      archivedName: current ? current.file.getName() : null
+      message: 'Rollover completed in ' + duration.toFixed(1) + 's.'
     };
   } catch (e) {
     Logger.log('Rollover from UI failed: ' + e.message);

@@ -34,20 +34,7 @@ function sendWeeklyRevenueDigest_Waratah() {
     bk_post(webhook, blocks, 'The Waratah — Weekly Revenue Digest');
     Logger.log('Weekly revenue digest sent successfully.');
   } catch (e) {
-    Logger.log('sendWeeklyRevenueDigest_Waratah failed: ' + e.message);
-    try {
-      const testWebhook = PropertiesService.getScriptProperties().getProperty('WARATAH_SLACK_WEBHOOK_TEST');
-      if (testWebhook) {
-        UrlFetchApp.fetch(testWebhook, {
-          method: 'post',
-          contentType: 'application/json',
-          payload: JSON.stringify({ text: '❌ Weekly Revenue Digest (Waratah) FAILED: ' + e.message }),
-          muteHttpExceptions: true
-        });
-      }
-    } catch (slackErr) {
-      Logger.log('Slack error notification also failed: ' + slackErr.message);
-    }
+    notifyError_('sendWeeklyRevenueDigest_Waratah', e);
   }
 }
 

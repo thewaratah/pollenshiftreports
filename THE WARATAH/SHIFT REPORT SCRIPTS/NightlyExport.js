@@ -867,24 +867,7 @@ function sendWeeklyTodoSummary_WARATAH() {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     _sendWeeklyTodoSummaryCore(ss, SLACK_WEBHOOK_URL_LIVE, false);
   } catch (error) {
-    Logger.log('❌ [sendWeeklyTodoSummary_WARATAH] failed: ' + error.message + '\n' + error.stack);
-    try {
-      const webhook = PropertiesService.getScriptProperties().getProperty('WARATAH_SLACK_WEBHOOK_TEST');
-      if (webhook) {
-        const slackResp = UrlFetchApp.fetch(webhook, {
-          method: 'post',
-          contentType: 'application/json',
-          payload: JSON.stringify({ text: '❌ [sendWeeklyTodoSummary_WARATAH] Waratah weekly TO-DO summary failed: ' + error.message }),
-          muteHttpExceptions: true
-        });
-        const slackCode = slackResp.getResponseCode();
-        if (slackCode < 200 || slackCode >= 300) {
-          Logger.log('❌ HTTP error ' + slackCode + ': ' + slackResp.getContentText());
-        }
-      }
-    } catch (slackErr) {
-      Logger.log('❌ [sendWeeklyTodoSummary_WARATAH] Slack notification also failed: ' + slackErr.message);
-    }
+    notifyError_('sendWeeklyTodoSummary_WARATAH', error);
   }
 }
 
