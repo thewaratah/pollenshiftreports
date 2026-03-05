@@ -6,10 +6,10 @@
 > **Note:** This guide covers patterns and systems **shared by both venues**. For venue-specific details, see `CLAUDE_SAKURA.md` or `CLAUDE_WARATAH.md`.
 
 **Recent Updates (Mar 6, 2026):**
-- **Waratah:** Task Management restructure v1.2.0 — sort order changed (Priority → Status → Staff); daily maintenance decomposed into individual triggers; 6 menu items removed; bug fixes (`MailApp` → `GmailApp`, `sheet.clear()` fix, LockService, trigger context safety)
-- **Waratah:** Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols, OPERATIONAL_EVENTS 8 cols, WASTAGE_COMPS 6 cols, QUALITATIVE_LOG 11 cols; covers/labor removed; full B5-B29 financial breakdown added
+- **Both venues:** Git repository initialized at `github.com/thewaratah/pollenshiftreports` — `clasp push` and `git push` are independent deployment/versioning workflows
+- **Waratah:** Task Management restructure v1.2.0 — sort order changed; daily maintenance decomposed into individual triggers; 6 menu items removed; bug fixes
+- **Waratah:** Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor removed; full B5-B29 financial breakdown added
 - **Waratah:** Weekly functions audit — 4 key functions reviewed, hardened, and deployed
-- **Waratah:** Silent export failures now send Slack warnings via `_notifyExportWarnings_()`
 - **Waratah:** Rollover trigger: 5:15am → 10am; weekly summary trigger: 6am → 9am
 
 **Previous Updates (Feb 26, 2026):**
@@ -564,6 +564,13 @@ try {
   throw error;  // Re-throw for trigger failure notification
 }
 ```
+
+**6. Deployment: clasp push + git push (independent):**
+- `clasp push` deploys to Google Apps Script (production runtime)
+- `git push` commits to GitHub at `github.com/thewaratah/pollenshiftreports` (version history only)
+- These are independent -- `git push` does not affect production; `clasp push` does not update git
+- Standard workflow: edit --> `clasp push` --> `git commit` + `git push`
+- `_SETUP_*` files (webhook secrets), `.clasp.json`, and `.claude/` are gitignored
 
 ---
 

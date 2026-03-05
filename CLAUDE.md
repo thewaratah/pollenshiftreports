@@ -95,7 +95,7 @@ SHIFT REPORTS 3.0 is a comprehensive hospitality automation system that manages 
 ## Project Structure
 
 ```
-SHIFT REPORTS 3.0/
+SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/pollenshiftreports
 ├── SAKURA HOUSE/
 │   ├── SHIFT REPORT SCRIPTS/         # 13 .gs + 3 .html, ~5,700 LOC
 │   ├── TASK MANAGEMENT SCRIPTS/      # 9 .gs + 1 .html, ~3,800 LOC
@@ -107,7 +107,8 @@ SHIFT REPORTS 3.0/
 │   ├── brainstorms/                  # Design documents
 │   └── plans/                        # Implementation plans
 ├── .claude/
-│   └── agents/                       # 12 specialist agents (gas-code-review, rollover, slack, etc.)
+│   └── agents/                       # 12 specialist agents (excluded from git)
+├── .gitignore                        # Excludes _SETUP_*, .clasp*, .claude/, etc.
 ├── CLAUDE.md                         # This navigation file
 ├── CLAUDE_SAKURA.md                  # Sakura House guide
 ├── CLAUDE_WARATAH.md                 # The Waratah guide
@@ -182,6 +183,18 @@ Specialist agents live in `.claude/agents/`. Claude uses the Task tool to invoke
 4. **Test on copies** - Never test destructive operations on production files
 5. **NEVER use `sheet.clear()`** — destroys formatting. Use `Range.clearContent()` (singular) for ranges; `Sheet.clearContents()` (PLURAL) for sheets. `sheet.clearContent()` does NOT exist — TypeError.
 
+**Git Repository & Deployment Workflow:**
+
+The project is version-controlled at `https://github.com/thewaratah/pollenshiftreports.git` (branch: `main`, remote: `origin`).
+
+`clasp push` and `git push` are **independent** and go to **different places:**
+- `clasp push` deploys code to Google Apps Script (production runtime)
+- `git push` commits to GitHub (version history only -- does not affect production)
+
+Standard workflow: **edit code --> `clasp push` (deploy to Google) --> `git commit` + `git push` (save to GitHub)**
+
+The `.gitignore` excludes: `_SETUP_*` files (contain Slack webhook secrets), `docs/_archive/`, `docs/_archive_analysis/`, `.clasp.json`, `.clasprc.json`, `.DS_Store`, `.claude/`, `node_modules/`, `.vscode/`, `.idea/`
+
 ---
 
 ## Quick Reference
@@ -201,25 +214,18 @@ Specialist agents live in `.claude/agents/`. Claude uses the Task tool to invoke
 **Last Updated:** March 6, 2026
 **Status:** Both venues fully operational and production-ready ✅
 
-**Deployment (Mar 6, 2026):**
-- Waratah Shift Reports: 21 files pushed (NightlyExport.js + WeeklyRolloverInPlace.js hardened)
-- Waratah Task Management: 8 files pushed (v1.2.0 restructure — sort order changed, daily maintenance decomposed into individual triggers, 6 menu items removed, bug fixes)
-
 **Recent Updates (Mar 6, 2026):**
-- Waratah: Task Management v1.2.0 — sort order (Priority → Status → Staff); daily maintenance decomposed into individual triggers; 6 menu items removed; `MailApp` → `GmailApp`, `sheet.clear()` fix, LockService, trigger context safety
+- Both venues: Git repository initialized at `github.com/thewaratah/pollenshiftreports` — `clasp push` (deploy) and `git push` (version history) are independent workflows
+- Waratah: Task Management v1.2.0 — sort order, daily maintenance decomposed, 6 menu items removed, bug fixes
 - Waratah: Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor/avgCheck removed; full B5-B29 financial breakdown added
 - Waratah: Weekly functions audit — 4 key functions reviewed, fixed, deployed
-- Waratah: `WeeklyRolloverInPlace.js` — todo count bug fixed; trigger 5:15am → 10am; `MailApp` → `GmailApp`; Slack webhook HTTP check added
+
+**Deployment (Mar 6, 2026):**
+- Waratah Shift Reports: 21 files pushed (NightlyExport.js + WeeklyRolloverInPlace.js hardened)
+- Waratah Task Management: 8 files pushed (v1.2.0 restructure)
 
 **Previous Deployment (Feb 28, 2026):**
 - Sakura Shift Reports: 17 files pushed (NightlyBasicExportSakura.gs added; NIGHTLY_FINANCIAL schema 10→13 cols; rollover multi-sheet PDF + trigger safety; analytics fixes)
-
-**Previous (Feb 23-28, 2026):**
-- Sakura: `NightlyBasicExportSakura.gs` added; NIGHTLY_FINANCIAL schema 10→13 cols; rollover multi-sheet PDF + trigger safety
-- Sakura: `buildFinancialDashboard()` rewritten; `runWeeklyBackfill_()` + batch `setValues()`; `MailApp` → `GmailApp`
-- Both venues: `runIntegrations()` fully non-blocking; `checklist-dialog.html` in-dialog success state
-- Both venues: `parseCellDate_()` + `normaliseDateKey_()` added; `WeeklyDigest` files added
-- Waratah: Rollover fresh-template handling; trigger management built in
 
 **💡 To avoid "prompt too long" errors:**
 - Start with venue-specific quick references (CLAUDE_WARATAH.md or CLAUDE_SAKURA.md)

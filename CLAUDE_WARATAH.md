@@ -478,6 +478,15 @@ const webhook = PropertiesService.getScriptProperties()
 
 ## ⚡ Development Quick Tips
 
+**Deployment workflow (clasp push + git push):**
+```
+1. Edit code locally
+2. clasp push                    # Deploy to Google Apps Script (production)
+3. git add <files> && git commit # Version history
+4. git push origin main          # Push to GitHub (independent of clasp)
+```
+Note: `_SETUP_*` files are gitignored (they contain Slack webhook secrets). `.clasp.json` and `.clasprc.json` are also excluded.
+
 **Read a value:**
 ```javascript
 const netRevenue = sheet.getRange('B34').getValue();  // Direct reference
