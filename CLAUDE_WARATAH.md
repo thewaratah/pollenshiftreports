@@ -8,7 +8,25 @@
 
 ---
 
-## 🆕 DEPLOYMENT (March 6, 2026)
+## 🆕 SR Phase 0+1 (March 6, 2026)
+
+**6 files modified — 3 critical bug fixes + performance/code quality (net -42 lines)**
+
+**Phase 0 — Critical Bugs Fixed:**
+1. **Rollover silent failure** (WeeklyRolloverInPlace.js) — `performWeeklyRollover()` catch block now calls `notifyError_()` for Slack alert before UI try/catch
+2. **Malformed email recipients** (WeeklyRolloverInPlace.js) — `WARATAH_EMAIL_RECIPIENTS` JSON parsed via `Object.keys()` instead of raw string
+3. **Dead executeRollover()** (UIServer.js) — rewrote as thin wrapper around `performWeeklyRollover()` (was calling 5 non-existent functions from old rollover)
+
+**Phase 1 — Performance & Code Quality:**
+1. **Batch cell reads** (IntegrationHub.js) — `extractShiftData_()` replaced ~30 individual `getRange().getValue()` with 3 batched reads (B3:B39, A43:A65, A53:F61)
+2. **Shared `notifyError_()`** (SlackBlockKitWaratahSR.js) — consolidated error notification utility; applied to WeeklyDigestWaratah.js, NightlyExport.js (`sendWeeklyTodoSummary_WARATAH`), IntegrationHub.js (`runWeeklyBackfill_`)
+3. **Weekly Digest trigger** — `setupWeeklyDigestTrigger_Waratah()` exists but needs manual activation from Apps Script editor
+
+**Improvement plan:** `docs/plans/2026-03-06-waratah-shift-report-scripts-improvement-plan.md` (Phases 2-6 pending)
+
+---
+
+## DEPLOYMENT (March 6, 2026)
 
 **clasp push — Waratah Shift Reports: 21 files + Task Management: 8 files**
 

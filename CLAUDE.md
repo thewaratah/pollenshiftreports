@@ -233,13 +233,15 @@ main                          ← stable, merged code only
 **Status:** Both venues fully operational and production-ready ✅
 
 **Recent Updates (Mar 6, 2026):**
-- Waratah: 6-tier manager-facing explainer docs added to `docs/waratah/explainers/` (Basic/Intermediate/Advanced for Shift Reports + Task Management, .txt format for Google Docs import)
+- Waratah SR Phase 0+1: 3 critical bug fixes + performance/code quality improvements (6 files, net -42 lines)
+- Waratah: 6-tier manager-facing explainer docs added to `docs/waratah/explainers/`
 - Both venues: Git branching strategy documented in CLAUDE.md (main, sakura/develop, waratah/develop)
 - Waratah: Task Management v1.2.0 — sort order, daily maintenance decomposed, 6 menu items removed, bug fixes
 - Waratah: Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor/avgCheck removed; full B5-B29 financial breakdown added
 - Waratah: Weekly functions audit — 4 key functions reviewed, fixed, deployed
 
 **Deployment (Mar 6, 2026):**
+- Waratah Shift Reports Phase 0+1: 6 files (IntegrationHub, NightlyExport, SlackBlockKit, UIServer, WeeklyDigest, WeeklyRollover)
 - Waratah Shift Reports: 21 files pushed (NightlyExport.js + WeeklyRolloverInPlace.js hardened)
 - Waratah Task Management: 8 files pushed (v1.2.0 restructure)
 
