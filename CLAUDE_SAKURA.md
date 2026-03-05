@@ -1,0 +1,845 @@
+# SAKURA HOUSE - Claude Code Project Guide
+
+**Last Updated:** February 28, 2026
+**Project Type:** Google Apps Script (Hospitality Management System)
+**Venue:** Sakura House (Single-Venue Documentation)
+
+> **Note:** This is the Sakura-specific guide. For The Waratah, see `CLAUDE_WARATAH.md`. For shared architecture patterns, see `CLAUDE_SHARED.md`.
+
+---
+
+## DEPLOYMENT (February 28, 2026)
+
+**clasp push — Sakura Shift Reports: 17 files pushed**
+
+**New file: `NightlyBasicExportSakura.gs`**
+- Standalone handover export — no cross-file dependencies, hardcoded CONFIG object at top
+- Intended for non-technical team use without touching the main export pipeline
+- Function: `sendShiftReportBasic()` — PDF export, email, Slack post, TO-DOs to tab
+
+**NIGHTLY_FINANCIAL schema expanded (10 → 13 columns):**
+- Previous: 10 columns (Date, Day, Week Ending, MOD, Net Revenue, … , Logged At)
+- New cols added: F=Cash Total (C19), G=Cash Tips (C29), H=Tips Total (C32)
+- All existing analytics + digest code updated for new column letters (see schemas below)
+
+**WeeklyRolloverInPlace.gs — key fixes:**
+- Rollover PDF now archives **all 6 day sheets** as a single multi-page PDF (previously Monday only)
+- `getUi()` trigger safety: `SpreadsheetApp.getUi()` moved out of function scope — each alert is self-contained with try/catch. Prevents silent crash when Monday 1am trigger fires. **First automated rollover: Monday 2 March 2026.**
+- `stampDaySheets_()` now uses `getFieldRange(sheet, 'date')` instead of hardcoded `"B3"`
+- Archive folder helpers merged into `getOrCreateArchiveSubfolder_(weekEndDateStr, subfolderName)`
+- `MailApp.sendEmail()` replaced with `GmailApp.sendEmail()` throughout (single OAuth scope)
+- HTTP response code check added to `exportPdfToArchive_()` PDF fetch
+
+**AnalyticsDashboardSakura.gs — fixes:**
+- `buildFinancialDashboard()`: MOD Performance section removed
+- `buildFinancialDashboard()`: Weekly Trend date column now formatted via `setNumberFormat('dd/MM/yyyy')` — fixes serial number display (e.g. "46082")
+- `sheet.clearContent()` → `sheet.getDataRange().clearContent()` (Sheet class has no `clearContent()`)
+- Column refs updated for new 13-col NIGHTLY_FINANCIAL schema: J=Total Tips, K=Production Amount, L=Discounts
+
+**Other changes:**
+- `todoFullRange` removed from FIELD_CONFIG and CLEARABLE_FIELDS (was defined, never read)
+- `runWeeklyBackfill_()` now protected by `LockService.getScriptLock()` / `tryLock(30000)`
+- C19 and C32 direct cell reads wrapped in try/catch with `Logger.log` warning
+- `buildTodoAggregationSheet_()` and `pushTodosToActionables()` batch-write via `setValues()` (replaced appendRow loops)
+- `SAKURA_TEMPLATE_ID`, `SAKURA_FOLDER_ID`, `SAKURA_ARCHIVE_FOLDER_ID` commented out in `_SETUP_ScriptProperties_SakuraOnly.gs` (vestigial from old duplication rollover)
+- `verifyScriptProperties()` corrected to check `TASK_MANAGEMENT_SPREADSHEET_ID` (not `SAKURA_TASK_MANAGEMENT_ID`)
+- `VenueConfigSakura.gs`: stale range keys in `SAKURA_CONFIG.ranges` updated to match current FIELD_CONFIG key names
+
+---
+
+## 🆕 DEPLOYMENT (February 26, 2026)
+
+**clasp push — Sakura Shift Reports: 16 files pushed**
+
+**NightlyExportSakura.gs (Feb 26 patch):**
+- `runIntegrations()` call in `continueExport()` is now fully non-blocking — any errors/warnings go to `Logger.log()` only; export (PDF, email, Slack) always proceeds regardless of warehouse failures.
+- TEST path Slack calls wrapped in try/catch.
+- Managers never see warehouse/system errors.
+
+**checklist-dialog.html (Feb 26 patch):**
+- Replaced browser `alert()` on success with in-dialog success state.
+- On success: buttons hidden, green "Sent successfully" message appears, dialog auto-closes after 2 seconds.
+- Root cause fixed: native `alert()` showed confusing "An embedded page at script.googleusercontent.com says..." header.
+
+**Design constraint (confirmed):** `continueExport()` is called from the HTML dialog via `google.script.run`. It MUST return `{ success: boolean, message: string }` and MUST NOT call `SpreadsheetApp.getUi()` or `ui.alert()` — these throw 'Authorisation is required to perform that action' in the google.script.run context. All UI feedback must be handled by the dialog's JavaScript callbacks.
+
+---
+
+## DEPLOYMENT (February 25, 2026)
+
+**clasp push — all 4 projects deployed:**
+
+- Sakura House Shift Reports: 16 files pushed (NightlyExportSakura.gs + checklist-dialog.html updated)
+- Sakura House Task Management: 11 files pushed (no code changes since Feb 23)
+- Waratah Shift Reports: already up to date
+- Waratah Task Management: 8 files pushed (no code changes since Feb 23)
+
+**NightlyExportSakura.gs (Feb 25 patch):** Added explicit JSDoc note to continueExport() clarifying that SpreadsheetApp.getUi() / ui.alert() must NOT be called from google.script.run context — these throw 'Authorisation is required to perform that action'. Return { success, message } and let the dialog handle all UI feedback.
+
+**checklist-dialog.html (both venues):** Pre-send checklist modal — Deputy Timesheets Approved + Fruit Order Done must both be checked before the Confirm & Send button enables. Calls continueExport() via google.script.run.
+
+---
+
+## 🆕 RECENT UPDATES (February 23, 2026)
+
+**Task Management Bug Fix:**
+
+🐛 **Fixed `TypeError: Cannot read properties of undefined (reading 'dmWebhooks')`**
+- **Root cause:** `TASK_CONFIG` has no `slack` section — it was removed during the Feb 16 cleanup, but 7 call sites in `EnhancedTaskManagement_Sakura.gs` still referenced `TASK_CONFIG.slack.*` and `TASK_CONFIG.escalation.escalateTo*`
+- **Fix:** Replaced all 7 references with the existing Script Properties helper functions:
+  - `TASK_CONFIG.slack.managersChannel` → `getManagersChannelWebhook_()`
+  - `TASK_CONFIG.slack.dmWebhooks[x]` → `getSlackDmWebhooks_()[x]`
+  - `TASK_CONFIG.escalation.escalateToSlackWebhook` → `getEscalationSlackWebhook_()`
+  - `TASK_CONFIG.escalation.escalateToEmail` → `getEscalationEmail_()`
+- **Affected functions:** `checkAndNotifyOverdueTasks`, `sendOverdueTasksDMs_`, `sendWeeklyActiveTasksSummary`, `sendWeeklyActiveTasksSummary_Test`, `_sendWeeklyActiveTasksDMs_`, `escalateBlockedTasks`
+- **Pushed:** ✅ clasp pushed Feb 23, 2026
+
+⚠️ **Pattern to Remember:** `TASK_CONFIG` contains only spreadsheet/sheet/timezone/escalation-threshold/archive settings. All Slack webhooks and emails are fetched at runtime via helper functions from Script Properties. **Never put webhook URLs or emails in `TASK_CONFIG`.**
+
+**Shift Report Scripts Overhaul:**
+
+📝 **`RunSakura.gs` — FIELD_CONFIG expanded to 25 fields**
+- New fields added: `fohStaff`, `bohStaff`, `cashCount`, `cashRecord`, `pettyCashTransactions`, `todoTasks`, `todoAssignees`, `todoFullRange`, `goodNotes`
+- Renamed: `todoTask` → `todoTasks`/`todoAssignees`/`todoFullRange`
+- Fallback cells updated throughout to match current template layout (e.g. `date` = `B3:D3`, `shiftSummary` = `A59:D59`)
+- New function: `forceUpdateNamedRangesOnAllSheets()` — overwrites existing named ranges with current FIELD_CONFIG fallbacks (use after updating fallbacks)
+
+🔄 **`WeeklyRolloverInPlace.gs` — Production ready**
+- CLEARABLE_FIELDS expanded to include all 25 fields
+- Now also clears the **TO-DOs tab** (row 2 onwards) via `config.TODO_SHEET = 'TO-DOs'`
+- Rollover Slack notification uses `SAKURA_SLACK_WEBHOOK_URL_TEST` (⚠️ still hardcoded constant — switch to live when ready)
+
+📋 **`MenuSakura.gs` (Shift Reports) — Restructured**
+- `Send Nightly Report` — **no longer password-gated** (runs directly)
+- All admin/destructive operations moved into `Admin Tools` submenu
+- New item: `Force Update Named Ranges (ALL Sheets)` under Setup & Diagnostics
+- Password now read from Script Properties via `getMenuPassword_()` (no hardcoded value in this file)
+
+🖊️ **`NightlyExportSakura.gs` — Pre-send checklist**
+- `showPreExportChecklist_()` now shows a modal dialog before export
+- User must confirm checklist items before export continues
+- `continueExport(sheetName, isTest)` is called by the dialog after confirmation
+
+**Task Management Scripts Overhaul:**
+
+📁 **New file: `_SETUP_ScriptProperties_TaskMgmt_Sakura.gs`**
+- Created because the setup file was deleted in the Feb 16 cleanup
+- Run `setupScriptProperties_TaskMgmt_Sakura()` once from the **Sakura Actionables Sheet**
+- Sets 6 properties: `TASK_MANAGEMENT_SPREADSHEET_ID`, `ESCALATION_EMAIL`, `ESCALATION_SLACK_WEBHOOK`, `SLACK_MANAGERS_CHANNEL_WEBHOOK`, `SLACK_FOH_LEADS_WEBHOOK`, `SLACK_DM_WEBHOOKS`
+- **Note:** These are properties for the Actionables Sheet project — separate from Shift Reports project properties
+
+🎯 **New: FOH Leads Summary**
+- New function: `sendWeeklyFohLeadsSummary_Live()` — posts to `#sakura_foh_leads` channel
+- Audience: Evan, Gooch, Sabine, Kalisha only
+- Menu item added: `Task Management → Weekly Summary → Send Weekly Active Tasks (FOH)`
+- New Script Property: `SLACK_FOH_LEADS_WEBHOOK`
+
+📋 **`Menu_Updated_Sakura.gs` — Updated task management menu**
+- Added FOH leads summary menu item
+- Added Slack actionables poster (second menu: `Custom Scripts`)
+- Admin password read from Script Properties via `getMenuPassword_()` (line 19) — property key: `MENU_PASSWORD` in the Sakura Actionables Sheet project
+
+---
+
+## 🆕 PREVIOUS UPDATES (February 16, 2026)
+
+**System Status - PRODUCTION READY ✅**
+
+**Cleanup & Deployment Complete:**
+
+📦 **Code Cleanup (Phases 1-2):**
+- **1,733 lines removed** (15.8% reduction)
+- **6 files deleted** (legacy rollover, test files, cross-venue code)
+- **Files:** 17 → 12 (.gs files)
+- **Storage freed:** ~265KB
+- **Venue isolation:** 100% achieved (no shared files)
+
+📋 **New Documentation:**
+- **[Deployment Guide](SAKURA%20HOUSE/CODE_REVIEW_REPORTS_2026-02-16/DEPLOYMENT_GUIDE.md)** - Complete deployment procedure via clasp
+- **[Testing Guide](SAKURA%20HOUSE/CODE_REVIEW_REPORTS_2026-02-16/ROLLOVER_TESTING_GUIDE.md)** - 4-phase testing procedure (400+ lines)
+- **[Phase 1 Cleanup](SAKURA%20HOUSE/CODE_REVIEW_REPORTS_2026-02-16/PHASE1_CLEANUP_COMPLETE.md)** - Legacy code removal (1,363 lines)
+- **[Phase 2 Cleanup](SAKURA%20HOUSE/CODE_REVIEW_REPORTS_2026-02-16/PHASE2_CLEANUP_COMPLETE.md)** - Additional cleanup (370 lines)
+- **[Implementation Summary](SAKURA%20HOUSE/CODE_REVIEW_REPORTS_2026-02-16/SESSION_IMPLEMENTATION_SUMMARY.md)** - What changed and why
+
+🔒 **Security Hardening (42 → 75 points):**
+- Created Sakura-only setup file (no cross-venue credentials)
+- Removed all hardcoded passwords and webhooks
+- Interactive Script Properties configuration
+- LIVE export now password-protected
+- Cross-venue credential exposure eliminated
+
+🚀 **Rollover System:**
+- Configuration moved to Script Properties (no hardcoded values)
+- PDF export refactored for trigger execution (no UI prompts)
+- PDFs now archived to Drive + emailed to management
+- Ready for automated Monday 1am trigger
+- Legacy rollover system completely removed
+
+✅ **Deployment Status:**
+- Deployed via clasp to Apps Script (16 files)
+- Script Properties configured (13 properties)
+- Menu verified working
+- Email recipients: 6 management team members
+
+📊 **Quality Scores:**
+- Overall: 63/100 → 76/100 (+13 points)
+- Security: 42/100 → 75/100 (+33 points)
+- Architecture: 78/100 → 87/100 (+9 points)
+- Dead code: 1,733 lines → 0 lines (-100%)
+
+---
+
+## Project Overview
+
+SAKURA HOUSE shift reporting and task management system built on Google Apps Script. Features advanced named range system, in-place weekly rollover, and comprehensive automation.
+
+**Core Capabilities:**
+- 📊 **Automated Shift Reporting** - Daily financial reconciliation and operational notes
+- ✅ **Enhanced Task Management** - 8-status workflow with auto-escalation and recurring tasks
+- 📈 **Data Warehousing** - Centralized analytics database with duplicate prevention
+- 🔄 **Weekly Rollover In-Place** - NEW: Automated report cycling without file duplication
+- 📧 **PDF Export** - Formatted reports via email and Slack
+- 💬 **Slack Integration** - Rich Block Kit notifications
+
+---
+
+## File Structure
+
+```
+SAKURA HOUSE/
+├── SHIFT REPORT SCRIPTS/         # 17 files, ~6,850 LOC (NightlyBasicExportSakura.gs added Feb 28)
+│   ├── Production Scripts (11 files):
+│   │   ├── RunSakura.gs             # Named range system (529 lines)
+│   │   ├── VenueConfigSakura.gs     # Sakura-only config (range keys updated Feb 28)
+│   │   ├── IntegrationHubSakura.gs  # Data integration (13-col schema, LockService, try/catch)
+│   │   ├── NightlyExportSakura.gs   # PDF export (pre-send checklist dialog, batch writes)
+│   │   ├── NightlyBasicExportSakura.gs  # Standalone handover export — no cross-file deps (NEW Feb 28)
+│   │   ├── WeeklyRolloverInPlace.gs # In-place rollover (multi-sheet PDF, trigger safety Feb 28)
+│   │   ├── MenuSakura.gs            # Custom menu (password-protected)
+│   │   ├── AnalyticsDashboardSakura.gs  # MOD Performance removed, date format fix (Feb 28)
+│   │   ├── TaskIntegrationSakura.gs # batch setValues() (Feb 28)
+│   │   ├── UIServerSakura.gs        # Export/analytics UI
+│   │   └── WeeklyDigestSakura.gs    # Weekly revenue Slack digest (col index J updated Feb 28)
+│   ├── Setup (1 file):
+│   │   └── _SETUP_ScriptProperties_SakuraOnly.gs  # Secure configuration (vestigial props commented out Feb 28)
+│   └── HTML Dashboards (3 files):
+│       ├── analytics-viewer.html    # 207KB
+│       ├── export-dashboard.html    # 208KB
+│       └── checklist-dialog.html    # Pre-send checklist modal (150 lines, added Feb 25)
+├── TASK MANAGEMENT SCRIPTS/      # 8 files, ~3,000 LOC
+│   ├── EnhancedTaskManagement_Sakura.gs  # Task system (1,964 lines, bug-fixed Feb 23)
+│   ├── Menu_Updated_Sakura.gs            # Task management + Slack poster menu
+│   ├── _SETUP_ScriptProperties_TaskMgmt_Sakura.gs  # NEW: Setup for task management properties
+│   ├── TaskDashboard_Sakura.gs
+│   ├── SlackActionablesPoster_Sakura.gs
+│   ├── VenueConfigSakura.gs, UIServerSakura.gs
+│   └── SlackBlockKitSAKURA.gs + task-manager.html
+└── CODE_REVIEW_REPORTS_2026-02-16/  # Documentation
+    ├── DEPLOYMENT_GUIDE.md
+    ├── ROLLOVER_TESTING_GUIDE.md
+    ├── PHASE1_CLEANUP_COMPLETE.md
+    ├── PHASE2_CLEANUP_COMPLETE.md
+    └── SESSION_IMPLEMENTATION_SUMMARY.md
+```
+
+**Total:** ~9,500 lines of code across 21 .gs files
+
+**Removed Files (Feb 2026):**
+- ❌ _SETUP_ScriptProperties.gs (cross-venue security risk)
+- ❌ WeeklyRolloverSakura.gs (legacy system)
+- ❌ WeeklyDuplicationSakura.gs (legacy system)
+- ❌ TEST_SlackBlockKitLibrarySakura.gs (unused test)
+- ❌ TEST_VenueConfigSakura.gs (unused test)
+- ❌ rollover-wizard.html (legacy UI, 209KB)
+
+---
+
+## Named Range System (Sakura's Key Innovation)
+
+**File:** [`RunSakura.gs`](SAKURA%20HOUSE/SHIFT%20REPORT%20SCRIPTS/RunSakura.gs) (529 lines)
+
+### Why Named Ranges?
+
+**Problem:** Hardcoded cell references (`B54`) break when:
+- Rows/columns are inserted
+- Sheet structure changes
+- Rollover operations occur
+
+**Solution:** Named ranges (`MONDAY_SR_NetRevenue`) stay bound to cells regardless of structural changes
+
+### Convention
+
+```
+{DAY}_SR_{Suffix}
+Examples:
+- MONDAY_SR_Date
+- TUESDAY_SR_NetRevenue
+- WEDNESDAY_SR_ShiftSummary
+```
+
+### Fallback Mechanism (Critical)
+
+```javascript
+function getFieldRange(sheet, fieldKey) {
+  const config = FIELD_CONFIG[fieldKey];
+  const namedRangeName = `${dayPrefix}_${config.suffix}`;
+
+  try {
+    const namedRange = spreadsheet.getRangeByName(namedRangeName);
+    if (namedRange) return namedRange;  // ✅ Found
+  } catch (e) { }
+
+  // ⚠️ Fallback to hardcoded cell
+  Logger.log(`Named Range not found. Using fallback: ${config.fallback}`);
+  return sheet.getRange(config.fallback);
+}
+```
+
+**Benefits:**
+- Graceful degradation if named ranges missing
+- Self-healing (can recreate from fallbacks)
+- Scripts never fail due to missing named ranges
+
+### Field Configuration (24 fields — todoFullRange removed Feb 28, 2026)
+
+```javascript
+const FIELD_CONFIG = {
+  // HEADER
+  date:                 { suffix: "SR_Date",                  fallback: "B3:D3",    description: "Report date (merged cell)" },
+  mod:                  { suffix: "SR_MOD",                   fallback: "B4:D4",    description: "Manager on Duty (merged cell)" },
+  fohStaff:             { suffix: "SR_FOHStaff",              fallback: "B6:D6",    description: "FOH staff on shift" },
+  bohStaff:             { suffix: "SR_BOHStaff",              fallback: "B7:D7",    description: "BOH staff on shift" },
+
+  // CASH
+  cashCount:            { suffix: "SR_CashCount",             fallback: "C10:E17",  description: "Cash count breakdown" },
+  cashRecord:           { suffix: "SR_CashRecord",            fallback: "C22:D23",  description: "Cash record totals" },
+  pettyCashTransactions:{ suffix: "SR_PettyCashTransactions", fallback: "B40:B45",  description: "Petty cash transactions" },
+
+  // FINANCIALS
+  netRevenue:           { suffix: "SR_NetRevenue",            fallback: "B54",      description: "Net revenue less tips & accounts" },
+
+  // SHIFT REPORT
+  shiftSummary:         { suffix: "SR_ShiftSummary",          fallback: "A59:D59",  description: "General overview / shift summary" },
+
+  // TO-DO SECTION
+  todoTasks:            { suffix: "SR_TodoTasks",             fallback: "A69:C84",  description: "To-do task descriptions" },
+  todoAssignees:        { suffix: "SR_TodoAssignees",         fallback: "D69:D84",  description: "To-do assignee dropdowns" },
+  // todoFullRange removed Feb 28, 2026 — was defined but never read by any function
+
+  // FINANCIAL DETAIL
+  cashTips:             { suffix: "SR_CashTips",              fallback: "C29",      description: "Tips - Cash" },
+  cardTips:             { suffix: "SR_CardTips",              fallback: "C30",      description: "Tips - Card" },
+  surchargeTips:        { suffix: "SR_SurchargeTips",         fallback: "C31",      description: "Tips - Surcharge" },
+  productionAmount:     { suffix: "SR_ProductionAmount",      fallback: "B37",      description: "Production amount (from Lightspeed)" },
+  deposit:              { suffix: "SR_Deposit",               fallback: "B38",      description: "Deposit / revenue outside Lightspeed" },
+  discounts:            { suffix: "SR_Discounts",             fallback: "B50",      description: "Total discounts (from Lightspeed)" },
+
+  // CONTENT SECTIONS
+  guestsOfNote:         { suffix: "SR_GuestsOfNote",          fallback: "A61:D61",  description: "VIPs, regulars" },
+  goodNotes:            { suffix: "SR_GoodNotes",             fallback: "A63:D63",  description: "Good notes - positive feedback" },
+  issues:               { suffix: "SR_Issues",                fallback: "A65:D65",  description: "Issues / improvements" },
+  kitchenNotes:         { suffix: "SR_KitchenNotes",          fallback: "A67:D67",  description: "Kitchen notes (from chef)" },
+  wastageComps:         { suffix: "SR_WastageComps",          fallback: "A86:D86",  description: "Wastage / comps / discounts" },
+  maintenance:          { suffix: "SR_Maintenance",           fallback: "A88:D88",  description: "Maintenance items" },
+  rsaIncidents:         { suffix: "SR_RSAIncidents",          fallback: "A90:D90",  description: "RSA / intox / refusals" }
+};
+```
+
+**Changed from old docs:** `todoTask` → split into `todoTasks`/`todoAssignees` (Feb 23); `todoFullRange` removed Feb 28 (was defined but never read); all fallback cells match actual template layout.
+
+### Diagnostics & Setup
+
+**Menu → Admin Tools → Setup & Diagnostics:**
+
+```javascript
+diagnoseNamedRanges()                   // Check active sheet
+diagnoseAllSheets()                     // Check all 6 day sheets
+createNamedRangesOnActiveSheet()        // Setup from fallbacks (skips existing)
+createNamedRangesOnAllSheets()          // Bulk setup for all days (skips existing)
+forceUpdateNamedRangesOnAllSheets()     // NEW: Overwrite ALL named ranges with current FIELD_CONFIG fallbacks
+```
+
+**When to use `forceUpdateNamedRangesOnAllSheets()`:**
+- After updating fallback cell references in FIELD_CONFIG
+- Named ranges are pointing to old cells and need to be refreshed
+- Unlike `createNamedRangesOnAllSheets()`, this OVERWRITES existing ranges
+
+**Usage:**
+1. Open any day sheet (MONDAY, TUESDAY, etc.)
+2. Menu → Setup & Diagnostics → Check Named Ranges
+3. If missing: Menu → Create Named Ranges (Active Sheet)
+
+---
+
+## Venue Configuration
+
+**File:** [`VenueConfigSakura.gs`](SAKURA%20HOUSE/SHIFT%20REPORT%20SCRIPTS/VenueConfigSakura.gs)
+
+**Key Difference from Waratah:** Uses **named ranges** (not hardcoded cells)
+
+```javascript
+const SAKURA_CONFIG = {
+  name: 'SAKURA HOUSE',
+  days: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'],
+  dayCount: 6,  // Closed Sundays
+  sheetNames: {
+    master: 'SAKURA HOUSE - CURRENT WEEK',
+    audit: 'AUDIT LOG',
+    archive: 'ARCHIVE'
+  },
+  ranges: {
+    usesNamedRanges: true,  // ✅ Uses named ranges
+    todoTask: 'TODO_TASK_RANGE',
+    date: 'DATE_RANGE',
+    netRevenue: 'NET_REVENUE',
+    // ... references to named ranges
+  },
+  timezone: 'Australia/Sydney',
+  features: {
+    taskManagement: true,
+    nightlyExport: true,
+    analytics: true,
+    inPlaceRollover: true  // NEW
+  }
+}
+```
+
+---
+
+## Weekly Rollover In-Place ✅
+
+**File:** [`WeeklyRolloverInPlace.gs`](SAKURA%20HOUSE/SHIFT%20REPORT%20SCRIPTS/WeeklyRolloverInPlace.gs)
+**Plan:** [docs/plans/2026-02-11-feat-in-place-weekly-rollover-plan.md](docs/plans/2026-02-11-feat-in-place-weekly-rollover-plan.md)
+
+### Why In-Place?
+
+**Problem with Duplication (Legacy):**
+- `makeCopy()` doesn't duplicate container-bound scripts
+- New files have no custom menus ❌
+- Complex Apps Script API workaround
+- Still fails intermittently
+
+**Solution:**
+- Single working file: **"Sakura House - Current Week"**
+- Every Monday 1am:
+  1. Export PDF + Google Sheets snapshot
+  2. Archive to `Archive/YYYY/YYYY-MM/sheets/` and `/pdfs/`
+  3. **Clear data** (preserve structure, formulas, named ranges)
+  4. Update dates to next week
+  5. Send notifications
+
+### Critical Pattern: clearContent() vs clear()
+
+```javascript
+// ✅ CORRECT - Preserves named ranges, formatting, validation
+const range = getFieldRange(sheet, 'netRevenue');
+range.clearContent();
+
+// ❌ WRONG - Destroys named ranges, formatting, formulas
+range.clear();
+```
+
+**Why This Matters:**
+- `clear()` removes named ranges → scripts stop working
+- `clearContent()` only removes values → everything else survives
+- **Always use `clearContent()` for rollover/data clearing**
+
+### Rollover Flow
+
+```javascript
+performInPlaceRollover()
+    ├─→ validateRolloverPreconditions_()  // Check file ID, VENUE_NAME, week completion
+    ├─→ generateWeekSummary_()
+    ├─→ exportPdfToArchive_()
+    ├─→ createArchiveSnapshot_()          // makeCopy() to archive folder
+    ├─→ clearAllSheetData_()              // FOR EACH field: range.clearContent()
+    ├─→ updateDatesToNextWeek_()          // Calculate + stamp next week dates
+    ├─→ verifyAndFixNamedRanges_()        // Recreate any missing named ranges
+    └─→ sendRolloverNotifications_()      // Email + Slack
+```
+
+### Archive Structure
+
+```
+Archive/
+├── 2026/
+│   ├── 2026-02/
+│   │   ├── sheets/
+│   │   │   └── Sakura Shift Report W.E. 09.02.2026
+│   │   └── pdfs/
+│   │       └── Sakura Shift Report W.E. 09.02.2026.pdf
+```
+
+### Rollover PDF — All 6 Sheets (updated Feb 28, 2026)
+
+The rollover now exports **all 6 day sheets** as a single multi-page PDF archive (previously only Monday's sheet). Implementation: non-day sheets are hidden before export, all visible sheets are exported together, sheet visibility is restored in a try/finally block.
+
+### Trigger Safety Fix (Feb 28, 2026)
+
+`SpreadsheetApp.getUi()` was previously called at function scope in `performInPlaceRollover()`. When the Monday 1am time trigger fires there is no UI context — the old code would throw a silent uncaught exception and abort the rollover. Fix: each `ui.alert()` call is now wrapped in its own try/catch. The rollover always runs to completion; UI prompts are silently skipped in trigger context.
+
+**First automated trigger run: Monday 2 March 2026.**
+
+### Archive Folder Helpers (updated Feb 28, 2026)
+
+`getOrCreateArchiveFolder_()` and `getOrCreatePdfArchiveFolder_()` merged into a single helper:
+```javascript
+getOrCreateArchiveSubfolder_(weekEndDateStr, subfolderName)
+// subfolderName: 'sheets' or 'pdfs'
+```
+
+### Setup Trigger
+
+**Manually create via Apps Script Editor → Triggers:**
+- Function: `performInPlaceRollover`
+- Event source: Time-driven
+- Type: Week timer
+- Day: Monday
+- Time: 1am to 2am
+
+### Testing
+
+```javascript
+previewInPlaceRollover()  // Dry run - shows what will happen, no changes
+```
+
+---
+
+## Script Properties Configuration
+
+**Required Properties:**
+
+```javascript
+// Venue
+VENUE_NAME: "SAKURA"
+
+// Slack Webhooks
+SAKURA_SLACK_WEBHOOK_LIVE: "https://hooks.slack.com/services/..."
+SAKURA_SLACK_WEBHOOK_TEST: "https://hooks.slack.com/services/..."
+
+// Email
+SAKURA_EMAIL_RECIPIENTS: '["evan@...", "adam@...", "properties.litster@..."]'
+
+// Spreadsheet IDs
+SAKURA_DATA_WAREHOUSE_ID: "1T4WwoedgSdT1MNWJwxPCC_eG9MmU54YE1VYDdjcRzDk"
+TASK_MANAGEMENT_SPREADSHEET_ID: "[spreadsheet_id]"
+
+// Task Management
+ESCALATION_EMAIL: "evan@sakurahousesydney.com"
+ESCALATION_SLACK_WEBHOOK: "https://hooks.slack.com/services/..."
+SLACK_MANAGERS_CHANNEL_WEBHOOK: "https://hooks.slack.com/services/..."
+SLACK_DM_WEBHOOKS: '{"Evan":"...", "Nick":"...", "Gooch":"..."}'
+
+// Rollover (for in-place system)
+SAKURA_WORKING_FILE_ID: "[current_working_file_id]"
+ARCHIVE_ROOT_FOLDER_ID: "1a1AbJN4qU7Lt2oyYPxiTn3kG5EEKOf1K"
+```
+
+**Setup Function (Shift Reports project):**
+```javascript
+setupScriptProperties_SakuraShiftReports()
+```
+
+**Task Management properties** (separate Actionables Sheet project — run `setupScriptProperties_TaskMgmt_Sakura()` from that sheet):
+```javascript
+TASK_MANAGEMENT_SPREADSHEET_ID: "13ANpyoohs9RQMpuS026mSLjLxrH9RIVmtp5i-mRhnZk"
+ESCALATION_EMAIL: "evan@sakurahousesydney.com"
+ESCALATION_SLACK_WEBHOOK: "https://hooks.slack.com/services/..."
+SLACK_MANAGERS_CHANNEL_WEBHOOK: "https://hooks.slack.com/services/..."
+SLACK_FOH_LEADS_WEBHOOK: "https://hooks.slack.com/services/..."  // #sakura_foh_leads
+SLACK_DM_WEBHOOKS: '{"Evan":"...","Nick":"...","Gooch":"...","Adam":"...","Cynthia":"...","Kalisha":"...","Sabine":"..."}'
+```
+
+**⚠️ Two separate projects — two separate Script Property stores:**
+- Shift Reports spreadsheet → uses `SAKURA_*` prefixed properties
+- Sakura Actionables Sheet → uses un-prefixed task management properties
+
+---
+
+## Integration Hub & Data Warehouse
+
+**File:** [`IntegrationHubSakura.gs`](SAKURA%20HOUSE/SHIFT%20REPORT%20SCRIPTS/IntegrationHubSakura.gs) (502 lines)
+
+**Flow:**
+```
+Shift Report
+    ↓
+runIntegrations(sheetName)
+    ├─→ extractShiftData_()      // Extract via named ranges
+    ├─→ validateShiftData_()
+    ├─→ logToDataWarehouse_()    // Write to 4 warehouse sheets
+    └─→ logIntegrationRun_()
+```
+
+**Data Warehouse Sheets (schemas current as of Feb 28, 2026):**
+
+**1. NIGHTLY_FINANCIAL** (13 columns — expanded Feb 28)
+```
+A=Date | B=Day | C=Week Ending | D=MOD | E=Net Revenue |
+F=Cash Total (C19) | G=Cash Tips (C29) | H=Tips Total (C32) |
+I=Logged At | J=Total Tips | K=Production Amount | L=Discounts | M=Deposit
+```
+Duplicate key: date (A) + MOD (D)
+
+**2. WASTAGE_COMPS** (5 columns — corrected Feb 28)
+```
+A=Date | B=Day | C=Week Ending | D=MOD | E=COMMENTS
+```
+Duplicate key: date (A) + MOD (D)
+
+**3. OPERATIONAL_EVENTS** (9 columns — rewritten Feb 28, one row per TO-DO item)
+```
+A=Date | B=Type ("New") | C=Item (task text) | D=Quantity ("") |
+E=Value ("MEDIUM") | F=Staff (assignee) | G=Reason ("") |
+H=Category ("TO-DO") | I=Source ("Shift Report")
+```
+Duplicate key: date (A) + Item text (C)
+
+**4. QUALITATIVE_LOG** - Shift narratives (schema unchanged)
+
+**Duplicate Prevention (hardened Feb 23, 2026):**
+
+Uses `normaliseDateKey_()` to handle both Date objects and string-stored dates:
+```javascript
+const shiftDateKey = normaliseDateKey_(shiftData.date);
+const isDuplicate = existingData.some(row => {
+  const rowKey = normaliseDateKey_(row[0]);
+  return rowKey !== null && rowKey === shiftDateKey && row[3] === shiftData.mod;
+});
+```
+
+**New helpers (Feb 23, 2026):**
+- `parseCellDate_(value)` — Parses `dd/MM/yyyy` strings using `Utilities.parseDate` with Australia/Sydney timezone
+- `normaliseDateKey_(v)` — Normalises Date objects OR string-stored dates to canonical `toDateString()` form for comparison
+- `showIntegrationLogStats()` — Shows a 30-day summary dialog of INTEGRATION_LOG (accessible from menu: `Admin Tools → Data Warehouse → Show Integration Log`)
+
+**Data Warehouse Menu (`Admin Tools → Data Warehouse`):**
+- Backfill This Sheet to Warehouse
+- Show Integration Log (Last 30 Days)
+- Setup Weekly Backfill Trigger
+
+---
+
+## Weekly Revenue Digest
+
+**File:** [`WeeklyDigestSakura.gs`](SAKURA%20HOUSE/SHIFT%20REPORT%20SCRIPTS/WeeklyDigestSakura.gs) (NEW Feb 23, 2026)
+
+Posts a weekly revenue performance summary to Slack, comparing this week vs last week.
+
+**Functions:**
+```javascript
+sendWeeklyRevenueDigest_Sakura()       // Main — posts to LIVE Slack webhook
+sendWeeklyRevenueDigest_Sakura_Test()  // Posts to TEST Slack webhook
+computeWeeklyStats_Sakura_(warehouseId) // Reads NIGHTLY_FINANCIAL, computes stats
+buildWeeklyDigestBlocks_Sakura_(stats)  // Block Kit message with change arrows, best day, tips
+setupWeeklyDigestTrigger_Sakura()       // Installs Monday 8am trigger (safe to re-run)
+```
+
+**Menu:** `Admin Tools → Weekly Digest`
+- Send Revenue Digest (LIVE)
+- Send Revenue Digest (TEST)
+- Setup Monday Digest Trigger
+
+**Data Source:** NIGHTLY_FINANCIAL sheet in `SAKURA_DATA_WAREHOUSE_ID`
+- Column E = Net Revenue
+- Column J = Total Tips (index updated from 6→9 on Feb 28 after schema expanded to 13 cols)
+
+**Trigger:** Monday 8am (Australia/Sydney) -- NOT YET SET UP. Must be installed manually via:
+- Menu: `Admin Tools → Weekly Digest → Setup Monday Digest Trigger`, or
+- Run `setupWeeklyDigestTrigger_Sakura()` from the Apps Script editor
+
+---
+
+## Menu System
+
+**File:** [`MenuSakura.gs`](SAKURA%20HOUSE/SHIFT%20REPORT%20SCRIPTS/MenuSakura.gs)
+
+```
+Shift Report
+├── Send Nightly Report             ← NO password required
+├── Send Test Report                ← password-gated
+├── Open Export Dashboard           ← no password
+├── ────────────────
+└── Admin Tools ▸                   ← all items password-gated
+    ├── Weekly Reports ▸
+    │   ├── Weekly To-Do Summary (LIVE)
+    │   └── Weekly To-Do Summary (TEST)
+    ├── Weekly Rollover (In-Place) ▸
+    │   ├── Run Rollover Now
+    │   ├── Preview Rollover (Dry Run)
+    │   └── Open Rollover Settings
+    ├── Integrations & Analytics ▸
+    │   ├── Test Integrations Now
+    │   ├── Validate All Systems
+    │   ├── Build Analytics Dashboard
+    │   ├── Build Executive Dashboard
+    │   └── Open Analytics
+    ├── Data Warehouse ▸                   ← NEW
+    │   ├── Backfill This Sheet to Warehouse
+    │   ├── Show Integration Log (Last 30 Days)
+    │   └── Setup Weekly Backfill Trigger
+    ├── Weekly Digest ▸                    ← NEW
+    │   ├── Send Revenue Digest (LIVE)
+    │   ├── Send Revenue Digest (TEST)
+    │   └── Setup Monday Digest Trigger
+    └── Setup & Diagnostics ▸
+        ├── Check Named Ranges (This Sheet)
+        ├── Check Named Ranges (ALL Sheets)
+        ├── Create Named Ranges (This Sheet)
+        ├── Create Named Ranges (ALL Sheets)
+        ├── Force Update Named Ranges (ALL Sheets)  ← NEW
+        └── Test Task Push to Actionables
+```
+
+**Password Protection (Shift Reports menu):**
+```javascript
+// Password read from Script Properties (NOT hardcoded)
+function getMenuPassword_() {
+  return PropertiesService.getScriptProperties().getProperty('MENU_PASSWORD');
+}
+```
+
+**Note:** The Task Management sheet (`Menu_Updated_Sakura.gs`) reads the admin password from Script Properties via `getMenuPassword_()` at line 19 — property key: `MENU_PASSWORD` (Sakura Actionables Sheet project).
+
+---
+
+## Common Operations
+
+### Fix Missing Named Ranges
+
+```
+Menu → Admin Tools → Setup & Diagnostics → Create Named Ranges (ALL Sheets)
+```
+
+or
+
+```javascript
+diagnoseNamedRanges()  // Check active sheet
+diagnoseAllSheets()    // Check all 6 day sheets
+createNamedRangesOnAllSheets()       // Create missing ranges
+forceUpdateNamedRangesOnAllSheets()  // Overwrite ALL with current FIELD_CONFIG fallbacks
+```
+
+### Test Integrations
+
+```javascript
+testIntegrations()       // Test on active sheet
+runValidationReport()    // Full system validation
+```
+
+### Preview Rollover (Dry Run)
+
+```
+Menu → Weekly Rollover (In-Place) → Preview Rollover (Dry Run)
+Enter password: chocolateteapot
+```
+
+### CLEARABLE_FIELDS (current list in WeeklyRolloverInPlace.gs)
+
+```javascript
+CLEARABLE_FIELDS: [
+  'mod', 'date', 'fohStaff', 'bohStaff',
+  'cashCount', 'cashRecord', 'pettyCashTransactions',
+  'netRevenue', 'shiftSummary',
+  'todoTasks', 'todoAssignees',  // todoFullRange removed Feb 28
+  'cashTips', 'cardTips', 'surchargeTips',
+  'productionAmount', 'deposit', 'discounts',
+  'guestsOfNote', 'goodNotes', 'issues',
+  'kitchenNotes', 'wastageComps', 'maintenance', 'rsaIncidents'
+]
+// Plus: TODO_SHEET = 'TO-DOs' tab is cleared wholesale (rows 2+)
+```
+
+### Add New Field to Clear (Rollover)
+
+```javascript
+// 1. Add to FIELD_CONFIG in RunSakura.gs
+newField: {
+  suffix: "SR_NewField",
+  fallback: "B99",
+  description: "New field description"
+}
+
+// 2. Add to CLEARABLE_FIELDS in WeeklyRolloverInPlace.gs
+CLEARABLE_FIELDS: [
+  // ... existing fields ...
+  'newField'
+]
+```
+
+---
+
+## Development Guidelines
+
+### When Working on Sakura Code
+
+**1. Always Use Named Range Abstraction:**
+```javascript
+// ✅ CORRECT
+const value = getFieldValue(sheet, 'netRevenue');
+setFieldValue(sheet, 'netRevenue', 1234.56);
+
+// ❌ AVOID
+const value = sheet.getRange('B54').getValue();  // Hardcoded cell
+```
+
+**2. Clear Content Correctly:**
+```javascript
+// ✅ CORRECT - Preserves named ranges
+range.clearContent();
+
+// ❌ WRONG - Destroys named ranges
+range.clear();
+```
+
+**3. Use Venue Configuration:**
+```javascript
+const config = getVenueConfig_();
+if (config.ranges.usesNamedRanges) {
+  // Use named range system
+}
+```
+
+---
+
+## Testing Checklist
+
+- [ ] Test on COPY of working file (never test on production)
+- [ ] Run preview/dry run mode if available
+- [ ] Check Apps Script logs for errors
+- [ ] Verify named ranges still work after data clearing
+- [ ] Test menu functionality
+- [ ] Confirm Slack notifications send correctly
+- [ ] Validate data warehouse writes
+
+---
+
+## Quick Reference
+
+**Working File:** "Sakura House - Current Week" (after rollover deployed)
+
+**Archive Root:** ID `1a1AbJN4qU7Lt2oyYPxiTn3kG5EEKOf1K`
+
+**Data Warehouse:** ID `1T4WwoedgSdT1MNWJwxPCC_eG9MmU54YE1VYDdjcRzDk`
+
+**Admin Password:** Read from Script Properties (`MENU_PASSWORD`) in both the Shift Reports menu and the Task Management menu (`Menu_Updated_Sakura.gs`) — validated via `getMenuPassword_()` ✅
+
+**Operating Days:** 6 days (Monday-Saturday, closed Sundays)
+
+**Timezone:** Australia/Sydney
+
+---
+
+## Resources
+
+- **Shift Report Workflow:** [`SAKURA_WORKFLOW_SHIFT_REPORTS.md`](SAKURA_WORKFLOW_SHIFT_REPORTS.md) - User + backend flow for daily nightly export
+- **Task Management Workflow:** [`SAKURA_WORKFLOW_TASK_MANAGEMENT.md`](SAKURA_WORKFLOW_TASK_MANAGEMENT.md) - Task lifecycle, automation, Slack DMs
+- **Shared Architecture:** See `CLAUDE_SHARED.md` for patterns used by both venues
+- **Waratah Comparison:** See `CLAUDE_WARATAH.md` for hardcoded cell system
+- **Full Analysis:** See `CODE_ANALYSIS_SAKURA.md` for detailed code structure
+- **Rollover Plan:** See `docs/plans/2026-02-11-feat-in-place-weekly-rollover-plan.md`
+
+---
+
+**Last Updated:** February 28, 2026
+**Total LOC:** ~9,700 lines across 22 .gs files (NightlyBasicExportSakura.gs added Feb 28)

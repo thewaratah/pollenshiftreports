@@ -1,0 +1,235 @@
+/**
+ * ============================================================================
+ * README SHEET CONTENT GENERATOR
+ * ============================================================================
+ * 
+ * Run this function to populate a README sheet with formatted content.
+ * Designed for the Sakura House Shift Report template.
+ * 
+ * USAGE:
+ * 1. Create a sheet named "README" in your template
+ * 2. Run populateReadmeSheet() from Apps Script
+ * 3. Adjust column widths as needed (A: 600px recommended)
+ * ============================================================================
+ */
+
+function populateReadmeSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName("README");
+  
+  if (!sheet) {
+    sheet = ss.insertSheet("README", 0);
+  } else {
+    sheet.clear();
+  }
+  
+  // Set column width
+  sheet.setColumnWidth(1, 700);
+  
+  // Content rows
+  const content = [
+    ["SAKURA HOUSE SHIFT REPORT"],
+    [""],
+    ["═══════════════════════════════════════════════════════════════"],
+    ["QUICK START"],
+    ["═══════════════════════════════════════════════════════════════"],
+    [""],
+    ["1. Select your day tab (e.g., MONDAY 27/01/2025)"],
+    ["2. Complete all sections of the shift report"],
+    ["3. Export & Email via menu: Shift Report → Export & Email PDF (LIVE)"],
+    ["4. Don't forget the FRUIT ORDER!"],
+    [""],
+    ["═══════════════════════════════════════════════════════════════"],
+    ["MENU OPTIONS"],
+    ["═══════════════════════════════════════════════════════════════"],
+    [""],
+    ["Export & Email PDF (LIVE)"],
+    ["   → Sends PDF to all managers + posts to Slack #managers"],
+    [""],
+    ["Export & Email (TEST to me)"],
+    ["   → Sends only to YOU for testing - use this first if unsure"],
+    [""],
+    ["Weekly To-Do Summary (LIVE)"],
+    ["   → Posts all week's to-dos to Slack #managers"],
+    [""],
+    ["Weekly To-Do Summary (TEST)"],
+    ["   → Posts summary only to your Slack DM"],
+    [""],
+    ["═══════════════════════════════════════════════════════════════"],
+    ["FIELD REFERENCE - HEADER"],
+    ["═══════════════════════════════════════════════════════════════"],
+    [""],
+    ["B3:D3    Date"],
+    ["B4:D4    MOD (Manager on Duty)"],
+    ["B6:D6    FOH Staff (dropdown)"],
+    ["B7:D7    BOH Staff (dropdown)"],
+    [""],
+    ["═══════════════════════════════════════════════════════════════"],
+    ["FIELD REFERENCE - CASH RECONCILIATION"],
+    ["═══════════════════════════════════════════════════════════════"],
+    [""],
+    ["C10:C17  Cash Counted in Till"],
+    ["D10:D17  Refloat ($500)"],
+    ["C22      Cash rung up incorrectly / returned"],
+    ["C23      CD - Cash Discount"],
+    ["C29      Tips - Cash"],
+    ["C30      Tips - Card"],
+    ["C31      Tips - Surcharge"],
+    [""],
+    ["═══════════════════════════════════════════════════════════════"],
+    ["FIELD REFERENCE - SALES RECONCILIATION"],
+    ["═══════════════════════════════════════════════════════════════"],
+    [""],
+    ["B37      Production Amount (from Lightspeed)"],
+    ["B38      Deposit / revenue outside Lightspeed"],
+    ["B40:B45  Card Transactions (Woolworths, Mitre 10, etc.)"],
+    ["B50      Total Discounts (from Lightspeed, includes CD)"],
+    ["B54      NET REVENUE (less tips & accounts)"],
+    [""],
+    ["═══════════════════════════════════════════════════════════════"],
+    ["FIELD REFERENCE - SHIFT REPORT"],
+    ["═══════════════════════════════════════════════════════════════"],
+    [""],
+    ["B59      General Overview - shift summary"],
+    ["B61      Guest of Note - VIPs, regulars"],
+    ["B63      Good Notes - positive feedback"],
+    ["B65      Issues / Improvements"],
+    ["B67      Kitchen Notes (from chef)"],
+    [""],
+    ["═══════════════════════════════════════════════════════════════"],
+    ["FIELD REFERENCE - TO-DO & NOTES"],
+    ["═══════════════════════════════════════════════════════════════"],
+    [""],
+    ["B69:B84  To-Do Tasks (short form)"],
+    ["D69:D84  Assignee (dropdown)"],
+    ["B86      Wastage / Comps / Discounts"],
+    ["B88      Maintenance (ping Evan)"],
+    ["B90      RSA / Intox / Refusals"],
+    [""],
+    ["═══════════════════════════════════════════════════════════════"],
+    ["⚠️  IMPORTANT REMINDERS  ⚠️"],
+    ["═══════════════════════════════════════════════════════════════"],
+    [""],
+    ["🍎 FRUIT ORDER - Complete before leaving!"],
+    [""],
+    ["✓ Check all fields - Incomplete reports cause confusion"],
+    ["✓ Use TEST mode first - If unsure, send a test to yourself"],
+    ["✓ One report per day - Don't overwrite previous days"],
+    ["✓ Maintenance items - Tag Evan in B88 for follow-up"],
+    ["✓ RSA incidents - Must be recorded in B90 for compliance"],
+    [""],
+    ["═══════════════════════════════════════════════════════════════"],
+    ["FIRST TIME USE - PERMISSIONS"],
+    ["═══════════════════════════════════════════════════════════════"],
+    [""],
+    ["The first time you run the script, Google will ask for permissions."],
+    ["This is normal and required for the script to work."],
+    [""],
+    ["1. 'Authorization Required' popup → Click CONTINUE"],
+    ["2. 'Choose an account' → Select your @sakurahousesydney.com account"],
+    ["3. 'Google hasn't verified this app' → Click ADVANCED"],
+    ["   → Then click 'Go to Sakura Shift Report (unsafe)'"],
+    ["4. Permission request → Click ALLOW"],
+    [""],
+    ["WHY THESE PERMISSIONS?"],
+    ["• Send email: To email the PDF report to managers"],
+    ["• Google Drive: To generate the PDF from the spreadsheet"],
+    ["• External service: To post to Slack"],
+    [""],
+    ["If you see 'You need permission to access this resource':"],
+    ["• Make sure you're signed into your @sakurahousesydney.com account"],
+    ["• Try signing out of personal Google accounts first"],
+    [""],
+    ["If issues persist, contact Evan."],
+    [""],
+    ["═══════════════════════════════════════════════════════════════"],
+    ["SUPPORT"],
+    ["═══════════════════════════════════════════════════════════════"],
+    [""],
+    ["Technical Issues: Contact Evan"],
+    ["Operational Questions: Contact your MOD or Nick"],
+    [""],
+    ["═══════════════════════════════════════════════════════════════"],
+    [""],
+    ["System Version: 1.2.0 | Last Updated: January 2025"],
+    ["This README is automatically included in each weekly report."]
+  ];
+  
+  // Write content
+  sheet.getRange(1, 1, content.length, 1).setValues(content);
+  
+  // Format title
+  sheet.getRange(1, 1).setFontSize(18).setFontWeight("bold");
+  
+  // Auto-format based on content patterns
+  for (let i = 0; i < content.length; i++) {
+    const row = i + 1;
+    const text = content[i][0];
+    
+    // Format divider lines (═══)
+    if (text.includes("═══")) {
+      sheet.getRange(row, 1).setFontFamily("Courier New").setFontColor("#888888");
+    }
+    
+    // Format section headers (all caps, not dividers, not blank)
+    if (text === text.toUpperCase() && 
+        text.length > 3 && 
+        !text.includes("═══") && 
+        !text.includes("→") &&
+        !text.startsWith("B") &&
+        !text.startsWith("C") &&
+        !text.startsWith("D")) {
+      sheet.getRange(row, 1).setFontSize(11).setFontWeight("bold").setBackground("#f3f3f3");
+    }
+    
+    // Format warning section and fruit order
+    if (text.includes("⚠️") || text.includes("🍎")) {
+      sheet.getRange(row, 1).setFontWeight("bold").setFontColor("#cc0000");
+    }
+  }
+  
+  // Freeze title row
+  sheet.setFrozenRows(1);
+  
+  // Hide gridlines for cleaner look
+  sheet.setHiddenGridlines(true);
+  
+  Logger.log("✅ README sheet populated successfully.");
+}
+
+/**
+ * Alternative: Get README content as a 2D array for manual insertion
+ */
+function getReadmeContent() {
+  return [
+    ["SAKURA HOUSE SHIFT REPORT - README"],
+    [""],
+    ["QUICK START"],
+    ["1. Select your day tab (e.g., MONDAY 27/01/2025)"],
+    ["2. Complete all sections of the shift report"],
+    ["3. Menu: Shift Report → Export & Email PDF (LIVE)"],
+    ["4. Don't forget the FRUIT ORDER!"],
+    [""],
+    ["MENU OPTIONS"],
+    ["• Export & Email PDF (LIVE) - Sends to all managers + Slack"],
+    ["• Export & Email (TEST) - Sends only to you"],
+    ["• Weekly To-Do Summary - Posts week's tasks to Slack"],
+    [""],
+    ["COMPLETING THE REPORT"],
+    ["• Date (B3): Verify it matches today"],
+    ["• MOD (B4): Manager on Duty name"],
+    ["• Net Revenue (B54): Revenue less tips & accounts"],
+    ["• Shift Summary (Row 59): Key events, issues, notes"],
+    ["• To-Dos (Rows 69-84): Tasks with assignees"],
+    [""],
+    ["REMINDERS"],
+    ["⚠️ Complete FRUIT ORDER before leaving"],
+    ["⚠️ Use TEST mode first if unsure"],
+    ["⚠️ Check all fields before sending"],
+    [""],
+    ["SUPPORT"],
+    ["Technical: Evan | Operations: MOD or Nick"],
+    [""],
+    ["Version 1.2.0 | January 2025"]
+  ];
+}

@@ -1,0 +1,26 @@
+# Exclude documentation from context unless explicitly needed
+CODE_ANALYSIS.md
+
+# Exclude planning documents (reference when needed, don't auto-load)
+docs/plans/
+docs/brainstorms/
+
+# Exclude test files
+**/TEST_*.gs
+**/TEST_*.js
+
+# Exclude archived code
+**/_ARCHIVED/
+
+# Exclude deployment guides (reference when needed)
+**/TASK_MANAGEMENT_DEPLOYMENT_GUIDE.md
+
+# Exclude config files
+**/.clasp.json
+**/appsscript.json
+
+# Exclude Claude settings
+.claude/
+
+# Keep only the navigation CLAUDE.md in context
+# The venue-specific guides will be loaded on-demand

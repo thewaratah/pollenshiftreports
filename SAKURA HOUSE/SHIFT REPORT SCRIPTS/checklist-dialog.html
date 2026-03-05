@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        color: #202124;
+        padding: 24px;
+        background: #fff;
+      }
+      h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 18px;
+        color: #202124;
+      }
+      .checklist {
+        list-style: none;
+        margin-bottom: 20px;
+      }
+      .checklist li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #e8eaed;
+        cursor: pointer;
+      }
+      .checklist li:first-child {
+        border-top: 1px solid #e8eaed;
+      }
+      .checklist label {
+        cursor: pointer;
+        user-select: none;
+        flex: 1;
+      }
+      input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: #1a73e8;
+        flex-shrink: 0;
+      }
+      .note {
+        font-size: 12px;
+        color: #80868b;
+        margin-bottom: 20px;
+      }
+      .buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+      button {
+        padding: 8px 22px;
+        border-radius: 4px;
+        border: none;
+        font-size: 14px;
+        cursor: pointer;
+        font-family: Arial, sans-serif;
+      }
+      #cancelBtn {
+        background: #f1f3f4;
+        color: #3c4043;
+      }
+      #cancelBtn:hover:not(:disabled) { background: #e8eaed; }
+      #confirmBtn {
+        background: #1a73e8;
+        color: #fff;
+      }
+      #confirmBtn:disabled {
+        background: #c5cae9;
+        cursor: not-allowed;
+      }
+      #confirmBtn:hover:not(:disabled) { background: #1557b0; }
+      #successMsg {
+        display: none;
+        text-align: center;
+        padding: 16px 0 8px;
+        color: #188038;
+        font-size: 15px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>Pre-Send Checklist</h3>
+    <ul class="checklist">
+      <li onclick="toggle('timesheets')">
+        <input type="checkbox" id="timesheets">
+        <label for="timesheets">Deputy Timesheets Approved</label>
+      </li>
+      <li onclick="toggle('fruit')">
+        <input type="checkbox" id="fruit">
+        <label for="fruit">Fruit Order Done</label>
+      </li>
+    </ul>
+    <p class="note">Both must be confirmed before sending.</p>
+    <div class="buttons">
+      <button id="cancelBtn" onclick="google.script.host.close()">Cancel</button>
+      <button id="confirmBtn" onclick="onConfirm()" disabled>Confirm &amp; Send</button>
+    </div>
+    <p id="successMsg">✓ Sent successfully</p>
+
+    <script>
+      var sheetName = <?!= sheetName ?>;
+      var isTest    = <?!= isTest ?>;
+
+      function toggle(id) {
+        var cb = document.getElementById(id);
+        cb.checked = !cb.checked;
+        updateButton();
+      }
+
+      function updateButton() {
+        var both = document.getElementById('timesheets').checked &&
+                   document.getElementById('fruit').checked;
+        document.getElementById('confirmBtn').disabled = !both;
+      }
+
+      // Prevent li click double-firing when the checkbox itself is clicked
+      ['timesheets', 'fruit'].forEach(function(id) {
+        document.getElementById(id).addEventListener('click', function(e) {
+          e.stopPropagation();
+          updateButton();
+        });
+      });
+
+      function onConfirm() {
+        document.getElementById('confirmBtn').disabled = true;
+        document.getElementById('cancelBtn').disabled = true;
+        document.getElementById('confirmBtn').textContent = 'Sending\u2026';
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result && !result.success) {
+              document.getElementById('confirmBtn').disabled = false;
+              document.getElementById('cancelBtn').disabled = false;
+              document.getElementById('confirmBtn').textContent = 'Confirm \u0026 Send';
+              alert(result.message);
+            } else {
+              document.querySelector('.buttons').style.display = 'none';
+              document.getElementById('successMsg').style.display = 'block';
+              setTimeout(function() { google.script.host.close(); }, 2000);
+            }
+          })
+          .withFailureHandler(function(err) {
+            document.getElementById('confirmBtn').disabled = false;
+            document.getElementById('cancelBtn').disabled = false;
+            document.getElementById('confirmBtn').textContent = 'Confirm \u0026 Send';
+            alert('Error: ' + err.message);
+          })
+          .continueExport(sheetName, isTest);
+      }
+    </script>
+  </body>
+</html>

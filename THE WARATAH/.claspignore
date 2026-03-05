@@ -1,0 +1,17 @@
+# Ignore .gs files (use .js only)
+**/*.gs
+
+# Ignore git files
+.git/**
+.gitignore
+
+# Ignore IDE files
+.vscode/**
+.idea/**
+
+# Ignore system files
+.DS_Store
+**/.DS_Store
+
+# Ignore archived legacy files
+SHIFT REPORT SCRIPTS/_ARCHIVED/**

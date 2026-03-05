@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Clasp credentials (contains script IDs)
+.clasp.json
+.clasprc.json
+
+# Node
+node_modules/
+
+# Claude Code local settings
+.claude/
+
+# Setup scripts (contain Slack webhook URLs and other secrets)
+**/_SETUP_*
+
+# Archived docs (contain leaked secrets from early development)
+docs/_archive/
+docs/_archive_analysis/
+
+# IDE
+.vscode/
+.idea/
