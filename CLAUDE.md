@@ -195,6 +195,21 @@ Standard workflow: **edit code --> `clasp push` (deploy to Google) --> `git comm
 
 The `.gitignore` excludes: `_SETUP_*` files (contain Slack webhook secrets), `docs/_archive/`, `docs/_archive_analysis/`, `.clasp.json`, `.clasprc.json`, `.DS_Store`, `.claude/`, `node_modules/`, `.vscode/`, `.idea/`
 
+**Git Branching (Venue Independence):**
+
+```
+main                          ← stable, merged code only
+├── sakura/develop            ← ongoing Sakura House work
+└── waratah/develop           ← ongoing Waratah work
+```
+
+- **`main`** — receives merges only; never commit directly
+- **`sakura/develop`** — all Sakura House development; `clasp push` from `SAKURA HOUSE/` directories
+- **`waratah/develop`** — all Waratah development; `clasp push` from `THE WARATAH/` directories
+- **Feature branches** — for larger changes, branch off the venue branch: `sakura/fix-rollover`, `waratah/add-dashboard`
+- **Shared file edits** (CLAUDE.md, docs/) — commit on whichever venue branch you're on; merge conflicts are rare since venue files don't overlap
+- **Merging** — when a venue branch is stable: `git checkout main && git merge sakura/develop && git push`
+
 ---
 
 ## Quick Reference

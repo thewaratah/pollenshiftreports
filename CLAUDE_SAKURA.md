@@ -800,6 +800,17 @@ if (config.ranges.usesNamedRanges) {
 }
 ```
 
+**4. Deployment workflow (clasp push + git push):**
+```
+1. git checkout sakura/develop        # Ensure correct branch
+2. Edit code locally
+3. clasp push                         # Deploy to Google Apps Script (production)
+4. git add "SAKURA HOUSE/..." && git commit -m "deploy: Sakura SR — description"
+5. git push origin sakura/develop     # Push to GitHub (independent of clasp)
+```
+Branches: `sakura/develop` for ongoing work, `sakura/*` for features. Never push directly to `main`.
+Note: `_SETUP_*` files are gitignored (they contain Slack webhook secrets). `.clasp.json` and `.clasprc.json` are also excluded.
+
 ---
 
 ## Testing Checklist

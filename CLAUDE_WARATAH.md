@@ -480,11 +480,13 @@ const webhook = PropertiesService.getScriptProperties()
 
 **Deployment workflow (clasp push + git push):**
 ```
-1. Edit code locally
-2. clasp push                    # Deploy to Google Apps Script (production)
-3. git add <files> && git commit # Version history
-4. git push origin main          # Push to GitHub (independent of clasp)
+1. git checkout waratah/develop       # Ensure correct branch
+2. Edit code locally
+3. clasp push                         # Deploy to Google Apps Script (production)
+4. git add "THE WARATAH/..." && git commit -m "deploy: Waratah SR — description"
+5. git push origin waratah/develop    # Push to GitHub (independent of clasp)
 ```
+Branches: `waratah/develop` for ongoing work, `waratah/*` for features. Never push directly to `main`.
 Note: `_SETUP_*` files are gitignored (they contain Slack webhook secrets). `.clasp.json` and `.clasprc.json` are also excluded.
 
 **Read a value:**
