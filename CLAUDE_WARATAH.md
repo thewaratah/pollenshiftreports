@@ -185,6 +185,14 @@ runValidationReport()    // Full system validation
 - 📙 [CELL_REFERENCE_MAP.md](docs/waratah/CELL_REFERENCE_MAP.md) - All hardcoded cell references (B34, B52, etc.)
 - 📙 [INTEGRATION_FLOWS.md](docs/waratah/INTEGRATION_FLOWS.md) - Data warehouse, Slack, email, task integrations
 
+**Manager Explainers (Google Docs-ready .txt, non-technical audience):**
+- 📖 [01-BASIC-Daily-Shift-Report-Guide.txt](docs/waratah/explainers/01-BASIC-Daily-Shift-Report-Guide.txt) - How to fill out and send shift reports
+- 📖 [02-INTERMEDIATE-How-The-System-Works.txt](docs/waratah/explainers/02-INTERMEDIATE-How-The-System-Works.txt) - What happens behind the scenes
+- 📖 [03-ADVANCED-Complete-Backend-Reference.txt](docs/waratah/explainers/03-ADVANCED-Complete-Backend-Reference.txt) - Full backend reference for power users
+- 📖 [04-BASIC-Task-Management-Guide.txt](docs/waratah/explainers/04-BASIC-Task-Management-Guide.txt) - How to use task management day-to-day
+- 📖 [05-INTERMEDIATE-Task-Management-System.txt](docs/waratah/explainers/05-INTERMEDIATE-Task-Management-System.txt) - Task system mechanics and automation
+- 📖 [06-ADVANCED-Task-Management-Backend.txt](docs/waratah/explainers/06-ADVANCED-Task-Management-Backend.txt) - Full task management backend reference
+
 ---
 
 ## 🔑 Key Files & Functions

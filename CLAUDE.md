@@ -66,6 +66,7 @@
 - 📋 Shift Reports: [`WORKFLOW_SHIFT_REPORTS.md`](WORKFLOW_SHIFT_REPORTS.md) (updated Mar 6)
 - 🏗️ Architecture: [`docs/waratah/DEEP_DIVE_ARCHITECTURE.md`](docs/waratah/DEEP_DIVE_ARCHITECTURE.md)
 - 🔌 Integrations: [`docs/waratah/INTEGRATION_FLOWS.md`](docs/waratah/INTEGRATION_FLOWS.md)
+- 📖 Manager Explainers: [`docs/waratah/explainers/`](docs/waratah/explainers/) (6-tier: Basic/Intermediate/Advanced for Shift Reports + Task Mgmt)
 
 ### Need Shared Patterns?
 → **Read [`CLAUDE_SHARED.md`](CLAUDE_SHARED.md)**
@@ -105,7 +106,9 @@ SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/polle
 │   └── TASK MANAGEMENT SCRIPTS/      # 6 .gs + 1 .html, ~3,400 LOC
 ├── docs/
 │   ├── brainstorms/                  # Design documents
-│   └── plans/                        # Implementation plans
+│   ├── plans/                        # Implementation plans
+│   └── waratah/
+│       └── explainers/              # 6-tier manager-facing explainers (Shift Reports + Task Mgmt)
 ├── .claude/
 │   └── agents/                       # 12 specialist agents (excluded from git)
 ├── .gitignore                        # Excludes _SETUP_*, .clasp*, .claude/, etc.
@@ -230,7 +233,8 @@ main                          ← stable, merged code only
 **Status:** Both venues fully operational and production-ready ✅
 
 **Recent Updates (Mar 6, 2026):**
-- Both venues: Git repository initialized at `github.com/thewaratah/pollenshiftreports` — `clasp push` (deploy) and `git push` (version history) are independent workflows
+- Waratah: 6-tier manager-facing explainer docs added to `docs/waratah/explainers/` (Basic/Intermediate/Advanced for Shift Reports + Task Management, .txt format for Google Docs import)
+- Both venues: Git branching strategy documented in CLAUDE.md (main, sakura/develop, waratah/develop)
 - Waratah: Task Management v1.2.0 — sort order, daily maintenance decomposed, 6 menu items removed, bug fixes
 - Waratah: Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor/avgCheck removed; full B5-B29 financial breakdown added
 - Waratah: Weekly functions audit — 4 key functions reviewed, fixed, deployed
