@@ -1060,15 +1060,15 @@ function setupWeeklyBackfillTrigger() {
 
   ScriptApp.newTrigger('runWeeklyBackfill_')
     .timeBased()
-    .onWeekDay(ScriptApp.WeekDay.WEDNESDAY) // Waratah week starts Wednesday
-    .atHour(2)
+    .onWeekDay(ScriptApp.WeekDay.MONDAY)
+    .atHour(8)
     .create();
 
-  Logger.log('Weekly backfill trigger installed: runs every Wednesday at 2am.');
+  Logger.log('Weekly backfill trigger installed: runs every Monday at 8am.');
   try {
     SpreadsheetApp.getUi().alert(
       'Trigger Installed',
-      'runWeeklyBackfill_() will run every Wednesday at 2am.\n\n' +
+      'runWeeklyBackfill_() will run every Monday at 8am.\n\n' +
       'To remove: Apps Script editor → Triggers (clock icon) → delete the trigger.',
       SpreadsheetApp.getUi().ButtonSet.OK
     );
