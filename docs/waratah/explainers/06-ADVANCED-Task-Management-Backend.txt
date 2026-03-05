@@ -230,7 +230,7 @@ EnhancedTaskManagementWaratah.gs - Core Functions
       - What it does: DONE/CANCELLED: sets Date Completed. BLOCKED: highlights Blocker Notes red with a note. Active from DONE/CANCELLED: clears Date Completed. Active from BLOCKED: clears Blocker Notes highlight.
 
    - sendWeeklyActiveTasksSummary()
-      - Called from: Monday 9am trigger + Menu (LIVE)
+      - Called from: Monday 10am trigger + Menu (LIVE)
       - What it does: Public wrapper. Calls core function with the live webhook URL. Wrapped in try/catch with Slack error notification.
 
    - sendWeeklyActiveTasksSummary_Test()
@@ -267,7 +267,7 @@ EnhancedTaskManagementWaratah.gs - Trigger Management Functions
       - Removes the bi-hourly cleanup trigger
 
    - createWeeklySummaryTrigger()
-      - Creates a Monday 9am trigger for sendWeeklyActiveTasksSummary
+      - Creates a Monday 10am trigger for sendWeeklyActiveTasksSummary
 
    - createOnEditTrigger()
       - Creates an installable onEdit trigger for onTaskSheetEditWithAutoSort
@@ -393,7 +393,7 @@ Six time-based triggers and one edit trigger run the automated components.
       - Purpose: Archive completed tasks older than 30 days
 
    - Weekly Active Summary
-      - Schedule: Monday at 9am AEST
+      - Schedule: Monday at 10am AEST
       - Function: sendWeeklyActiveTasksSummary()
       - File: EnhancedTaskManagementWaratah.gs
       - Purpose: Post active tasks to Slack, send individual DMs

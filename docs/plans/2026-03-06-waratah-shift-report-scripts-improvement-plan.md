@@ -162,7 +162,7 @@ Add to: `SlackBlockKitWaratahSR.js` (since it's already the Slack foundation lay
 
 ### 1.3 Activate Weekly Digest Trigger
 
-**Current:** `setupWeeklyDigestTrigger_Waratah()` exists but the trigger has never been installed. The Wednesday 8am digest only runs when manually triggered from the menu.
+**Current:** `setupWeeklyDigestTrigger_Waratah()` exists but the trigger has never been installed. The Monday 9am digest only runs when manually triggered from the menu.
 
 **Fix:** Run `setupWeeklyDigestTrigger_Waratah()` from the Apps Script editor or menu. No code change needed — just activation.
 

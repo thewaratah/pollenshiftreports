@@ -10,7 +10,7 @@
 - **Waratah:** Task Management restructure v1.2.0 — sort order changed; daily maintenance decomposed into individual triggers; 6 menu items removed; bug fixes
 - **Waratah:** Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor removed; full B5-B29 financial breakdown added
 - **Waratah:** Weekly functions audit — 4 key functions reviewed, hardened, and deployed
-- **Waratah:** Rollover trigger: 5:15am → 10am; weekly summary trigger: 6am → 9am
+- **Waratah:** All weekly triggers consolidated to Monday: backfill 8am, digest 9am, rollover 10am, weekly summary 10am
 
 **Previous Updates (Feb 26, 2026):**
 - **Both venues:** `runIntegrations()` fully non-blocking in `continueExport()` — warehouse errors go to `Logger.log()` only; export always proceeds

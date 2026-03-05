@@ -966,7 +966,7 @@ function backfillShiftToWarehouse() {
 
 /**
  * Iterate all shift report sheets and backfill any not yet in the data warehouse.
- * Designed to be called by a weekly time-based trigger (Wednesday morning).
+ * Designed to be called by a weekly time-based trigger (Monday 8am).
  */
 function runWeeklyBackfill_() {
   const INTEGRATION_CONFIG = getIntegrationConfig_();

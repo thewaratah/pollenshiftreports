@@ -35,7 +35,7 @@ Waratah Tools
     ├── Weekly Digest
     │   ├── Send Revenue Digest (LIVE)
     │   ├── Send Revenue Digest (TEST)
-    │   └── Setup Wednesday Digest Trigger
+    │   └── Setup Monday Digest Trigger
     │
     ├── Analytics
     │   ├── Build Financial Dashboard

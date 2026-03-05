@@ -188,8 +188,11 @@ NEW → TO DO → IN PROGRESS → TO DISCUSS → DONE
 ```
 
 **Automation:**
-- Daily 6am: Cleanup, escalation, recurring tasks, archival, overdue summary
-- Monday 9am: Weekly active tasks summary to Slack
+- Bi-hourly: Cleanup and sort
+- Daily 6am: Staff workload refresh
+- Sunday 9am: Overdue summary
+- Monday 6am: Archive old tasks
+- Monday 10am: Weekly active tasks summary to Slack
 - On Edit: Audit log, auto-sort
 
 **Setup:**

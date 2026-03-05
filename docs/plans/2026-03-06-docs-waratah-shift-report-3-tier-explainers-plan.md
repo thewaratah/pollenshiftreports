@@ -59,7 +59,7 @@ Three progressive documents, each building on the last:
 - What the data warehouse is and what it stores (4 sheets, 22 financial columns)
 - How duplicate prevention works (Date + MOD key)
 - What the weekly rollover actually does (archive → clear → update dates → notify)
-- What the 3 automated triggers do (Monday rollover, Wednesday digest, Wednesday backfill)
+- What the 3 automated triggers do (Monday backfill 8am, Monday digest 9am, Monday rollover 10am)
 - TEST vs LIVE mode — what's different
 - The basic export alternative (NightlyBasicExport) and when to use it
 - The "Waratah Tools" menu — every item explained

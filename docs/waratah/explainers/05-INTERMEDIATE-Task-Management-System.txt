@@ -32,7 +32,7 @@ The task management system has six automated components:
 
    - Weekly Active Tasks Summary
       - Posts all active tasks to Slack, grouped by staff
-      - Runs Monday at 9am
+      - Runs Monday at 10am
 
    - Auto-Sort on Edit
       - Re-sorts the sheet whenever a task's status or priority changes
@@ -280,7 +280,7 @@ The two systems are separate Google Apps Script projects attached to different s
 Slack Notifications: What Gets Sent and When
 
 
-Weekly Active Tasks (Monday 9am)
+Weekly Active Tasks (Monday 10am)
 
 Posted to the managers Slack channel:
    - Header showing the week starting date

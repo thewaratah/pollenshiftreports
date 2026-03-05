@@ -164,7 +164,7 @@ You do not need to press anything for these. They run on timers.
    - Every Monday at 6am
       - Tasks marked Done or Cancelled more than 30 days ago are moved to the Archive
 
-   - Every Monday at 9am
+   - Every Monday at 10am
       - A weekly summary of all active tasks is posted to the managers Slack channel
       - Each staff member gets a personal Slack message listing their active tasks
 

@@ -163,7 +163,7 @@ Every function that the system exposes (callable from menus, triggers, or HTML d
 | `validateShiftData_(shiftData)` | Called from runIntegrations | Checks that required fields (date, MOD, revenue) are present and valid. |
 | `showIntegrationLogStats()` | Menu: Admin > Data Warehouse > Show Integration Log | Displays a summary of all warehouse writes. |
 | `backfillShiftToWarehouse()` | Menu: Admin > Data Warehouse > Backfill Current Sheet | Manually pushes the active sheet's data to the warehouse. |
-| `runWeeklyBackfill_()` | Automatic trigger: Wednesday 2am | Scans all 5 sheets and logs any that weren't already in the warehouse. |
+| `runWeeklyBackfill_()` | Automatic trigger: Monday 8am | Scans all 5 sheets and logs any that weren't already in the warehouse. |
 | `runValidationReport()` | Run from Apps Script editor | Health check: validates all connections and data extraction. |
 
 ### WeeklyRolloverInPlace.js — Rollover Functions
@@ -180,8 +180,8 @@ Every function that the system exposes (callable from menus, triggers, or HTML d
 
 | Function | How It's Called | What It Does |
 |----------|----------------|-------------|
-| `sendWeeklyRevenueDigest_Waratah()` | Automatic trigger: Wednesday 8am + Menu (password required) | Reads warehouse data, compares this week vs last week, posts to Slack. |
-| `setupWeeklyDigestTrigger_Waratah()` | Menu: Admin > Weekly Digest > Setup Trigger | Installs the Wednesday 8am timer. |
+| `sendWeeklyRevenueDigest_Waratah()` | Automatic trigger: Monday 9am + Menu (password required) | Reads warehouse data, compares this week vs last week, posts to Slack. |
+| `setupWeeklyDigestTrigger_Waratah()` | Menu: Admin > Weekly Digest > Setup Trigger | Installs the Monday 9am timer. |
 
 ### Menu.js — Menu and Access Control
 
@@ -273,8 +273,8 @@ Three time-based triggers run the automated components. These are set up once an
 | Trigger | Schedule | Function | File | Purpose |
 |---------|----------|----------|------|---------|
 | Weekly Rollover | Monday 10:00am AEST | `performWeeklyRollover()` | WeeklyRolloverInPlace.js | Archive, clear, update dates, notify |
-| Weekly Revenue Digest | Wednesday 8:00am AEST | `sendWeeklyRevenueDigest_Waratah()` | WeeklyDigestWaratah.js | This-week vs last-week Slack comparison |
-| Weekly Backfill | Wednesday 2:00am AEST | `runWeeklyBackfill_()` | IntegrationHub.js | Catch unlogged shifts |
+| Weekly Revenue Digest | Monday 9:00am AEST | `sendWeeklyRevenueDigest_Waratah()` | WeeklyDigestWaratah.js | This-week vs last-week Slack comparison |
+| Weekly Backfill | Monday 8:00am AEST | `runWeeklyBackfill_()` | IntegrationHub.js | Catch unlogged shifts |
 
 Plus one event trigger:
 

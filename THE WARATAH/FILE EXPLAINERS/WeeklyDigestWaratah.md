@@ -2,13 +2,13 @@
 
 **Location:** `THE WARATAH/SHIFT REPORT SCRIPTS/WeeklyDigestWaratah.js`
 **Type:** Weekly revenue digest — automated Slack summary
-**Run from:** Time-based trigger (Wednesday 8am) or Menu > Admin Tools > Weekly Digest
+**Run from:** Time-based trigger (Monday 9am) or Menu > Admin Tools > Weekly Digest
 
 ---
 
 ## What This File Does
 
-This file (~203 lines) generates and posts a weekly revenue comparison to Slack every Wednesday morning. It reads from the NIGHTLY_FINANCIAL sheet in the Data Warehouse, compares this week's numbers against last week's, and posts a formatted summary showing trends.
+This file (~203 lines) generates and posts a weekly revenue comparison to Slack every Monday morning. It reads from the NIGHTLY_FINANCIAL sheet in the Data Warehouse, compares this week's numbers against last week's, and posts a formatted summary showing trends.
 
 ---
 
@@ -38,7 +38,7 @@ Takes the stats object and builds a Slack Block Kit message with:
 - Per-day breakdown if available
 
 ### `setupWeeklyDigestTrigger_Waratah()`
-Creates a time-based trigger that fires every **Wednesday at 8am AEST**. Removes any existing digest trigger first to prevent duplicates.
+Creates a time-based trigger that fires every **Monday at 9am AEST**. Removes any existing digest trigger first to prevent duplicates.
 
 ---
 
@@ -47,14 +47,14 @@ Creates a time-based trigger that fires every **Wednesday at 8am AEST**. Removes
 - **Changing when the digest fires** — Update the day/time in `setupWeeklyDigestTrigger_Waratah()`
 - **Adding new metrics to the digest** — Update `computeWeeklyStats_Waratah_()` to pull additional columns from NIGHTLY_FINANCIAL, then update `formatDigestMessage_Waratah_()` to display them
 - **Changing the comparison period** — Modify the date range filtering in `computeWeeklyStats_Waratah_()`
-- **Digest not posting** — Check that the trigger exists (Admin Tools > Weekly Digest > Setup Wednesday Digest Trigger) and that the Slack webhook is valid
+- **Digest not posting** — Check that the trigger exists (Admin Tools > Weekly Digest > Setup Monday Digest Trigger) and that the Slack webhook is valid
 
 ---
 
 ## Important Notes
 
 - **Depends on the Data Warehouse** — If NIGHTLY_FINANCIAL is empty or has missing days, the digest will show incomplete data or zero values.
-- **Wednesday timing is intentional** — The Waratah operates Wed–Sun, so Wednesday morning is the start of a new week. The digest covers the previous full operating week.
+- **Monday timing is intentional** — All weekly maintenance triggers (backfill, digest, rollover) are consolidated to Monday. The digest covers the previous full operating week (Wed-Sun).
 - **The trigger must be re-created after deployment** — `clasp push` does not preserve time-based triggers. Run `setupWeeklyDigestTrigger_Waratah()` after any deployment.
 - **Uses `bk_*` functions from SlackBlockKitWaratahSR.js** for Block Kit message formatting.
 

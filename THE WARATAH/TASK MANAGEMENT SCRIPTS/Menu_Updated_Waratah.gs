@@ -202,7 +202,7 @@ function onOpen() {
         .addSeparator()
         .addSubMenu(ui.createMenu('🔧 Setup Triggers')
           .addItem('Create Edit Trigger (Auto-sort)', 'protected_createOnEditTrigger')
-          .addItem('Create Weekly Summary Trigger (Mon 9am)', 'protected_createWeeklySummaryTrigger')
+          .addItem('Create Weekly Summary Trigger (Mon 10am)', 'protected_createWeeklySummaryTrigger')
           .addItem('Create Bi-Hourly Cleanup Trigger (Every 2hrs)', 'protected_createBiHourlyCleanupTrigger')
           .addItem('Create Daily Staff Workload Trigger (6am)', 'protected_createDailyStaffWorkloadTrigger')
           .addItem('Create Weekly Archive Trigger (Mon 6am)', 'protected_createWeeklyArchiveTrigger')

@@ -210,7 +210,7 @@ IntegrationHub.js - Data Warehouse Functions
       - What it does: Manually pushes the active sheet's data to the warehouse
 
    - runWeeklyBackfill_()
-      - Called from: Automatic trigger - Wednesday 2am
+      - Called from: Automatic trigger - Monday 8am
       - What it does: Scans all 5 sheets and logs any that weren't already in the warehouse
 
    - runValidationReport()
@@ -244,12 +244,12 @@ WeeklyRolloverInPlace.js - Rollover Functions
 WeeklyDigestWaratah.js - Revenue Digest Functions
 
    - sendWeeklyRevenueDigest_Waratah()
-      - Called from: Automatic trigger - Wednesday 8am + Menu (password required)
+      - Called from: Automatic trigger - Monday 9am + Menu (password required)
       - What it does: Reads warehouse data, compares this week vs last week, posts to Slack
 
    - setupWeeklyDigestTrigger_Waratah()
       - Called from: Menu - Admin > Weekly Digest > Setup Trigger
-      - What it does: Installs the Wednesday 8am timer
+      - What it does: Installs the Monday 9am timer
 
 
 Menu.js - Menu and Access Control
@@ -442,13 +442,13 @@ Three time-based triggers run the automated components. These are set up once an
       - Purpose: Archive, clear, update dates, notify
 
    - Weekly Revenue Digest
-      - Schedule: Wednesday 8:00am AEST
+      - Schedule: Monday 9:00am AEST
       - Function: sendWeeklyRevenueDigest_Waratah()
       - File: WeeklyDigestWaratah.js
       - Purpose: This-week vs last-week Slack comparison
 
    - Weekly Backfill
-      - Schedule: Wednesday 2:00am AEST
+      - Schedule: Monday 8:00am AEST
       - Function: runWeeklyBackfill_()
       - File: IntegrationHub.js
       - Purpose: Catch unlogged shifts

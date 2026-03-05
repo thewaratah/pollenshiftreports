@@ -45,7 +45,7 @@
    - `buildTodoAggregationSheet_()`: `appendRow()` loop → batch `setValues()`
 
 2. **EnhancedTaskManagementWaratah.gs `sendWeeklyActiveTasksSummary()`**
-   - Trigger timing: 6am → **9am** (`.atHour(9).nearMinute(0)`)
+   - Trigger timing: 6am → **10am** (`.atHour(10).nearMinute(0)`)
    - BLOCKED tasks remain excluded from weekly summary (by design)
 
 3. **WeeklyRolloverInPlace.js `performWeeklyRollover()`**
@@ -345,18 +345,18 @@ sendWeeklyRevenueDigest_Waratah()       // Main — posts to LIVE Slack webhook
 sendWeeklyRevenueDigest_Waratah_Test()  // Posts to TEST Slack webhook
 computeWeeklyStats_Waratah_(warehouseId) // Reads NIGHTLY_FINANCIAL, computes stats
 buildWeeklyDigestBlocks_Waratah_(stats)  // Block Kit message with change arrows, best day, tips
-setupWeeklyDigestTrigger_Waratah()       // Installs Wednesday 8am trigger (safe to re-run)
+setupWeeklyDigestTrigger_Waratah()       // Installs Monday 9am trigger (safe to re-run)
 ```
 
 **Menu:** `Admin Tools → Weekly Digest`
 - Send Revenue Digest (LIVE)
 - Send Revenue Digest (TEST)
-- Setup Wednesday Digest Trigger
+- Setup Monday Digest Trigger
 
 **Data Source:** NIGHTLY_FINANCIAL sheet via `getIntegrationConfig_().dataWarehouseId`
 
-**Trigger:** Wednesday 8am (Australia/Sydney) -- NOT YET SET UP. Must be installed manually via:
-- Menu: `Admin Tools → Weekly Digest → Setup Wednesday Digest Trigger`, or
+**Trigger:** Monday 9am (Australia/Sydney) -- NOT YET SET UP. Must be installed manually via:
+- Menu: `Admin Tools → Weekly Digest → Setup Monday Digest Trigger`, or
 - Run `setupWeeklyDigestTrigger_Waratah()` from the Apps Script editor
 
 ---
@@ -412,7 +412,7 @@ NEW → TO DO → IN PROGRESS → DONE
 | Staff Workload Refresh | Daily 6am | `runScheduledStaffWorkload()` |
 | Archive Old Tasks | Monday 6am | `runScheduledArchive()` |
 | Overdue Summary | Sunday 9am | `runScheduledOverdueSummary()` |
-| Weekly Summary | Mon 9am (optional) | `sendWeeklyActiveTasksSummary()` |
+| Weekly Summary | Mon 10am (optional) | `sendWeeklyActiveTasksSummary()` |
 | onEdit Auto-sort | Every edit | `onTaskSheetEditWithAutoSort()` |
 | Weekly Rollover | Monday 10am | `performWeeklyRollover()` |
 

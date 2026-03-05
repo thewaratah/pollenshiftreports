@@ -16,8 +16,8 @@ The Waratah shift report system has four main components:
 |-----------|-------------|--------------|
 | **The Nightly Export** | Sends tonight's report (PDF, email, Slack, data logging) | When you click "Export & Email PDF (LIVE)" |
 | **The Weekly Rollover** | Archives last week and resets the spreadsheet | Monday at 10am (automatic) |
-| **The Weekly Digest** | Posts a revenue comparison (this week vs last) to Slack | Wednesday at 8am (automatic) |
-| **The Weekly Backfill** | Catches any days that didn't get logged to the data warehouse | Wednesday at 2am (automatic) |
+| **The Weekly Digest** | Posts a revenue comparison (this week vs last) to Slack | Monday at 9am (automatic) |
+| **The Weekly Backfill** | Catches any days that didn't get logged to the data warehouse | Monday at 8am (automatic) |
 
 ---
 
@@ -163,7 +163,7 @@ A Slack message with the same information is posted to the Waratah channel.
 ## The Weekly Digest: Revenue at a Glance
 
 **Triggered by:** Automatic timer
-**When:** Wednesday at 8:00am Sydney time
+**When:** Monday at 9:00am Sydney time
 **What it does:** Posts a revenue comparison to Slack
 
 The digest reads from the data warehouse and compares:
@@ -178,7 +178,7 @@ It's designed to give the management team a quick pulse check on how the venue i
 ## The Weekly Backfill: Catching Missed Data
 
 **Triggered by:** Automatic timer
-**When:** Wednesday at 2:00am Sydney time
+**When:** Monday at 8:00am Sydney time
 **What it does:** Scans all 5 day sheets and logs any that weren't captured by the nightly export
 
 This is a safety net. If the nightly export failed for a particular day (network error, script timeout, etc.), the backfill catches it and logs the data to the warehouse. It uses the same duplicate prevention — days that were already logged are skipped.
@@ -308,8 +308,8 @@ The Master Actionables spreadsheet is the central task management system. Tasks 
 |------|--------------|
 | **The Nightly Export** | The full pipeline that runs when you send the shift report (PDF, email, Slack, data logging, task push) |
 | **The Weekly Rollover** | Monday morning automation that archives last week and resets the spreadsheet |
-| **The Weekly Digest** | Wednesday morning Slack post comparing this week's revenue to last week's |
-| **The Weekly Backfill** | Wednesday night safety net that catches any days not logged to the warehouse |
+| **The Weekly Digest** | Monday morning Slack post comparing this week's revenue to last week's |
+| **The Weekly Backfill** | Monday morning safety net that catches any days not logged to the warehouse |
 | **The Data Warehouse** | Separate spreadsheet storing all historical financial, task, and narrative data |
 | **Master Actionables** | Separate spreadsheet tracking tasks across both venues |
 | **MOD** | Manager on Duty — whoever ran tonight's service |

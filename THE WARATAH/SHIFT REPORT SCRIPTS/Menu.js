@@ -99,7 +99,7 @@ function onOpen() {
           .addItem('Send Revenue Digest (LIVE)', 'pw_sendWeeklyRevenueDigest_Waratah')
           .addItem('Send Revenue Digest (TEST)', 'pw_sendWeeklyRevenueDigest_Waratah_Test')
           .addSeparator()
-          .addItem('Setup Wednesday Digest Trigger', 'pw_setupWeeklyDigestTrigger_Waratah'))
+          .addItem('Setup Monday Digest Trigger', 'pw_setupWeeklyDigestTrigger_Waratah'))
 
         .addSeparator()
 

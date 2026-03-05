@@ -1634,13 +1634,13 @@ function runDailyTaskMaintenance() {
 
 
 /* ==========================================================================
-   WEEKLY ACTIVE TASKS SUMMARY (Monday 9am)
+   WEEKLY ACTIVE TASKS SUMMARY (Monday 10am)
    ========================================================================== */
 
 /**
  * Posts all active tasks (excluding DONE, BLOCKED, CANCELLED) to the
  * managers Slack channel, grouped by staff member.
- * Designed to run automatically every Monday at 9am via trigger.
+ * Designed to run automatically every Monday at 10am via trigger.
  */
 function sendWeeklyActiveTasksSummary() {
   try {
@@ -1881,7 +1881,7 @@ function createDailyMaintenanceTrigger() {
 
 
 /**
- * Creates the weekly summary trigger (Monday 9am).
+ * Creates the weekly summary trigger (Monday 10am).
  * Run once to set up.
  */
 function createWeeklySummaryTrigger() {
