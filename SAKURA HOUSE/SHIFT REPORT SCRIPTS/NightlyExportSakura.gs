@@ -291,7 +291,7 @@ function postToSlackFromSheet_(spreadsheet, sheet, sheetName, webhookUrl) {
 
   // --- Helper: format currency ---
   const fmtAUD = (val) => {
-    const n = parseFloat(val);
+    const n = parseFloat(String(val).replace(/[^0-9.\-]/g, ''));
     if (isNaN(n)) return "N/A";
     return "$" + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
