@@ -162,15 +162,7 @@ function performInPlaceRollover() {
 
   } catch (error) {
     Logger.log('❌ [performInPlaceRollover] failed: ' + error.message + '\n' + error.stack);
-
-    try {
-      const webhook = PropertiesService.getScriptProperties().getProperty('SAKURA_SLACK_WEBHOOK_TEST');
-      if (webhook) {
-        bk_post(webhook, [bk_section('❌ *[performInPlaceRollover] failed*\n' + error.message)], 'performInPlaceRollover error');
-      }
-    } catch (slackErr) {
-      Logger.log('Could not send Slack error notification: ' + slackErr.message);
-    }
+    notifyError_('performInPlaceRollover', error);
 
     try {
       const ui = SpreadsheetApp.getUi();
@@ -866,7 +858,7 @@ function sendRolloverNotifications_(summary, pdfResult, snapshotResult) {
   // Slack notification (Block Kit)
   try {
     const blocks = buildRolloverSlackBlocks_(summary, pdfResult, snapshotResult);
-    bk_post(getSakuraSlackWebhookTest_(), blocks, "Weekly Rollover — Sakura House");
+    bk_post(getSakuraSlackWebhookLive_(), blocks, "Weekly Rollover — Sakura House");
     Logger.log("Rollover posted to Slack.");
   } catch (e) {
     Logger.log(`Slack notification failed: ${e.message}`);

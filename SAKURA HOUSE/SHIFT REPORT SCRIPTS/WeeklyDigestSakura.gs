@@ -29,7 +29,9 @@ function sendWeeklyRevenueDigest_Sakura() {
     bk_post(webhook, blocks, 'Sakura House — Weekly Revenue Digest');
     Logger.log('Weekly revenue digest sent successfully.');
   } catch (e) {
+    notifyError_('sendWeeklyRevenueDigest_Sakura', e);
     Logger.log('sendWeeklyRevenueDigest_Sakura failed: ' + e.message);
+    throw e;
   }
 }
 

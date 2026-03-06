@@ -1,10 +1,36 @@
 # SAKURA HOUSE - Claude Code Project Guide
 
-**Last Updated:** February 28, 2026
+**Last Updated:** March 6, 2026
 **Project Type:** Google Apps Script (Hospitality Management System)
 **Venue:** Sakura House (Single-Venue Documentation)
 
 > **Note:** This is the Sakura-specific guide. For The Waratah, see `CLAUDE_WARATAH.md`. For shared architecture patterns, see `CLAUDE_SHARED.md`.
+
+---
+
+## DEPLOYMENT (March 6, 2026) -- Phases 0-4 Alignment
+
+**Phase 0 -- Error Notification Utility:**
+- Added `notifyError_(functionName, error)` to `SlackBlockKitSakuraSR.gs` -- shared Slack error notification utility that reads `SAKURA_SLACK_WEBHOOK_TEST` from Script Properties
+- Wired into 4 files: `WeeklyRolloverInPlace.gs` (replaced 8-line inline Slack error block), `IntegrationHubSakura.gs` (added catch to `runWeeklyBackfill_` which was try/finally only), `WeeklyDigestSakura.gs` (added `notifyError_` + re-throw), `NightlyExportSakura.gs` (wrapped `sendWeeklyTodoSummary` in try/catch)
+
+**Phase 1 -- Data Warehouse Schema Expansion (13 to 17 cols):**
+- NIGHTLY_FINANCIAL schema expanded from A-M to A-Q using append-only strategy (see updated schema below)
+- New columns: N=FOHStaff, O=BOHStaff, P=CardTips, Q=SurchargeTips
+- `IntegrationHubSakura.gs`: `extractShiftData_()` now returns fohStaff, bohStaff, cardTips, surchargeTips individually; `appendRow` expanded to 17 columns
+- `AnalyticsDashboardSakura.gs`: QUERY ranges updated from `A2:M` to `A2:Q`
+
+**Phase 2 -- Rollover Wizard UI:**
+- NEW FILE: `rollover-wizard.html` -- lightweight vanilla HTML/CSS/JS wizard dialog (not React)
+- `UIServerSakura.gs`: Added `openRolloverWizard()`, `getRolloverPreview()`, `executeRollover()` (with LockService)
+- `MenuSakura.gs`: Added `pw_openRolloverWizard()` wrapper and "Open Rollover Wizard" menu item in Weekly Rollover submenu
+
+**Phase 3 -- Rollover Webhook TEST to LIVE:**
+- `WeeklyRolloverInPlace.gs`: Changed rollover success notification from `getSakuraSlackWebhookTest_()` to `getSakuraSlackWebhookLive_()` -- rollover notifications now post to the LIVE Slack channel
+
+**Phase 4 -- Trigger Schedule Alignment:**
+- `IntegrationHubSakura.gs`: Changed backfill trigger from Monday 2am to Monday 8am
+- Added try/catch around `getUi().alert()` in backfill trigger setup for trigger context safety
 
 ---
 
@@ -17,8 +43,8 @@
 - Intended for non-technical team use without touching the main export pipeline
 - Function: `sendShiftReportBasic()` — PDF export, email, Slack post, TO-DOs to tab
 
-**NIGHTLY_FINANCIAL schema expanded (10 → 13 columns):**
-- Previous: 10 columns (Date, Day, Week Ending, MOD, Net Revenue, … , Logged At)
+**NIGHTLY_FINANCIAL schema expanded (10 → 13 columns):** *(further expanded to 17 cols Mar 6 -- see Mar 6 deployment above)*
+- Previous: 10 columns (Date, Day, Week Ending, MOD, Net Revenue, ... , Logged At)
 - New cols added: F=Cash Total (C19), G=Cash Tips (C29), H=Tips Total (C32)
 - All existing analytics + digest code updated for new column letters (see schemas below)
 
@@ -34,7 +60,7 @@
 - `buildFinancialDashboard()`: MOD Performance section removed
 - `buildFinancialDashboard()`: Weekly Trend date column now formatted via `setNumberFormat('dd/MM/yyyy')` — fixes serial number display (e.g. "46082")
 - `sheet.clearContent()` → `sheet.getDataRange().clearContent()` (Sheet class has no `clearContent()`)
-- Column refs updated for new 13-col NIGHTLY_FINANCIAL schema: J=Total Tips, K=Production Amount, L=Discounts
+- Column refs updated for NIGHTLY_FINANCIAL schema (now 17 cols A-Q as of Mar 6; QUERY ranges updated to A2:Q)
 
 **Other changes:**
 - `todoFullRange` removed from FIELD_CONFIG and CLEARABLE_FIELDS (was defined, never read)
@@ -107,7 +133,8 @@
 🔄 **`WeeklyRolloverInPlace.gs` — Production ready**
 - CLEARABLE_FIELDS expanded to include all 25 fields
 - Now also clears the **TO-DOs tab** (row 2 onwards) via `config.TODO_SHEET = 'TO-DOs'`
-- Rollover Slack notification uses `SAKURA_SLACK_WEBHOOK_URL_TEST` (⚠️ still hardcoded constant — switch to live when ready)
+- Rollover Slack notification uses `getSakuraSlackWebhookLive_()` -- switched from TEST to LIVE Mar 6 (Phase 3)
+- Error notifications use shared `notifyError_()` from SlackBlockKitSakuraSR.gs (Phase 0)
 
 📋 **`MenuSakura.gs` (Shift Reports) — Restructured**
 - `Send Nightly Report` — **no longer password-gated** (runs directly)
@@ -207,25 +234,27 @@ SAKURA HOUSE shift reporting and task management system built on Google Apps Scr
 
 ```
 SAKURA HOUSE/
-├── SHIFT REPORT SCRIPTS/         # 17 files, ~6,850 LOC (NightlyBasicExportSakura.gs added Feb 28)
-│   ├── Production Scripts (11 files):
+├── SHIFT REPORT SCRIPTS/         # 18 files, ~7,100 LOC (rollover-wizard.html added Mar 6)
+│   ├── Production Scripts (13 .gs files):
 │   │   ├── RunSakura.gs             # Named range system (529 lines)
 │   │   ├── VenueConfigSakura.gs     # Sakura-only config (range keys updated Feb 28)
-│   │   ├── IntegrationHubSakura.gs  # Data integration (13-col schema, LockService, try/catch)
+│   │   ├── IntegrationHubSakura.gs  # Data integration (17-col schema, LockService, notifyError_)
 │   │   ├── NightlyExportSakura.gs   # PDF export (pre-send checklist dialog, batch writes)
-│   │   ├── NightlyBasicExportSakura.gs  # Standalone handover export — no cross-file deps (NEW Feb 28)
-│   │   ├── WeeklyRolloverInPlace.gs # In-place rollover (multi-sheet PDF, trigger safety Feb 28)
-│   │   ├── MenuSakura.gs            # Custom menu (password-protected)
-│   │   ├── AnalyticsDashboardSakura.gs  # MOD Performance removed, date format fix (Feb 28)
-│   │   ├── TaskIntegrationSakura.gs # batch setValues() (Feb 28)
-│   │   ├── UIServerSakura.gs        # Export/analytics UI
-│   │   └── WeeklyDigestSakura.gs    # Weekly revenue Slack digest (col index J updated Feb 28)
+│   │   ├── NightlyBasicExportSakura.gs  # Standalone handover export -- no cross-file deps
+│   │   ├── WeeklyRolloverInPlace.gs # In-place rollover (multi-sheet PDF, LIVE webhook Mar 6)
+│   │   ├── MenuSakura.gs            # Custom menu (rollover wizard added Mar 6)
+│   │   ├── AnalyticsDashboardSakura.gs  # QUERY ranges A2:Q (updated Mar 6)
+│   │   ├── SlackBlockKitSakuraSR.gs # Block Kit helpers + notifyError_() utility (Mar 6)
+│   │   ├── TaskIntegrationSakura.gs # batch setValues()
+│   │   ├── UIServerSakura.gs        # Export/analytics UI + rollover wizard server fns (Mar 6)
+│   │   └── WeeklyDigestSakura.gs    # Weekly revenue Slack digest (notifyError_ added Mar 6)
 │   ├── Setup (1 file):
-│   │   └── _SETUP_ScriptProperties_SakuraOnly.gs  # Secure configuration (vestigial props commented out Feb 28)
-│   └── HTML Dashboards (3 files):
+│   │   └── _SETUP_ScriptProperties_SakuraOnly.gs  # Secure configuration
+│   └── HTML (4 files):
 │       ├── analytics-viewer.html    # 207KB
 │       ├── export-dashboard.html    # 208KB
-│       └── checklist-dialog.html    # Pre-send checklist modal (150 lines, added Feb 25)
+│       ├── checklist-dialog.html    # Pre-send checklist modal (150 lines)
+│       └── rollover-wizard.html     # Rollover wizard dialog -- vanilla HTML/CSS/JS (NEW Mar 6)
 ├── TASK MANAGEMENT SCRIPTS/      # 8 files, ~3,000 LOC
 │   ├── EnhancedTaskManagement_Sakura.gs  # Task system (1,964 lines, bug-fixed Feb 23)
 │   ├── Menu_Updated_Sakura.gs            # Task management + Slack poster menu
@@ -242,7 +271,7 @@ SAKURA HOUSE/
     └── SESSION_IMPLEMENTATION_SUMMARY.md
 ```
 
-**Total:** ~9,500 lines of code across 21 .gs files
+**Total:** ~10,100 lines of code across 22 .gs + 5 .html files
 
 **Removed Files (Feb 2026):**
 - ❌ _SETUP_ScriptProperties.gs (cross-venue security risk)
@@ -250,7 +279,9 @@ SAKURA HOUSE/
 - ❌ WeeklyDuplicationSakura.gs (legacy system)
 - ❌ TEST_SlackBlockKitLibrarySakura.gs (unused test)
 - ❌ TEST_VenueConfigSakura.gs (unused test)
-- ❌ rollover-wizard.html (legacy UI, 209KB)
+
+**Re-created Files (Mar 6, 2026):**
+- rollover-wizard.html -- new lightweight vanilla HTML/CSS/JS wizard (replaces legacy 209KB React version)
 
 ---
 
@@ -497,6 +528,17 @@ getOrCreateArchiveSubfolder_(weekEndDateStr, subfolderName)
 - Day: Monday
 - Time: 1am to 2am
 
+### Rollover Wizard (NEW Mar 6 -- Phase 2)
+
+**Files:** `rollover-wizard.html` + `UIServerSakura.gs`
+
+A lightweight vanilla HTML/CSS/JS wizard dialog that provides a guided rollover experience:
+- `openRolloverWizard()` -- opens the wizard dialog (called from menu)
+- `getRolloverPreview()` -- returns preview data for the wizard to display
+- `executeRollover()` -- runs the rollover with `LockService.getScriptLock()` protection
+
+Accessed via: **Menu -> Admin Tools -> Weekly Rollover (In-Place) -> Open Rollover Wizard**
+
 ### Testing
 
 ```javascript
@@ -558,7 +600,7 @@ SLACK_DM_WEBHOOKS: '{"Evan":"...","Nick":"...","Gooch":"...","Adam":"...","Cynth
 
 ## Integration Hub & Data Warehouse
 
-**File:** [`IntegrationHubSakura.gs`](SAKURA%20HOUSE/SHIFT%20REPORT%20SCRIPTS/IntegrationHubSakura.gs) (502 lines)
+**File:** [`IntegrationHubSakura.gs`](SAKURA%20HOUSE/SHIFT%20REPORT%20SCRIPTS/IntegrationHubSakura.gs)
 
 **Flow:**
 ```
@@ -571,14 +613,16 @@ runIntegrations(sheetName)
     └─→ logIntegrationRun_()
 ```
 
-**Data Warehouse Sheets (schemas current as of Feb 28, 2026):**
+**Data Warehouse Sheets (schemas current as of Mar 6, 2026):**
 
-**1. NIGHTLY_FINANCIAL** (13 columns — expanded Feb 28)
+**1. NIGHTLY_FINANCIAL** (17 columns A-Q -- expanded Mar 6 from 13 cols)
 ```
-A=Date | B=Day | C=Week Ending | D=MOD | E=Net Revenue |
-F=Cash Total (C19) | G=Cash Tips (C29) | H=Tips Total (C32) |
-I=Logged At | J=Total Tips | K=Production Amount | L=Discounts | M=Deposit
+A=Date | B=Day | C=WeekEnding | D=MOD | E=NetRevenue |
+F=CashTotal | G=CashTips | H=TipsTotal | I=LoggedAt |
+J=TotalTips | K=ProductionAmount | L=Discounts | M=Deposit |
+N=FOHStaff | O=BOHStaff | P=CardTips | Q=SurchargeTips
 ```
+Columns N-Q added Mar 6 (Phase 1) using append-only strategy -- no existing column letters changed.
 Duplicate key: date (A) + MOD (D)
 
 **2. WASTAGE_COMPS** (5 columns — corrected Feb 28)
@@ -618,6 +662,8 @@ const isDuplicate = existingData.some(row => {
 - Show Integration Log (Last 30 Days)
 - Setup Weekly Backfill Trigger
 
+**Backfill Trigger:** Monday 8am (Australia/Sydney) -- changed from 2am in Phase 4, Mar 6. `getUi().alert()` wrapped in try/catch for trigger context safety.
+
 ---
 
 ## Weekly Revenue Digest
@@ -642,7 +688,8 @@ setupWeeklyDigestTrigger_Sakura()       // Installs Monday 8am trigger (safe to 
 
 **Data Source:** NIGHTLY_FINANCIAL sheet in `SAKURA_DATA_WAREHOUSE_ID`
 - Column E = Net Revenue
-- Column J = Total Tips (index updated from 6→9 on Feb 28 after schema expanded to 13 cols)
+- Column J = Total Tips (index 9; schema now 17 cols A-Q as of Mar 6)
+- Error handling via `notifyError_()` from SlackBlockKitSakuraSR.gs (added Mar 6)
 
 **Trigger:** Monday 8am (Australia/Sydney) -- NOT YET SET UP. Must be installed manually via:
 - Menu: `Admin Tools → Weekly Digest → Setup Monday Digest Trigger`, or
@@ -665,6 +712,7 @@ Shift Report
     │   ├── Weekly To-Do Summary (LIVE)
     │   └── Weekly To-Do Summary (TEST)
     ├── Weekly Rollover (In-Place) ▸
+    │   ├── Open Rollover Wizard          ← NEW Mar 6 (Phase 2)
     │   ├── Run Rollover Now
     │   ├── Preview Rollover (Dry Run)
     │   └── Open Rollover Settings
@@ -841,5 +889,5 @@ if (config.ranges.usesNamedRanges) {
 
 ---
 
-**Last Updated:** February 28, 2026
-**Total LOC:** ~9,700 lines across 22 .gs files (NightlyBasicExportSakura.gs added Feb 28)
+**Last Updated:** March 6, 2026
+**Total LOC:** ~10,100 lines across 22 .gs + 5 .html files (rollover-wizard.html added Mar 6; NIGHTLY_FINANCIAL 17 cols)

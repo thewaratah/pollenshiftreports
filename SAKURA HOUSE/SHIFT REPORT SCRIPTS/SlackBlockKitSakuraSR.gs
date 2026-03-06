@@ -122,6 +122,35 @@ function bk_list(items, style) {
 
 
 /**
+ * Send an error notification to Evan via Slack (TEST webhook).
+ * Safe to call from any context (trigger, menu, editor).
+ * Use in catch blocks of trigger-eligible functions.
+ *
+ * @param {string} functionName — name of the function that failed
+ * @param {Error} error — the caught error object
+ */
+function notifyError_(functionName, error) {
+  Logger.log('❌ ' + functionName + ' failed: ' + error.message);
+  try {
+    var webhook = PropertiesService.getScriptProperties()
+      .getProperty('SAKURA_SLACK_WEBHOOK_TEST');
+    if (webhook) {
+      UrlFetchApp.fetch(webhook, {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify({
+          text: '❌ ' + functionName + ' FAILED: ' + error.message
+        }),
+        muteHttpExceptions: true
+      });
+    }
+  } catch (e) {
+    Logger.log('Error notification also failed: ' + e.message);
+  }
+}
+
+
+/**
  * Post Block Kit message to a Slack webhook.
  * @param {string} webhookUrl — Slack incoming webhook URL
  * @param {Array<Object>} blocks — array of Block Kit blocks

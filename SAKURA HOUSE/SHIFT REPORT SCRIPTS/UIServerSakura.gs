@@ -18,6 +18,13 @@
    DIALOG / SIDEBAR OPENERS
    ========================================================================== */
 
+function openRolloverWizard() {
+  var html = HtmlService.createHtmlOutputFromFile('rollover-wizard')
+    .setWidth(500)
+    .setHeight(640);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Weekly Rollover');
+}
+
 function openExportDashboard() {
   var html = HtmlService.createHtmlOutputFromFile('export-dashboard');
   SpreadsheetApp.getUi().showSidebar(html);
@@ -26,6 +33,106 @@ function openExportDashboard() {
 function openAnalyticsViewer() {
   var html = HtmlService.createHtmlOutputFromFile('analytics-viewer');
   SpreadsheetApp.getUi().showSidebar(html);
+}
+
+
+/* ==========================================================================
+   ROLLOVER WIZARD — SERVER FUNCTIONS
+   ========================================================================== */
+
+/**
+ * Returns a preview of the current week's rollover status.
+ * Called by the Rollover Wizard dialog on load.
+ */
+function getRolloverPreview() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var config = getRolloverConfig_();
+  var dayNames = config.DAY_SHEETS;
+  var tz = config.TIMEZONE;
+
+  var reportName = ss.getName();
+  var weekEndDate = '';
+
+  // Find week end date from Saturday tab (last operating day)
+  var satSheet = findSheetByPrefix_(ss, 'SATURDAY');
+  if (satSheet) {
+    try {
+      var dateVal = getFieldValue(satSheet, 'date');
+      if (dateVal instanceof Date) {
+        weekEndDate = Utilities.formatDate(dateVal, tz, 'dd/MM/yyyy');
+      }
+    } catch (e) { /* */ }
+  }
+
+  var daysCompleted = [];
+  var totalRevenue = 0;
+  var daysReported = 0;
+  var warnings = [];
+
+  dayNames.forEach(function(dayName) {
+    var daySheet = findSheetByPrefix_(ss, dayName);
+
+    if (!daySheet) {
+      daysCompleted.push({ day: dayName, mod: '', revenue: '', complete: false });
+      warnings.push(dayName + ' tab not found');
+      return;
+    }
+
+    var mod = '';
+    var revenue = 0;
+    try { mod = String(getFieldValue(daySheet, 'mod') || '').trim(); } catch (e) { /* */ }
+    try { revenue = Number(getFieldValue(daySheet, 'netRevenue')) || 0; } catch (e) { /* */ }
+
+    var revenueStr = revenue > 0 ? '$' + Math.round(revenue).toLocaleString() : '';
+    var complete = mod !== '' && revenue > 0;
+
+    if (complete) {
+      totalRevenue += revenue;
+      daysReported++;
+    } else {
+      if (!mod) warnings.push(dayName + ': No MOD');
+      if (revenue <= 0) warnings.push(dayName + ': No revenue');
+    }
+
+    daysCompleted.push({ day: dayName, mod: mod, revenue: revenueStr, complete: complete });
+  });
+
+  var avgRevenue = daysReported > 0 ? totalRevenue / daysReported : 0;
+
+  return {
+    currentReport: reportName,
+    weekEndDate: weekEndDate,
+    daysCompleted: daysCompleted,
+    allComplete: daysCompleted.every(function(d) { return d.complete; }),
+    warnings: warnings,
+    summary: {
+      totalRevenue: '$' + Math.round(totalRevenue).toLocaleString(),
+      avgRevenue: '$' + Math.round(avgRevenue).toLocaleString(),
+      daysReported: daysReported
+    }
+  };
+}
+
+/**
+ * Executes the weekly rollover from the wizard dialog.
+ * Wraps performInPlaceRollover() and returns a result object for the UI.
+ */
+function executeRollover() {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) {
+    return { success: false, message: 'Another rollover is already running. Please wait.' };
+  }
+  try {
+    var startTime = new Date();
+    performInPlaceRollover();
+    var duration = ((new Date()) - startTime) / 1000;
+    return { success: true, message: 'Rollover completed in ' + duration.toFixed(1) + 's.' };
+  } catch (e) {
+    Logger.log('Rollover from wizard failed: ' + e.message);
+    return { success: false, message: e.message || String(e) };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 

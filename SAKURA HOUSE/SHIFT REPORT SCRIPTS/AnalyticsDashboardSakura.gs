@@ -10,7 +10,8 @@
  * Data source: NIGHTLY_FINANCIAL sheet
  * Columns: A=Date, B=Day, C=WeekEnding, D=MOD,
  *   E=NetRevenue, F=CashTotal, G=CashTips, H=TipsTotal,
- *   I=LoggedAt, J=TotalTips, K=ProductionAmount, L=Discounts, M=Deposit
+ *   I=LoggedAt, J=TotalTips, K=ProductionAmount, L=Discounts, M=Deposit,
+ *   N=FOHStaff, O=BOHStaff, P=CardTips, Q=SurchargeTips
  *
  * Sections:
  *   1. This Week snapshot
@@ -176,7 +177,7 @@ function buildFinancialDashboard() {
   sheet.getRange(5, trendCol, 1, trendHeaders.length).setFontWeight("bold").setBackground("#f3f3f3");
 
   sheet.getRange(6, trendCol).setFormula(
-    `=IFERROR(QUERY(${src}!A2:M,` +
+    `=IFERROR(QUERY(${src}!A2:Q,` +
     `"SELECT C, SUM(E), SUM(J), SUM(K), COUNT(A) ` +
     `WHERE C IS NOT NULL ` +
     `GROUP BY C ` +
@@ -333,7 +334,7 @@ function buildExecutiveDashboard() {
 
   row = 12;
   sheet.getRange(row, 1).setFormula(
-    `=IFERROR(QUERY(${src}!A2:M,` +
+    `=IFERROR(QUERY(${src}!A2:Q,` +
     `"SELECT YEAR(A)*100+MONTH(A), SUM(E), SUM(J), SUM(K), SUM(L), COUNT(A) ` +
     `WHERE A IS NOT NULL ` +
     `GROUP BY YEAR(A)*100+MONTH(A) ` +
@@ -418,7 +419,7 @@ function buildExecutiveDashboard() {
 
   modRow = 6;
   sheet.getRange(modRow, modCol).setFormula(
-    `=IFERROR(QUERY(${src}!A2:M,` +
+    `=IFERROR(QUERY(${src}!A2:Q,` +
     `"SELECT D, COUNT(D), AVG(E), AVG(J) ` +
     `WHERE D IS NOT NULL ` +
     `GROUP BY D ` +
@@ -439,7 +440,7 @@ function buildExecutiveDashboard() {
 
   dowRow = 18;
   sheet.getRange(dowRow, modCol).setFormula(
-    `=IFERROR(QUERY(${src}!A2:M,` +
+    `=IFERROR(QUERY(${src}!A2:Q,` +
     `"SELECT B, AVG(E), SUM(E), COUNT(A) ` +
     `WHERE B IS NOT NULL ` +
     `GROUP BY B ` +

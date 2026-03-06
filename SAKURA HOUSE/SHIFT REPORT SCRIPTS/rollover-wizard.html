@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Google Sans', Roboto, Arial, sans-serif; color: #333; padding: 20px; background: #fafafa; }
+    h2 { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #666; margin-bottom: 16px; }
+    .card { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+    .card-title { font-size: 14px; font-weight: 500; color: #1a73e8; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 6px 8px; background: #f5f5f5; border-bottom: 2px solid #e0e0e0; font-weight: 500; color: #555; }
+    td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+    .complete { color: #34a853; }
+    .incomplete { color: #ea4335; }
+    .check { font-size: 16px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+    .summary-label { color: #666; }
+    .summary-value { font-weight: 500; }
+    .warnings { background: #fef7e0; border-left: 3px solid #f9ab00; padding: 10px 12px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; color: #6d4c00; }
+    .warnings li { margin-left: 16px; margin-top: 4px; }
+    .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+    button { padding: 8px 20px; border-radius: 4px; font-size: 14px; cursor: pointer; border: none; font-family: inherit; }
+    .btn-primary { background: #1a73e8; color: #fff; }
+    .btn-primary:hover { background: #1557b0; }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-danger { background: #ea4335; color: #fff; }
+    .btn-danger:hover { background: #c5221f; }
+    .btn-danger:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-cancel { background: #fff; color: #666; border: 1px solid #ddd; }
+    .btn-cancel:hover { background: #f5f5f5; }
+    .progress { display: none; text-align: center; padding: 24px; }
+    .progress .spinner { border: 3px solid #e0e0e0; border-top: 3px solid #1a73e8; border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .result { display: none; text-align: center; padding: 24px; }
+    .result.success { color: #34a853; }
+    .result.error { color: #ea4335; }
+    .result .icon { font-size: 36px; margin-bottom: 8px; }
+    #loading { text-align: center; padding: 40px; color: #666; }
+    #content { display: none; }
+  </style>
+</head>
+<body>
+  <h2>Weekly Rollover</h2>
+  <div class="subtitle">Sakura House — Review and confirm</div>
+
+  <div id="loading">Loading preview...</div>
+
+  <div id="content">
+    <div class="card">
+      <div class="card-title">Current Week</div>
+      <div class="summary-row">
+        <span class="summary-label">Report:</span>
+        <span class="summary-value" id="reportName"></span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Week Ending:</span>
+        <span class="summary-value" id="weekEnd"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Day Summary</div>
+      <table>
+        <thead><tr><th></th><th>Day</th><th>MOD</th><th>Revenue</th></tr></thead>
+        <tbody id="dayRows"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Totals</div>
+      <div class="summary-row">
+        <span class="summary-label">Total Revenue:</span>
+        <span class="summary-value" id="totalRev"></span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Daily Average:</span>
+        <span class="summary-value" id="avgRev"></span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Days Reported:</span>
+        <span class="summary-value" id="daysCount"></span>
+      </div>
+    </div>
+
+    <div id="warningBox" class="warnings" style="display:none;">
+      <strong>Warnings:</strong>
+      <ul id="warningList"></ul>
+    </div>
+
+    <div id="preActions" class="btn-row">
+      <button class="btn-cancel" onclick="google.script.host.close()">Cancel</button>
+      <button class="btn-danger" id="rolloverBtn" onclick="confirmRollover()">Run Rollover</button>
+    </div>
+  </div>
+
+  <div id="progress" class="progress">
+    <div class="spinner"></div>
+    <div>Running rollover... This may take 30-60 seconds.</div>
+  </div>
+
+  <div id="resultSuccess" class="result success">
+    <div class="icon">&#10003;</div>
+    <div id="successMsg"></div>
+    <div class="btn-row" style="justify-content:center; margin-top:16px;">
+      <button class="btn-primary" onclick="google.script.host.close()">Close</button>
+    </div>
+  </div>
+
+  <div id="resultError" class="result error">
+    <div class="icon">&#10007;</div>
+    <div id="errorMsg"></div>
+    <div class="btn-row" style="justify-content:center; margin-top:16px;">
+      <button class="btn-cancel" onclick="google.script.host.close()">Close</button>
+    </div>
+  </div>
+
+  <script>
+    google.script.run
+      .withSuccessHandler(renderPreview)
+      .withFailureHandler(function(e) {
+        document.getElementById('loading').textContent = 'Failed to load preview: ' + e.message;
+      })
+      .getRolloverPreview();
+
+    function renderPreview(data) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+
+      document.getElementById('reportName').textContent = data.currentReport;
+      document.getElementById('weekEnd').textContent = data.weekEndDate || 'N/A';
+
+      var tbody = document.getElementById('dayRows');
+      data.daysCompleted.forEach(function(d) {
+        var tr = document.createElement('tr');
+        var iconTd = document.createElement('td');
+        var iconSpan = document.createElement('span');
+        iconSpan.className = 'check ' + (d.complete ? 'complete' : 'incomplete');
+        iconSpan.textContent = d.complete ? '\u2713' : '\u2717';
+        iconTd.appendChild(iconSpan);
+
+        var dayTd = document.createElement('td');
+        dayTd.textContent = d.day.charAt(0) + d.day.slice(1).toLowerCase();
+
+        var modTd = document.createElement('td');
+        modTd.textContent = d.mod || '\u2014';
+
+        var revTd = document.createElement('td');
+        revTd.textContent = d.revenue || '\u2014';
+
+        tr.appendChild(iconTd);
+        tr.appendChild(dayTd);
+        tr.appendChild(modTd);
+        tr.appendChild(revTd);
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('totalRev').textContent = data.summary.totalRevenue;
+      document.getElementById('avgRev').textContent = data.summary.avgRevenue;
+      document.getElementById('daysCount').textContent = data.summary.daysReported + ' / ' + data.daysCompleted.length;
+
+      if (data.warnings.length > 0) {
+        document.getElementById('warningBox').style.display = 'block';
+        var ul = document.getElementById('warningList');
+        data.warnings.forEach(function(w) {
+          var li = document.createElement('li');
+          li.textContent = w;
+          ul.appendChild(li);
+        });
+      }
+    }
+
+    function confirmRollover() {
+      if (!confirm('This will archive the current week, clear all data, and advance dates. Continue?')) return;
+
+      document.getElementById('content').style.display = 'none';
+      document.getElementById('progress').style.display = 'block';
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          document.getElementById('progress').style.display = 'none';
+          if (result.success) {
+            document.getElementById('successMsg').textContent = result.message;
+            document.getElementById('resultSuccess').style.display = 'block';
+          } else {
+            document.getElementById('errorMsg').textContent = result.message;
+            document.getElementById('resultError').style.display = 'block';
+          }
+        })
+        .withFailureHandler(function(e) {
+          document.getElementById('progress').style.display = 'none';
+          document.getElementById('errorMsg').textContent = e.message || String(e);
+          document.getElementById('resultError').style.display = 'block';
+        })
+        .executeRollover();
+    }
+  </script>
+</body>
+</html>

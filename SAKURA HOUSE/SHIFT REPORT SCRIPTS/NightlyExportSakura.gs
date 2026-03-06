@@ -541,7 +541,13 @@ function generatePdfForSheet_(spreadsheet, sheet, filename, ui) {
 // ============================================================================
 
 function sendWeeklyTodoSummary() {
-  _sendWeeklyTodoSummaryCore(getSakuraSlackWebhookUrlLive_(), false);
+  try {
+    _sendWeeklyTodoSummaryCore(getSakuraSlackWebhookUrlLive_(), false);
+  } catch (e) {
+    notifyError_('sendWeeklyTodoSummary', e);
+    Logger.log('sendWeeklyTodoSummary error: ' + e.message);
+    throw e;
+  }
 }
 
 function sendWeeklyTodoSummary_TestToSelf() {

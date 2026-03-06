@@ -1,28 +1,21 @@
 # SHIFT REPORTS 3.0 - Shared Architecture Guide
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 7, 2026
 **Project Type:** Google Apps Script (Multi-Venue Hospitality Management System)
 
 > **Note:** This guide covers patterns and systems **shared by both venues**. For venue-specific details, see `CLAUDE_SAKURA.md` or `CLAUDE_WARATAH.md`.
 
-**Recent Updates (Mar 6, 2026):**
+**Recent Updates (Mar 7, 2026):**
+- **Sakura:** SR alignment Phases 0-4 — `notifyError_()` utility added to SlackBlockKitSakuraSR.gs and wired into 4 trigger-eligible files; NIGHTLY_FINANCIAL expanded 13->17 cols (N=FOHStaff, O=BOHStaff, P=CardTips, Q=SurchargeTips); rollover wizard UI (rollover-wizard.html); rollover webhook TEST->LIVE; backfill trigger Mon 2am->8am
 - **Both venues:** Git repository initialized at `github.com/thewaratah/pollenshiftreports` — `clasp push` and `git push` are independent deployment/versioning workflows
-- **Waratah:** Task Management restructure v1.2.0 — sort order changed; daily maintenance decomposed into individual triggers; 6 menu items removed; bug fixes
 - **Waratah:** Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor removed; full B5-B29 financial breakdown added
+- **Waratah:** All weekly triggers consolidated to Monday: backfill 8am, digest 9am, rollover 10am, weekly summary 10am
 - **Waratah:** Weekly functions audit — 4 key functions reviewed, hardened, and deployed
-- **Waratah:** Rollover trigger: 5:15am → 10am; weekly summary trigger: 6am → 9am
 
 **Previous Updates (Feb 26, 2026):**
 - **Both venues:** `runIntegrations()` fully non-blocking in `continueExport()` — warehouse errors go to `Logger.log()` only; export always proceeds
 - **Both venues:** TEST path Slack calls wrapped in try/catch in NightlyExport files
-- **Waratah only:** `_getExportConfig_()` moved inside outer try/catch in `NightlyExport.js`
 - **Both venues:** `checklist-dialog.html` success UX replaced browser `alert()` with in-dialog green success message + 2-second auto-close
-
-**Previous Updates (Feb 23, 2026):**
-- **Both venues:** Fixed `TypeError: Cannot read properties of undefined (reading 'dmWebhooks')` in `EnhancedTaskManagement_Sakura.gs` AND `EnhancedTaskManagementWaratah.gs` — all `TASK_CONFIG.slack.*` references replaced with Script Properties helper functions
-- **Sakura Shift Reports:** Menu restructured; `forceUpdateNamedRangesOnAllSheets()` added; FIELD_CONFIG expanded to 25 fields; pre-send checklist added to nightly export
-- **Sakura Task Management:** New `_SETUP_ScriptProperties_TaskMgmt_Sakura.gs`; FOH leads summary added; new `SLACK_FOH_LEADS_WEBHOOK` property
-- **Waratah Rollover:** Fresh template handling (skips archiving if no previous data); tab renaming; trigger management built in
 
 ---
 
@@ -453,7 +446,7 @@ runIntegrations(sheetName)
 
 **Data Warehouse Sheets (4 sheets per venue):**
 
-**1. NIGHTLY_FINANCIAL** — Full financial breakdown per shift (Waratah: 22 cols A-V; Sakura: 13 cols)
+**1. NIGHTLY_FINANCIAL** — Full financial breakdown per shift (Waratah: 22 cols A-V; Sakura: 17 cols A-Q)
 - Duplicate detection: date + MOD
 
 **2. OPERATIONAL_EVENTS** — TO-DOs with assignees (Waratah: 8 cols; one row per TODO)
@@ -696,5 +689,5 @@ previewArchival()                  // Preview what would be archived
 
 ---
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 7, 2026
 **Applies To:** Both Sakura House and The Waratah

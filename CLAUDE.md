@@ -1,6 +1,6 @@
 # SHIFT REPORTS 3.0 - Navigation Guide
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 7, 2026
 **Project Type:** Google Apps Script (Multi-Venue Hospitality Management System)
 **Venues:** Sakura House, The Waratah
 
@@ -50,7 +50,7 @@
 - Named range system
 - In-place weekly rollover ✅
 - 6-day operation (closed Sundays)
-- ~9,500 lines of code (13 .gs + 9 .gs task mgmt + HTML)
+- ~9,900 lines of code (13 .gs + 4 .html SR + 9 .gs + 1 .html task mgmt)
 
 ### Working on THE WARATAH?
 
@@ -97,7 +97,7 @@ SHIFT REPORTS 3.0 is a comprehensive hospitality automation system that manages 
 ```
 SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/pollenshiftreports
 ├── SAKURA HOUSE/
-│   ├── SHIFT REPORT SCRIPTS/         # 13 .gs + 3 .html, ~5,700 LOC
+│   ├── SHIFT REPORT SCRIPTS/         # 13 .gs + 4 .html, ~6,100 LOC
 │   ├── TASK MANAGEMENT SCRIPTS/      # 9 .gs + 1 .html, ~3,800 LOC
 │   └── CODE_REVIEW_REPORTS_2026-02-16/  # Deployment & testing guides
 ├── THE WARATAH/
@@ -116,7 +116,7 @@ SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/polle
 └── CODE_ANALYSIS.md                  # Full code analysis
 ```
 
-**Total:** ~19,200 lines of code across 44 .gs/.js files + 9 .html files (53 files total)
+**Total:** ~19,900 lines of code across 44 .gs/.js files + 10 .html files (54 files total)
 
 ---
 
@@ -127,7 +127,7 @@ SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/polle
 | **Cell References** | Named ranges (`MONDAY_SR_NetRevenue`) | Hardcoded cells (`B34`) |
 | **Operating Days** | 6 days (Mon-Sat) | 5 days (Wed-Sun) |
 | **Weekly Rollover** | In-place system ✅ | In-place system ✅ |
-| **Code Volume** | ~9,500 LOC (22 files) | ~9,700 LOC (22 files) |
+| **Code Volume** | ~9,900 LOC (23 files) | ~9,700 LOC (22 files) |
 | **Documentation** | `CLAUDE_SAKURA.md` | `CLAUDE_WARATAH.md` |
 | **Status** | Production Ready ✅ | Production Ready ✅ |
 
@@ -211,21 +211,23 @@ The `.gitignore` excludes: `_SETUP_*` files (contain Slack webhook secrets), `do
 
 ---
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 7, 2026
 **Status:** Both venues fully operational and production-ready ✅
 
-**Recent Updates (Mar 6, 2026):**
-- Both venues: Git repository initialized at `github.com/thewaratah/pollenshiftreports` — `clasp push` (deploy) and `git push` (version history) are independent workflows
+**Recent Updates (Mar 7, 2026):**
+- Sakura SR Alignment Phases 0-4: notifyError_ utility, NIGHTLY_FINANCIAL 13->17 cols, rollover wizard UI, webhook TEST->LIVE, backfill trigger Mon 2am->8am (9 files, 1 new)
+- Waratah SR Phase 0+1: 3 critical bug fixes + performance/code quality improvements (6 files, net -42 lines)
+- Waratah: 6-tier manager-facing explainer docs added to `docs/waratah/explainers/`
+- Both venues: Git branching strategy documented in CLAUDE.md (main, sakura/develop, waratah/develop)
 - Waratah: Task Management v1.2.0 — sort order, daily maintenance decomposed, 6 menu items removed, bug fixes
 - Waratah: Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor/avgCheck removed; full B5-B29 financial breakdown added
-- Waratah: Weekly functions audit — 4 key functions reviewed, fixed, deployed
 
-**Deployment (Mar 6, 2026):**
-- Waratah Shift Reports: 21 files pushed (NightlyExport.js + WeeklyRolloverInPlace.js hardened)
+**Deployment (Mar 7, 2026):**
+- Sakura Shift Reports Phases 0-4: 9 files (SlackBlockKitSakuraSR, WeeklyRolloverInPlace, IntegrationHubSakura, WeeklyDigestSakura, NightlyExportSakura, AnalyticsDashboardSakura, UIServerSakura, MenuSakura + rollover-wizard.html NEW)
+
+**Previous Deployment (Mar 6, 2026):**
+- Waratah Shift Reports Phase 0+1: 6 files (IntegrationHub, NightlyExport, SlackBlockKit, UIServer, WeeklyDigest, WeeklyRollover)
 - Waratah Task Management: 8 files pushed (v1.2.0 restructure)
-
-**Previous Deployment (Feb 28, 2026):**
-- Sakura Shift Reports: 17 files pushed (NightlyBasicExportSakura.gs added; NIGHTLY_FINANCIAL schema 10→13 cols; rollover multi-sheet PDF + trigger safety; analytics fixes)
 
 **💡 To avoid "prompt too long" errors:**
 - Start with venue-specific quick references (CLAUDE_WARATAH.md or CLAUDE_SAKURA.md)
