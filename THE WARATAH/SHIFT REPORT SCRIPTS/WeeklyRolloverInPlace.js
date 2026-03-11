@@ -38,9 +38,13 @@ const CLEARABLE_FIELDS = {
   mod: 'B4:F4',
   staff: 'B5:F5',
 
-  // Financial fields (B37:B40 are formulas — DO NOT CLEAR)
-  netRevenue: 'B34',
-  covers: 'B36',
+  // Financial fields
+  // Formula cells — DO NOT CLEAR (clearing destroys the formulas):
+  //   B15 (Cash Takings), B16 (Gross Sales Inc Cash),
+  //   B26 (Discounts Comps Exc CD), B27 (Gross Taxable Sales),
+  //   B28 (Taxes), B29 (Net Sales w Tips),
+  //   B34 (Net Revenue), B36 (Covers),
+  //   B37 (Total Tips), B38 (Labor Hours), B39 (Labor Cost)
   productionAmount: 'B8',
   deposit: 'B9:B10',
   airbnbCovers: 'B11',

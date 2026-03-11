@@ -49,13 +49,13 @@ Net Sales w Tips:      B29      (formula)
 Petty Cash:            B30
 Card Tips:             B32
 Cash Tips:             B33
-Net Revenue:           B34
+Net Revenue:           B34      (formula)
 Cash Total:            B35      (NOT warehoused)
-Covers:                B36      (NOT warehoused)
+Covers:                B36      (formula, NOT warehoused)
 Total Tips:            B37      (formula)
 Labor Hours:           B38      (formula, NOT warehoused)
 Labor Cost:            B39      (formula, NOT warehoused)
-B37:B40 = FORMULA CELLS — DO NOT CLEAR during rollover
+B34, B36, B37:B40 = FORMULA CELLS — DO NOT CLEAR during rollover
 ```
 
 ### Narrative Fields (merged A:F, odd rows = data)
@@ -187,13 +187,25 @@ These fields are cleared during weekly rollover (structure preserved):
 ```javascript
 const CLEARABLE_FIELDS = {
   // Header
+  date: 'B3:F3',
   mod: 'B4:F4',
   staff: 'B5:F5',
 
-  // Financial (single cells only — B37:B40 are formulas, DO NOT CLEAR)
-  netRevenue: 'B34',
-  cashTips: 'B33',
+  // Financial (input cells only)
+  // Formula cells — DO NOT CLEAR:
+  //   B15, B16, B26, B27, B28, B29, B34, B36, B37, B38, B39
+  productionAmount: 'B8',
+  deposit: 'B9:B10',
+  airbnbCovers: 'B11',
+  cancellations: 'B13:B14',
+  cashReturns: 'B17:B18',
+  cashDiscount: 'B19:B20',
+  refunds: 'B21:B22',
+  cdRedeem: 'B23:B24',
+  totalDiscounts: 'B25',
+  pettyCash: 'B30',
   cardTips: 'B32',
+  cashTips: 'B33',
 
   // Narrative fields (merged A:F — value lives in col A, must clear full merge)
   shiftSummary: 'A43:F43',
@@ -207,9 +219,6 @@ const CLEARABLE_FIELDS = {
   // To-do fields (9 rows: 53-61, merged A:E for tasks)
   todoTasks: 'A53:E61',
   todoAllocations: 'F53:F61'
-
-  // Note: B3:F3 (date) is NOT cleared — updated with new dates
-  // Note: B37:B40 are formulas — NEVER clear
 };
 ```
 
@@ -260,9 +269,9 @@ U=TotalTips, V=LoggedAt
 | Net Sales w Tips | B29 | Formula | Yes (col R) | No |
 | Card Tips | B32 | Number | Yes (col S) | Yes |
 | Cash Tips | B33 | Number | Yes (col T) | Yes |
-| Net Revenue | B34 | Number | Yes (col F) | Yes |
+| Net Revenue | B34 | Formula | Yes (col F) | No (formula) |
 | Cash Total | B35 | Number | No | No |
-| Covers | B36 | Number | No | No |
+| Covers | B36 | Formula | No | No (formula) |
 | Total Tips | B37 | Formula | Yes (col U) | No (formula) |
 | Labor Hours | B38 | Formula | No | No (formula) |
 | Labor Cost | B39 | Formula | No | No (formula) |

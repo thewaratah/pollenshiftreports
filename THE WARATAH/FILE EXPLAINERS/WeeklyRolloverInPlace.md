@@ -34,14 +34,16 @@ This is the most important constant in the file. It maps every cell range that s
 
 | Category | Ranges |
 |----------|--------|
-| **Financial data** | B32, B33, B34, B36 (tips, revenue, covers) |
+| **Header fields** | B3:F3 (date), B4:F4 (MOD), B5:F5 (staff) |
+| **Financial data (inputs)** | B8, B9:B10, B11, B13:B14, B17:B18, B19:B20, B21:B22, B23:B24, B25, B30, B32, B33 |
 | **Narrative fields** | A43:F43, A45:F45, A47:F47, A49:F49, A51:F51 (merged cells) |
 | **TO-DO tasks** | A53:E61 (9 task rows), F53:F61 (assignees) |
 | **Incidents** | A63:F63 (wastage), A65:F65 (RSA) |
 
-**Deliberately excluded:**
-- **B37:B40** — Formula cells (Total Tips, Labor Hours, Labor Cost). Clearing these would destroy the formulas permanently.
-- **B3:F3, B4:F4** — Date and MOD cells are updated, not cleared.
+**Deliberately excluded (formula cells -- clearing destroys them permanently):**
+- **B34** (Net Revenue), **B36** (Covers) — removed from CLEARABLE_FIELDS Mar 12 (bug fix)
+- **B37:B40** — Total Tips, Labor Hours, Labor Cost — removed from CLEARABLE_FIELDS Mar 3
+- **B15, B16, B26, B27, B28, B29** — other formula cells (never were in CLEARABLE_FIELDS)
 
 ---
 
@@ -89,7 +91,7 @@ This is the most important constant in the file. It maps every cell range that s
 ## Important Notes
 
 - **This is the highest-risk operation in the system.** A bad rollover can destroy a week of data. Always test with `previewRollover()` first.
-- **Formula cells B37:B40 must NEVER be in `CLEARABLE_FIELDS`** — this has been a historical source of bugs.
+- **Formula cells (B34, B36, B37:B40, B15, B16, B26-B29) must NEVER be in `CLEARABLE_FIELDS`** — this has been a historical source of bugs (B34/B36 fixed Mar 12, B37:B40 fixed Mar 3).
 - **Merged cells (narrative fields) must use `A##:F##` ranges** — clearing only `B##:F##` does nothing because the value lives in column A of the merge.
 - **The trigger fires at 10am Wednesday** — chosen to be after the previous week's final shift (Sunday night) and before the new week's first shift (Wednesday evening).
 - **Triggers are destroyed by `clasp push`** — after any deployment, re-run `createRolloverTrigger()` from the menu.

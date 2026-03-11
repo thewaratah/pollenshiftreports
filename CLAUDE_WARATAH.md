@@ -165,10 +165,13 @@ runValidationReport()    // Full system validation
    - `clearContent()` on B:F of a merged A:F range does **NOT** clear the value
    - Always use `A##:F##` (not `B##:F##`) when clearing merged narrative cells
 
-6. **Formula Cells (B37:B40) — DO NOT CLEAR**
+6. **Formula Cells (B34, B36, B37:B40) — DO NOT CLEAR**
+   - B34 (Net Revenue) is a formula — warehoused in col F
+   - B36 (Covers) is a formula — NOT warehoused (ignored)
    - B37 (Total Tips) is a formula — warehoused in col U
    - B38 (Labor Hours), B39 (Labor Cost) are formulas — NOT warehoused (ignored)
    - Clearing any of them during rollover destroys the formulas
+   - Additional formula cells (B15, B16, B26-B29) were never in CLEARABLE_FIELDS
 
 ---
 
