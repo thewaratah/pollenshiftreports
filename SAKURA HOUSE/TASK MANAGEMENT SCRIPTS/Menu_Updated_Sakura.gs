@@ -131,6 +131,12 @@ function protected_createWeeklySummaryTrigger() {
   }
 }
 
+function protected_createOverdueSummaryTrigger() {
+  if (requirePassword_('create overdue summary trigger')) {
+    createOverdueSummaryTrigger();
+  }
+}
+
 function protected_sendWeeklyFohLeadsSummary_Live() {
   if (requirePassword_('send FOH leads weekly tasks (LIVE)')) {
     sendWeeklyFohLeadsSummary_Live();
@@ -195,6 +201,7 @@ function onOpen() {
           .addItem('Create Daily Trigger (7am)', 'protected_createDailyMaintenanceTrigger')
           .addItem('Create Edit Trigger (Auto-sort)', 'protected_createOnEditTrigger')
           .addItem('Create Weekly Summary Trigger (Mon 6am)', 'protected_createWeeklySummaryTrigger')
+          .addItem('Create Overdue Summary Trigger (Sun 9am)', 'protected_createOverdueSummaryTrigger')
           .addItem('Remove All Task Triggers', 'protected_removeAllTaskTriggers'))
         .addSubMenu(ui.createMenu('Manual Actions')
           .addItem('Run Daily Maintenance Now', 'protected_runDailyTaskMaintenance')

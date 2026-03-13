@@ -1,16 +1,15 @@
 # SHIFT REPORTS 3.0 - Shared Architecture Guide
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 12, 2026
 **Project Type:** Google Apps Script (Multi-Venue Hospitality Management System)
 
 > **Note:** This guide covers patterns and systems **shared by both venues**. For venue-specific details, see `CLAUDE_SAKURA.md` or `CLAUDE_WARATAH.md`.
 
-**Recent Updates (Mar 6, 2026):**
+**Recent Updates (Mar 12, 2026):**
+- **Sakura Task Mgmt:** Sort/formatting overhaul — RECURRING active, BLOCKED inactive; priority row banding; Slack emoji to shortcodes; 15-col schema (Notes col O); STAFF_LIST: Ian removed, Sabine/Kalisha added
 - **Both venues:** Git repository initialized at `github.com/thewaratah/pollenshiftreports` — `clasp push` and `git push` are independent deployment/versioning workflows
 - **Waratah:** Task Management restructure v1.2.0 — sort order changed; daily maintenance decomposed into individual triggers; 6 menu items removed; bug fixes
 - **Waratah:** Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor removed; full B5-B29 financial breakdown added
-- **Waratah:** Weekly functions audit — 4 key functions reviewed, hardened, and deployed
-- **Waratah:** Rollover trigger: 5:15am → 10am; weekly summary trigger: 6am → 9am
 
 **Previous Updates (Feb 26, 2026):**
 - **Both venues:** `runIntegrations()` fully non-blocking in `continueExport()` — warehouse errors go to `Logger.log()` only; export always proceeds
@@ -238,11 +237,11 @@ NEW → TO DO → IN PROGRESS → DONE
           RECURRING (auto-regenerates)
 ```
 
-**Data Schema (14 columns):**
+**Data Schema (15 columns, A-O):**
 | Column | Field | Type |
 |--------|-------|------|
-| A | Status | Dropdown (8 statuses) |
-| B | Priority | URGENT, HIGH, MEDIUM, LOW |
+| A | Priority | URGENT, HIGH, MEDIUM, LOW |
+| B | Status | Dropdown (8 statuses) |
 | C | Staff Allocated | Dropdown (venue-specific staff) |
 | D | Area | FOH, BOH, Bar, Kitchen, Admin, etc. |
 | E | Description | Text |
@@ -255,12 +254,15 @@ NEW → TO DO → IN PROGRESS → DONE
 | L | Recurrence | None, Weekly, Fortnightly, Monthly |
 | M | Last Updated | Date (auto) |
 | N | Updated By | Email (auto) |
+| O | Notes | Text |
 
 **Key Features:**
 
 **1. Auto-Sort on Edit**
 - Triggers via `onEdit` installable trigger
-- Sort order: Active vs Completed → Priority → Status → Staff (Waratah v1.2.0; was Priority → Staff → Status)
+- Sort order (both venues, Mar 12): Active vs Inactive → Priority (URGENT>HIGH>MEDIUM>LOW>RECURRING) → Status → Staff → Due date ascending
+- Inactive statuses: BLOCKED, DONE, CANCELLED (sorted to bottom)
+- Active statuses: NEW, TO DO, IN PROGRESS, TO DISCUSS, DEFERRED, RECURRING
 
 **2. Blocked Task Escalation**
 - Tasks blocked > 14 days → escalate to manager
@@ -288,11 +290,11 @@ NEW → TO DO → IN PROGRESS → DONE
 - Sakura: Bundled `runDailyTaskMaintenance()` trigger (daily 7am) still in use.
 - Both: `createOnEditTrigger()` for auto-sort; `createWeeklySummaryTrigger()` for Monday summaries.
 
-**Conditional Formatting:**
-- Status column: Color-coded
-- Priority column: URGENT (red), HIGH (orange), MEDIUM (yellow), LOW (blue)
-- Entire row: URGENT/BLOCKED (light red tint)
-- Strikethrough: DONE/CANCELLED
+**Conditional Formatting (Sakura, Mar 12):**
+- DONE/CANCELLED/BLOCKED rows: strikethrough + muted (first rule = highest precedence)
+- Priority-based row banding: HIGH=light orange, MEDIUM=light yellow, LOW=light blue, RECURRING=light purple
+- URGENT row tint preserved (light red)
+- BLOCKED full-row highlight removed (now grouped with DONE/CANCELLED as inactive)
 
 ---
 
@@ -696,5 +698,5 @@ previewArchival()                  // Preview what would be archived
 
 ---
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 12, 2026
 **Applies To:** Both Sakura House and The Waratah

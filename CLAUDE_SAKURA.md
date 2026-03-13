@@ -1,12 +1,23 @@
 # SAKURA HOUSE - Claude Code Project Guide
 
-**Last Updated:** February 28, 2026
+**Last Updated:** March 12, 2026
 **Project Type:** Google Apps Script (Hospitality Management System)
 **Venue:** Sakura House (Single-Venue Documentation)
 
 > **Note:** This is the Sakura-specific guide. For The Waratah, see `CLAUDE_WARATAH.md`. For shared architecture patterns, see `CLAUDE_SHARED.md`.
 
+**Recent Updates (Mar 12, 2026, Sakura task management overhaul):**
+- Sakura Task Mgmt: Sort order reworked — RECURRING moved to active group, BLOCKED moved to inactive (with DONE/CANCELLED). Sort: active/inactive > priority (URGENT>HIGH>MEDIUM>LOW>RECURRING) > status > staff > due date asc
+- Sakura Task Mgmt: New constant `ETM_INACTIVE_STATUSES = [BLOCKED, DONE, CANCELLED]`; BLOCKED removed from `ETM_ACTIVE_STATUSES`; RECURRING added to `ETM_ACTIVE_STATUSES`
+- Sakura Task Mgmt: Conditional formatting — DONE/CANCELLED/BLOCKED get strikethrough + muted; priority-based row banding (HIGH=light orange, MEDIUM=light yellow, LOW=light blue, RECURRING=light purple); BLOCKED full-row highlight removed
+- Sakura Task Mgmt: STAFF_LIST updated — Ian removed, Sabine and Kalisha added
+- Sakura Task Mgmt: Slack emoji constants converted from Unicode to Slack shortcodes (e.g. `:red_circle:` not `\uD83D\uDD34`); priority legend added to channel summary, DMs, and FOH leads messages
+- Sakura Task Mgmt: Bug fix — `processRecurringTasks_` and `createTask` newTask arrays had 14 elements but TOTAL_COLS=15; added missing Notes column (col O)
+- Sakura Task Mgmt: Data schema now 15 columns (A-O) — col O = Notes
+
 ---
+
+> **CRITICAL: `clasp push` destroys all time-based triggers.** After every deployment, re-create all triggers via the menu or Apps Script editor. Affected triggers: Rollover (Mon 10am), Weekly Digest (Mon 8am), Weekly Backfill (Mon 2am), Daily Task Maintenance (7am), Weekly Task Summary (Mon 6am), Overdue Summary (Sun 9am), onEdit auto-sort.
 
 ## DEPLOYMENT (February 28, 2026)
 
@@ -227,7 +238,7 @@ SAKURA HOUSE/
 │       ├── export-dashboard.html    # 208KB
 │       └── checklist-dialog.html    # Pre-send checklist modal (150 lines, added Feb 25)
 ├── TASK MANAGEMENT SCRIPTS/      # 8 files, ~3,000 LOC
-│   ├── EnhancedTaskManagement_Sakura.gs  # Task system (1,964 lines, bug-fixed Feb 23)
+│   ├── EnhancedTaskManagement_Sakura.gs  # Task system (~2,050 lines, sort/formatting/emoji overhaul Mar 12)
 │   ├── Menu_Updated_Sakura.gs            # Task management + Slack poster menu
 │   ├── _SETUP_ScriptProperties_TaskMgmt_Sakura.gs  # NEW: Setup for task management properties
 │   ├── TaskDashboard_Sakura.gs
@@ -421,7 +432,7 @@ const SAKURA_CONFIG = {
 
 **Solution:**
 - Single working file: **"Sakura House - Current Week"**
-- Every Monday 1am:
+- Every Monday 10am:
   1. Export PDF + Google Sheets snapshot
   2. Archive to `Archive/YYYY/YYYY-MM/sheets/` and `/pdfs/`
   3. **Clear data** (preserve structure, formulas, named ranges)
@@ -476,9 +487,9 @@ The rollover now exports **all 6 day sheets** as a single multi-page PDF archive
 
 ### Trigger Safety Fix (Feb 28, 2026)
 
-`SpreadsheetApp.getUi()` was previously called at function scope in `performInPlaceRollover()`. When the Monday 1am time trigger fires there is no UI context — the old code would throw a silent uncaught exception and abort the rollover. Fix: each `ui.alert()` call is now wrapped in its own try/catch. The rollover always runs to completion; UI prompts are silently skipped in trigger context.
+`SpreadsheetApp.getUi()` was previously called at function scope in `performInPlaceRollover()`. When the time trigger fires there is no UI context — the old code would throw a silent uncaught exception and abort the rollover. Fix: each `ui.alert()` call is now wrapped in its own try/catch. The rollover always runs to completion; UI prompts are silently skipped in trigger context.
 
-**First automated trigger run: Monday 2 March 2026.**
+**First automated trigger run: Monday 2 March 2026. Schedule changed to Monday 10am (Mar 12, 2026).**
 
 ### Archive Folder Helpers (updated Feb 28, 2026)
 
@@ -488,14 +499,14 @@ getOrCreateArchiveSubfolder_(weekEndDateStr, subfolderName)
 // subfolderName: 'sheets' or 'pdfs'
 ```
 
-### Setup Trigger
+### Trigger Management
 
-**Manually create via Apps Script Editor → Triggers:**
-- Function: `performInPlaceRollover`
-- Event source: Time-driven
-- Type: Week timer
-- Day: Monday
-- Time: 1am to 2am
+**From menu:** Admin Tools → Weekly Rollover → Create Rollover Trigger (Mon 10am)
+**From editor:** Run `createRolloverTrigger_Sakura()`
+
+To remove: Admin Tools → Weekly Rollover → Remove Rollover Trigger
+
+> **WARNING: `clasp push` destroys all time-based triggers.** After every deployment, re-create triggers via the menu or editor. This applies to rollover, digest, backfill, and all task management triggers.
 
 ### Testing
 
@@ -667,7 +678,10 @@ Shift Report
     ├── Weekly Rollover (In-Place) ▸
     │   ├── Run Rollover Now
     │   ├── Preview Rollover (Dry Run)
-    │   └── Open Rollover Settings
+    │   ├── Open Rollover Settings
+    │   ├── ────────────────
+    │   ├── Create Rollover Trigger (Mon 10am)
+    │   └── Remove Rollover Trigger
     ├── Integrations & Analytics ▸
     │   ├── Test Integrations Now
     │   ├── Validate All Systems
@@ -841,5 +855,5 @@ if (config.ranges.usesNamedRanges) {
 
 ---
 
-**Last Updated:** February 28, 2026
+**Last Updated:** March 12, 2026
 **Total LOC:** ~9,700 lines across 22 .gs files (NightlyBasicExportSakura.gs added Feb 28)

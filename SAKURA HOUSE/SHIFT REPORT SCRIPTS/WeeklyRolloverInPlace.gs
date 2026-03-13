@@ -17,7 +17,7 @@
  * 7. Verify named ranges
  * 8. Send notifications
  *
- * TRIGGER: Monday 1:00 AM (Australia/Sydney)
+ * TRIGGER: Monday 10:00 AM (Australia/Sydney)
  * MANUAL: Shift Report > Weekly Rollover (In-Place)
  *
  * @version 1.0.0
@@ -1022,6 +1022,71 @@ function previewInPlaceRollover() {
 // ============================================================================
 // UTILITY / DISPLAY
 // ============================================================================
+
+// ============================================================================
+// TRIGGER MANAGEMENT
+// ============================================================================
+
+/**
+ * Creates the weekly rollover trigger (Monday 10am).
+ * Removes any existing rollover trigger first to avoid duplicates.
+ *
+ * WARNING: clasp push destroys all time-based triggers.
+ * Re-run this after every deployment.
+ */
+function createRolloverTrigger_Sakura() {
+  var triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(function(trigger) {
+    if (trigger.getHandlerFunction() === 'performInPlaceRollover') {
+      ScriptApp.deleteTrigger(trigger);
+      Logger.log('Deleted existing rollover trigger: ' + trigger.getUniqueId());
+    }
+  });
+
+  ScriptApp.newTrigger('performInPlaceRollover')
+    .timeBased()
+    .onWeekDay(ScriptApp.WeekDay.MONDAY)
+    .atHour(10)
+    .nearMinute(0)
+    .create();
+
+  Logger.log('Weekly rollover trigger created: Monday 10:00am');
+
+  try {
+    SpreadsheetApp.getUi().alert(
+      'Trigger Created',
+      'Weekly rollover trigger created successfully.\n\nSchedule: Monday 10:00am\n\nVerify in Apps Script Editor > Triggers',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  } catch (e) { Logger.log('UI alert skipped — trigger context'); }
+}
+
+
+/**
+ * Removes the weekly rollover trigger.
+ */
+function removeRolloverTrigger_Sakura() {
+  var triggers = ScriptApp.getProjectTriggers();
+  var removed = 0;
+
+  triggers.forEach(function(trigger) {
+    if (trigger.getHandlerFunction() === 'performInPlaceRollover') {
+      ScriptApp.deleteTrigger(trigger);
+      removed++;
+    }
+  });
+
+  Logger.log('Removed ' + removed + ' rollover trigger(s)');
+
+  try {
+    SpreadsheetApp.getUi().alert(
+      'Trigger Removed',
+      'Removed ' + removed + ' weekly rollover trigger(s).\n\nAutomatic rollover is now disabled.',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  } catch (e) { Logger.log('UI alert skipped — trigger context'); }
+}
+
 
 /**
  * Show configuration (no password needed, read-only).

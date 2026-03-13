@@ -191,15 +191,15 @@ const STATUS_LIST = [
 
 // Prefixed to avoid collision with MEETING ROLLING ACTIONABLES.gs
 const ETM_STATUS_EMOJI = {
-  [STATUSES.NEW]: "🔵",
-  [STATUSES.TODO]: "⚪",
-  [STATUSES.IN_PROGRESS]: "🟡",
-  [STATUSES.TO_DISCUSS]: "💬",
-  [STATUSES.BLOCKED]: "🔴",
-  [STATUSES.DEFERRED]: "🟠",
-  [STATUSES.DONE]: "🟢",
-  [STATUSES.CANCELLED]: "⚫",
-  [STATUSES.RECURRING]: "🟣"
+  [STATUSES.NEW]: ":large_blue_circle:",
+  [STATUSES.TODO]: ":white_circle:",
+  [STATUSES.IN_PROGRESS]: ":large_yellow_circle:",
+  [STATUSES.TO_DISCUSS]: ":speech_balloon:",
+  [STATUSES.BLOCKED]: ":red_circle:",
+  [STATUSES.DEFERRED]: ":large_orange_circle:",
+  [STATUSES.DONE]: ":white_check_mark:",
+  [STATUSES.CANCELLED]: ":black_circle:",
+  [STATUSES.RECURRING]: ":purple_circle:"
 };
 
 const STATUS_COLORS = {
@@ -220,10 +220,12 @@ const ETM_ACTIVE_STATUSES = [
   STATUSES.TODO,
   STATUSES.IN_PROGRESS,
   STATUSES.TO_DISCUSS,
-  STATUSES.BLOCKED,
   STATUSES.DEFERRED,
   STATUSES.RECURRING
 ];
+
+// Statuses treated as inactive (sorted to bottom, strikethrough formatting)
+const ETM_INACTIVE_STATUSES = [STATUSES.BLOCKED, STATUSES.DONE, STATUSES.CANCELLED];
 
 // Statuses eligible for recurrence regeneration
 const RECURRENCE_ELIGIBLE_STATUSES = [
@@ -248,11 +250,22 @@ const PRIORITY_LIST = [
 ];
 
 const PRIORITY_EMOJI = {
-  [PRIORITIES.URGENT]: "🔴",
-  [PRIORITIES.HIGH]: "🟠",
-  [PRIORITIES.MEDIUM]: "🟡",
-  [PRIORITIES.LOW]: "🔵"
+  [PRIORITIES.URGENT]: ":red_circle:",
+  [PRIORITIES.HIGH]: ":large_orange_circle:",
+  [PRIORITIES.MEDIUM]: ":large_yellow_circle:",
+  [PRIORITIES.LOW]: ":large_blue_circle:"
 };
+
+/** Slack Block Kit legend block — priority key for all task messages */
+function bk_priorityLegend_() {
+  return bk_context([
+    ":red_circle: Urgent  " +
+    ":large_orange_circle: High  " +
+    ":large_yellow_circle: Medium  " +
+    ":large_blue_circle: Low  " +
+    ":purple_circle: Recurring"
+  ]);
+}
 
 const AREAS = [
   "FOH",
@@ -286,7 +299,8 @@ const STAFF_LIST = [
   "Gooch",
   "Cynthia",
   "Adam",
-  "Ian",
+  "Sabine",
+  "Kalisha",
   "FOH Team",
   "Bar Team",
   "Kitchen Team",
@@ -302,7 +316,12 @@ const STAFF_LIST = [
 
 /**
  * Advanced sort with custom status and priority ordering.
- * Sorts: Active tasks first (by priority, then due date), then completed tasks.
+ * Sort hierarchy:
+ *   1. Active vs inactive — BLOCKED, DONE, and CANCELLED are inactive (RECURRING is active)
+ *   2. Priority: URGENT (1) > HIGH (2) > MEDIUM (3) > LOW (4) > RECURRING (5)
+ *   3. Status order (within same priority group)
+ *   4. Staff alphabetical (blanks last)
+ *   5. Due date ascending — overdue first, soonest next, no-date LAST
  */
 function sortMasterActionablesAdvanced() {
   const ss = SpreadsheetApp.openById(getTaskSpreadsheetId_());
@@ -345,27 +364,39 @@ function sortMasterActionablesAdvanced() {
 
   // Sort the data
   data.sort((a, b) => {
-    // 1. Active vs completed (active first, done/cancelled last)
     const statusA = statusOrder[a[COLS.STATUS]] || 99;
     const statusB = statusOrder[b[COLS.STATUS]] || 99;
-    const activeA = statusA <= 6 ? 0 : 1;  // DEFERRED (6) and below = active; RECURRING (7), DONE (8), CANCELLED (9) = inactive
-    const activeB = statusB <= 6 ? 0 : 1;
+
+    // 1. Active vs inactive — uses ETM_INACTIVE_STATUSES (BLOCKED, DONE, CANCELLED)
+    const activeA = ETM_INACTIVE_STATUSES.includes(a[COLS.STATUS]) ? 1 : 0;
+    const activeB = ETM_INACTIVE_STATUSES.includes(b[COLS.STATUS]) ? 1 : 0;
     if (activeA !== activeB) return activeA - activeB;
 
-    // 2. Priority order (urgent first)
-    const priorityA = priorityOrder[a[COLS.PRIORITY]] || 99;
-    const priorityB = priorityOrder[b[COLS.PRIORITY]] || 99;
+    // 2. Priority order — RECURRING tasks sort after LOW (4) as priority group 5
+    const rawPriorityA = priorityOrder[a[COLS.PRIORITY]] || 99;
+    const rawPriorityB = priorityOrder[b[COLS.PRIORITY]] || 99;
+    const priorityA = (a[COLS.STATUS] === "RECURRING") ? 5 : rawPriorityA;
+    const priorityB = (b[COLS.STATUS] === "RECURRING") ? 5 : rawPriorityB;
     if (priorityA !== priorityB) return priorityA - priorityB;
 
-    // 3. Group by staff (alphabetical, blanks last)
+    // 3. Status order within same priority group
+    if (statusA !== statusB) return statusA - statusB;
+
+    // 4. Staff alphabetical (blanks last)
     const staffA = (a[COLS.STAFF] || "").toString().trim();
     const staffB = (b[COLS.STAFF] || "").toString().trim();
     if (!staffA && staffB) return 1;
     if (staffA && !staffB) return -1;
     if (staffA !== staffB) return staffA.localeCompare(staffB);
 
-    // 4. Status order within same priority+staff group
-    if (statusA !== statusB) return statusA - statusB;
+    // 5. Due date ascending — overdue first, soonest next, no-date LAST
+    const dueDateA = a[COLS.DUE_DATE];
+    const dueDateB = b[COLS.DUE_DATE];
+    const hasDueDateA = dueDateA instanceof Date && !isNaN(dueDateA.getTime());
+    const hasDueDateB = dueDateB instanceof Date && !isNaN(dueDateB.getTime());
+    if (hasDueDateA && !hasDueDateB) return -1;  // Has date before no date
+    if (!hasDueDateA && hasDueDateB) return 1;
+    if (hasDueDateA && hasDueDateB) return dueDateA.getTime() - dueDateB.getTime();
 
     return 0;
   });
@@ -560,6 +591,8 @@ function applyDataValidation_(sheet) {
 
 /**
  * Applies conditional formatting for status and priority colors.
+ * Rule order matters: In Google Sheets, the FIRST matching rule wins (highest precedence).
+ * Order: DONE/CANCELLED/BLOCKED strikethrough (1st) > URGENT row tint > priority banding > status/priority cells
  */
 function applyConditionalFormatting_(sheet) {
   // Clear existing conditional format rules
@@ -567,13 +600,59 @@ function applyConditionalFormatting_(sheet) {
 
   const rules = [];
   const lastRow = 500;
+  const rowRange = sheet.getRange(2, 1, lastRow, TOTAL_COLS);
 
-  // Status column coloring (column A)
+  // ── 1. DONE/CANCELLED/BLOCKED — strikethrough + muted (FIRST = highest precedence) ──
+  rules.push(SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=OR($B2="DONE",$B2="CANCELLED",$B2="BLOCKED")')
+    .setBackground("#f3ffe2")
+    .setStrikethrough(true)
+    .setFontColor("#a1a6ae")
+    .setRanges([rowRange])
+    .build());
+
+  // ── 2. URGENT full-row tint (light red) ──
+  rules.push(SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=AND($A2="URGENT",NOT(OR($B2="DONE",$B2="CANCELLED",$B2="BLOCKED")))')
+    .setBackground("#fce8e6")  // Light red tint
+    .setRanges([rowRange])
+    .build());
+
+  // ── 3. Priority group row banding — subtle alternating backgrounds ──
+  // HIGH tasks: very light orange tint
+  rules.push(SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=AND($A2="HIGH",NOT(OR($B2="DONE",$B2="CANCELLED",$B2="BLOCKED")))')
+    .setBackground("#fef3e8")  // Very light orange
+    .setRanges([rowRange])
+    .build());
+
+  // MEDIUM tasks: very light yellow tint
+  rules.push(SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=AND($A2="MEDIUM",NOT(OR($B2="DONE",$B2="CANCELLED",$B2="BLOCKED")))')
+    .setBackground("#fef9e7")  // Very light yellow
+    .setRanges([rowRange])
+    .build());
+
+  // LOW tasks: very light blue tint
+  rules.push(SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=AND($A2="LOW",NOT(OR($B2="DONE",$B2="CANCELLED",$B2="BLOCKED")))')
+    .setBackground("#eef4fc")  // Very light blue
+    .setRanges([rowRange])
+    .build());
+
+  // RECURRING tasks: very light purple tint
+  rules.push(SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=AND($B2="RECURRING",NOT(OR($B2="DONE",$B2="CANCELLED",$B2="BLOCKED")))')
+    .setBackground("#f3edfc")  // Very light purple
+    .setRanges([rowRange])
+    .build());
+
+  // ── 4. Status column coloring (column A — status cell only) ──
   const statusRange = sheet.getRange(2, COLS.STATUS + 1, lastRow, 1);
 
   Object.entries(STATUS_COLORS).forEach(([status, color]) => {
-    // Skip DONE and CANCELLED - they get special row-level formatting below
-    if (status === STATUSES.DONE || status === STATUSES.CANCELLED) return;
+    // Skip DONE, CANCELLED, and BLOCKED - they get the strikethrough rule above
+    if (status === STATUSES.DONE || status === STATUSES.CANCELLED || status === STATUSES.BLOCKED) return;
 
     const rule = SpreadsheetApp.newConditionalFormatRule()
       .whenTextEqualTo(status)
@@ -584,12 +663,12 @@ function applyConditionalFormatting_(sheet) {
     rules.push(rule);
   });
 
-  // Priority column coloring (column B)
+  // ── 5. Priority column coloring (column B — priority cell only) ──
   const priorityRange = sheet.getRange(2, COLS.PRIORITY + 1, lastRow, 1);
 
   // URGENT - red background (excluding DONE/CANCELLED)
   rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=AND($A2="URGENT",NOT(OR($B2="DONE",$B2="CANCELLED")))')
+    .whenFormulaSatisfied('=AND($A2="URGENT",NOT(OR($B2="DONE",$B2="CANCELLED",$B2="BLOCKED")))')
     .setBackground("#ea4335")
     .setFontColor("#ffffff")
     .setBold(true)
@@ -598,7 +677,7 @@ function applyConditionalFormatting_(sheet) {
 
   // HIGH - orange background (excluding DONE/CANCELLED)
   rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=AND($A2="HIGH",NOT(OR($B2="DONE",$B2="CANCELLED")))')
+    .whenFormulaSatisfied('=AND($A2="HIGH",NOT(OR($B2="DONE",$B2="CANCELLED",$B2="BLOCKED")))')
     .setBackground("#ff6d01")
     .setFontColor("#ffffff")
     .setRanges([priorityRange])
@@ -606,7 +685,7 @@ function applyConditionalFormatting_(sheet) {
 
   // MEDIUM - yellow background (excluding DONE/CANCELLED)
   rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=AND($A2="MEDIUM",NOT(OR($B2="DONE",$B2="CANCELLED")))')
+    .whenFormulaSatisfied('=AND($A2="MEDIUM",NOT(OR($B2="DONE",$B2="CANCELLED",$B2="BLOCKED")))')
     .setBackground("#fbbc04")
     .setFontColor("#000000")
     .setRanges([priorityRange])
@@ -614,35 +693,10 @@ function applyConditionalFormatting_(sheet) {
 
   // LOW - light blue background (excluding DONE/CANCELLED)
   rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=AND($A2="LOW",NOT(OR($B2="DONE",$B2="CANCELLED")))')
+    .whenFormulaSatisfied('=AND($A2="LOW",NOT(OR($B2="DONE",$B2="CANCELLED",$B2="BLOCKED")))')
     .setBackground("#c9daf8")
     .setFontColor("#000000")
     .setRanges([priorityRange])
-    .build());
-
-  // Highlight entire row for URGENT tasks (excluding DONE/CANCELLED — they get the green/grey DONE rule below)
-  const rowRange = sheet.getRange(2, 1, lastRow, TOTAL_COLS);
-  rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=AND($A2="URGENT",NOT(OR($B2="DONE",$B2="CANCELLED")))')
-    .setBackground("#fce8e6")  // Light red tint
-    .setRanges([rowRange])
-    .build());
-
-  // Highlight BLOCKED tasks (BLOCKED is always active so no DONE exclusion needed, but guard anyway)
-  rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=AND($B2="BLOCKED",NOT(OR($B2="DONE",$B2="CANCELLED")))')
-    .setBackground("#fce8e6")
-    .setRanges([rowRange])
-    .build());
-
-  // DONE or CANCELLED tasks - light green background, grey text, strikethrough (MUST BE LAST)
-  // This rule takes precedence over all other conditional formatting
-  rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=OR($B2="DONE",$B2="CANCELLED")')
-    .setBackground("#f3ffe2")
-    .setStrikethrough(true)
-    .setFontColor("#a1a6ae")
-    .setRanges([rowRange])
     .build());
 
   sheet.setConditionalFormatRules(rules);
@@ -1034,22 +1088,23 @@ function processRecurringTasks_() {
         return;
     }
 
-    // Create new task
+    // Create new task (must match TOTAL_COLS = 15)
     const newTask = [
-      row[COLS.PRIORITY],
-      STATUSES.TODO,
-      row[COLS.STAFF],
-      row[COLS.AREA],
-      description,
-      nextDueDate,
-      today,
-      "",
-      "",
-      "",
-      row[COLS.SOURCE],
-      recurrence,
-      today,
-      "System (Recurring)"
+      row[COLS.PRIORITY],     // A: Priority
+      STATUSES.TODO,          // B: Status
+      row[COLS.STAFF],        // C: Staff
+      row[COLS.AREA],         // D: Area
+      description,            // E: Description
+      nextDueDate,            // F: Due Date
+      today,                  // G: Date Created
+      "",                     // H: Date Completed
+      "",                     // I: Days Open (formula)
+      "",                     // J: Blocker Notes
+      row[COLS.SOURCE],       // K: Source
+      recurrence,             // L: Recurrence
+      today,                  // M: Last Updated
+      "System (Recurring)",   // N: Updated By
+      ""                      // O: Notes
     ];
 
     newTasks.push(newTask);
@@ -1131,82 +1186,93 @@ function getNextMonday_(fromDate, weeksAhead) {
  * Called by daily maintenance trigger.
  */
 function sendOverdueTasksSummary_() {
-  const ss = SpreadsheetApp.openById(getTaskSpreadsheetId_());
-  const sheet = ss.getSheetByName(TASK_CONFIG.sheets.master);
+  try {
+    const ss = SpreadsheetApp.openById(getTaskSpreadsheetId_());
+    const sheet = ss.getSheetByName(TASK_CONFIG.sheets.master);
 
-  if (!sheet) return;
+    if (!sheet) return;
 
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return;
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return;
 
-  const data = sheet.getRange(2, 1, lastRow - 1, TOTAL_COLS).getValues();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+    const data = sheet.getRange(2, 1, lastRow - 1, TOTAL_COLS).getValues();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  const overdueTasks = [];
+    const overdueTasks = [];
 
-  data.forEach((row, index) => {
-    const status = (row[COLS.STATUS] || "").toString().trim().toUpperCase();
-    const dueDate = row[COLS.DUE_DATE];
+    data.forEach((row, index) => {
+      const status = (row[COLS.STATUS] || "").toString().trim().toUpperCase();
+      const dueDate = row[COLS.DUE_DATE];
 
-    if (!ETM_ACTIVE_STATUSES.includes(status)) return;
+      if (!ETM_ACTIVE_STATUSES.includes(status)) return;
 
-    if (dueDate instanceof Date) {
-      const dueDateOnly = new Date(dueDate);
-      dueDateOnly.setHours(0, 0, 0, 0);
+      if (dueDate instanceof Date) {
+        const dueDateOnly = new Date(dueDate);
+        dueDateOnly.setHours(0, 0, 0, 0);
 
-      if (dueDateOnly < today) {
-        const daysOverdue = Math.floor((today - dueDateOnly) / (24 * 60 * 60 * 1000));
+        if (dueDateOnly < today) {
+          const daysOverdue = Math.floor((today - dueDateOnly) / (24 * 60 * 60 * 1000));
 
-        overdueTasks.push({
-          rowNum: index + 2,
-          description: row[COLS.DESCRIPTION],
-          assignee: row[COLS.STAFF] || "Unassigned",
-          dueDate: Utilities.formatDate(dueDate, TASK_CONFIG.timezone, "dd/MM/yyyy"),
-          daysOverdue: daysOverdue,
-          priority: row[COLS.PRIORITY],
-          status: status
-        });
+          overdueTasks.push({
+            rowNum: index + 2,
+            description: row[COLS.DESCRIPTION],
+            assignee: row[COLS.STAFF] || "Unassigned",
+            dueDate: Utilities.formatDate(dueDate, TASK_CONFIG.timezone, "dd/MM/yyyy"),
+            daysOverdue: daysOverdue,
+            priority: row[COLS.PRIORITY],
+            status: status
+          });
+        }
       }
-    }
-  });
-
-  if (overdueTasks.length === 0) {
-    Logger.log("No overdue tasks today.");
-    return;
-  }
-
-  overdueTasks.sort((a, b) => b.daysOverdue - a.daysOverdue);
-
-  const byAssignee = {};
-  overdueTasks.forEach(task => {
-    if (!byAssignee[task.assignee]) byAssignee[task.assignee] = [];
-    byAssignee[task.assignee].push(task);
-  });
-
-  // Build overdue Block Kit message
-  const overdueBlocks = [
-    bk_header("Daily Overdue Tasks"),
-    bk_section(`*${overdueTasks.length} task(s) past their due date*`)
-  ];
-
-  Object.entries(byAssignee).forEach(([assignee, tasks]) => {
-    overdueBlocks.push(bk_divider());
-    let staffSection = `*${assignee}* (${tasks.length}):\n`;
-    tasks.forEach(task => {
-      const priorityEmoji = PRIORITY_EMOJI[task.priority] || "";
-      staffSection += `${priorityEmoji} ${task.description} _(${task.daysOverdue}d overdue)_\n`;
     });
-    overdueBlocks.push(bk_section(staffSection));
-  });
 
-  overdueBlocks.push(bk_divider());
-  overdueBlocks.push(bk_buttons([{ text: "View All Tasks", url: `https://docs.google.com/spreadsheets/d/${getTaskSpreadsheetId_()}` }]));
+    if (overdueTasks.length === 0) {
+      Logger.log("No overdue tasks today.");
+      return;
+    }
 
-  bk_post(getManagersChannelWebhook_(), overdueBlocks,
-    `Daily Overdue: ${overdueTasks.length} task(s) past due`);
+    overdueTasks.sort((a, b) => b.daysOverdue - a.daysOverdue);
 
-  sendOverdueTasksDMs_(byAssignee);
+    const byAssignee = {};
+    overdueTasks.forEach(task => {
+      if (!byAssignee[task.assignee]) byAssignee[task.assignee] = [];
+      byAssignee[task.assignee].push(task);
+    });
+
+    // Build overdue Block Kit message
+    const overdueBlocks = [
+      bk_header("Daily Overdue Tasks"),
+      bk_section(`*${overdueTasks.length} task(s) past their due date*`)
+    ];
+
+    Object.entries(byAssignee).forEach(([assignee, tasks]) => {
+      overdueBlocks.push(bk_divider());
+      let staffSection = `*${assignee}* (${tasks.length}):\n`;
+      tasks.forEach(task => {
+        const priorityEmoji = PRIORITY_EMOJI[task.priority] || "";
+        staffSection += `${priorityEmoji} ${task.description} _(${task.daysOverdue}d overdue)_\n`;
+      });
+      overdueBlocks.push(bk_section(staffSection));
+    });
+
+    overdueBlocks.push(bk_divider());
+    overdueBlocks.push(bk_buttons([{ text: "View All Tasks", url: `https://docs.google.com/spreadsheets/d/${getTaskSpreadsheetId_()}` }]));
+
+    bk_post(getManagersChannelWebhook_(), overdueBlocks,
+      `Daily Overdue: ${overdueTasks.length} task(s) past due`);
+
+    sendOverdueTasksDMs_(byAssignee);
+  } catch (e) {
+    Logger.log('sendOverdueTasksSummary_ error: ' + e.message + '\n' + e.stack);
+    try {
+      bk_post(getManagersChannelWebhook_(),
+        [bk_section(':x: *sendOverdueTasksSummary_ failed*\n' + e.message)],
+        'Overdue summary error');
+    } catch (slackErr) {
+      Logger.log('Could not send Slack error notification: ' + slackErr.message);
+    }
+  }
 }
 
 
@@ -1514,7 +1580,8 @@ function _sendWeeklyActiveTasksSummaryCore(webhookUrl, isTest) {
 
   const weeklyBlocks = [
     bk_header(`${titlePrefix}Sakura House — Weekly Active Tasks`),
-    bk_context([`Week starting ${dateStr}`])
+    bk_context([`Week starting ${dateStr}`]),
+    bk_priorityLegend_()
   ];
 
   staffOrder.forEach(staff => {
@@ -1587,7 +1654,8 @@ function _sendWeeklyActiveTasksDMs_(staffMap, today, tz, isTest) {
 
     const dmBlocks = [
       bk_header(`SAKURA HOUSE WEEKLY TASKS — Week of ${dateStr}`),
-      bk_section(`_You have ${tasks.length} task(s) requiring action_`)
+      bk_section(`_You have ${tasks.length} task(s) requiring action_`),
+      bk_priorityLegend_()
     ];
 
     ["URGENT", "HIGH", "MEDIUM", "LOW"].forEach(priority => {
@@ -1680,7 +1748,8 @@ function _sendWeeklyFohLeadsSummary_(staffMap, today, tz, isTest) {
 
   const blocks = [
     bk_header(`${titlePrefix}Sakura FOH Leads — Weekly Tasks`),
-    bk_context([`Week starting ${dateStr}`])
+    bk_context([`Week starting ${dateStr}`]),
+    bk_priorityLegend_()
   ];
 
   FOH_STAFF.forEach(staff => {
@@ -1785,11 +1854,49 @@ function createOnEditTrigger() {
 
 
 /**
+ * Creates the weekly overdue summary trigger (Sunday 9am).
+ * Posts overdue tasks to Slack every Sunday morning.
+ *
+ * WARNING: clasp push destroys all time-based triggers.
+ * Re-run this after every deployment.
+ */
+function createOverdueSummaryTrigger() {
+  ScriptApp.getProjectTriggers().forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'sendOverdueTasksSummary_') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+
+  ScriptApp.newTrigger('sendOverdueTasksSummary_')
+    .timeBased()
+    .onWeekDay(ScriptApp.WeekDay.SUNDAY)
+    .atHour(9)
+    .nearMinute(0)
+    .create();
+
+  Logger.log('Created weekly overdue summary trigger (Sunday 9am).');
+  try {
+    SpreadsheetApp.getUi().alert(
+      'Trigger Created',
+      'Overdue task summary will be posted to Slack every Sunday at 9am.',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  } catch (e) { Logger.log('UI alert skipped — trigger context'); }
+}
+
+
+/**
  * Removes all triggers for this script.
  */
 function removeAllTaskTriggers() {
   const triggers = ScriptApp.getProjectTriggers();
-  const handlerFunctions = ["runDailyTaskMaintenance", "onTaskSheetEditWithAutoSort", "onTaskSheetEdit", "sendWeeklyActiveTasksSummary"];
+  const handlerFunctions = [
+    "runDailyTaskMaintenance",
+    "onTaskSheetEditWithAutoSort",
+    "onTaskSheetEdit",
+    "sendWeeklyActiveTasksSummary",
+    "sendOverdueTasksSummary_"
+  ];
 
   let removed = 0;
   triggers.forEach(trigger => {
@@ -1826,20 +1933,21 @@ function createTask(taskData) {
   const user = Session.getActiveUser().getEmail() || "System";
 
   const newRow = [
-    taskData.priority || PRIORITIES.MEDIUM,
-    STATUSES.NEW,
-    taskData.assignee || "",
-    taskData.area || "General",
-    taskData.description,
-    taskData.dueDate || "",
-    now,
-    "",
-    "",
-    taskData.notes || "",
-    taskData.source || "Ad-hoc",
-    taskData.recurrence || "None",
-    now,
-    user
+    taskData.priority || PRIORITIES.MEDIUM,  // A: Priority
+    STATUSES.NEW,                            // B: Status
+    taskData.assignee || "",                 // C: Staff
+    taskData.area || "General",              // D: Area
+    taskData.description,                    // E: Description
+    taskData.dueDate || "",                  // F: Due Date
+    now,                                     // G: Date Created
+    "",                                      // H: Date Completed
+    "",                                      // I: Days Open (formula)
+    "",                                      // J: Blocker Notes
+    taskData.source || "Ad-hoc",             // K: Source
+    taskData.recurrence || "None",           // L: Recurrence
+    now,                                     // M: Last Updated
+    user,                                    // N: Updated By
+    taskData.notes || ""                     // O: Notes
   ];
 
   const newRowNum = sheet.getLastRow() + 1;

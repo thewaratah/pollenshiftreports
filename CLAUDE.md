@@ -211,18 +211,15 @@ The `.gitignore` excludes: `_SETUP_*` files (contain Slack webhook secrets), `do
 ---
 
 
-**Last Updated:** March 7, 2026
+**Last Updated:** March 12, 2026
 **Status:** Both venues fully operational and production-ready ✅
 
-**Recent Updates (Mar 7, 2026):**
+**Recent Updates (Mar 12, 2026):**
+- Sakura Task Mgmt: Sort/formatting overhaul — RECURRING moved to active, BLOCKED to inactive; priority row banding; Slack emoji to shortcodes; 15-col schema (Notes col O); STAFF_LIST updated (Ian out, Sabine/Kalisha in)
 - Both venues: Fixed `fmtAUD()` NaN bug in nightly Slack export — `parseFloat(val)` returned NaN on display-formatted currency strings ("$1,234.50"); now strips non-numeric chars before parsing (NightlyExport files)
 - Sakura SR Alignment Phases 0-4: notifyError_ utility, NIGHTLY_FINANCIAL 13->17 cols, rollover wizard UI, webhook TEST->LIVE, backfill trigger Mon 2am->8am (9 files, 1 new)
 - Waratah SR Phase 0+1: 3 critical bug fixes + performance/code quality improvements (6 files, net -42 lines)
 - Waratah: 6-tier manager-facing explainer docs added to `docs/waratah/explainers/`
-- Both venues: Git repository initialized at `github.com/thewaratah/pollenshiftreports` — `clasp push` (deploy) and `git push` (version history) are independent workflows
-- Waratah: Task Management v1.2.0 — sort order, daily maintenance decomposed, 6 menu items removed, bug fixes
-- Waratah: Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor/avgCheck removed; full B5-B29 financial breakdown added
-- Waratah: Weekly functions audit — 4 key functions reviewed, fixed, deployed
 
 **Deployment (Mar 6, 2026):**
 - Waratah Shift Reports: 21 files pushed (NightlyExport.js + WeeklyRolloverInPlace.js hardened)
