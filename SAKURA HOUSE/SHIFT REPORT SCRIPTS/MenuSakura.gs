@@ -60,10 +60,11 @@ function pw_sendWeeklyTodoSummary()           { if (requirePassword_()) sendWeek
 function pw_sendWeeklyTodoSummary_TestToSelf() { if (requirePassword_()) sendWeeklyTodoSummary_TestToSelf(); }
 
 // === PASSWORD-GATED WRAPPERS: Weekly Rollover (In-Place) ===
-function pw_openRolloverWizard()              { if (requirePassword_()) openRolloverWizard(); }
 function pw_performInPlaceRollover()           { if (requirePassword_()) performInPlaceRollover(); }
 function pw_previewInPlaceRollover()           { if (requirePassword_()) previewInPlaceRollover(); }
 function pw_showRolloverConfig()              { if (requirePassword_()) showRolloverConfig(); }
+function pw_createRolloverTrigger_Sakura()    { if (requirePassword_()) createRolloverTrigger_Sakura(); }
+function pw_removeRolloverTrigger_Sakura()    { if (requirePassword_()) removeRolloverTrigger_Sakura(); }
 
 // === PASSWORD-GATED WRAPPERS: Integrations & Analytics ===
 function pw_testIntegrations()                { if (requirePassword_()) testIntegrations(); }
@@ -118,10 +119,12 @@ function onOpen() {
           .addItem('Setup Monday Digest Trigger', 'pw_setupWeeklyDigestTrigger_Sakura'))
 
         .addSubMenu(ui.createMenu('Weekly Rollover')
-          .addItem('Open Rollover Wizard', 'pw_openRolloverWizard')
           .addItem('Run Rollover Now', 'pw_performInPlaceRollover')
           .addItem('Preview Rollover (Dry Run)', 'pw_previewInPlaceRollover')
-          .addItem('Open Rollover Settings', 'pw_showRolloverConfig'))
+          .addItem('Open Rollover Settings', 'pw_showRolloverConfig')
+          .addSeparator()
+          .addItem('Create Rollover Trigger (Mon 10am)', 'pw_createRolloverTrigger_Sakura')
+          .addItem('Remove Rollover Trigger', 'pw_removeRolloverTrigger_Sakura'))
 
         .addSubMenu(ui.createMenu('Integrations & Analytics')
           .addItem('Test Integrations Now', 'pw_testIntegrations')

@@ -182,8 +182,6 @@ function extractShiftData_(sheetName) {
   const dateValue = getFieldValue(sheet, "date");
   const date = parseCellDate_(dateValue);
   const mod = getFieldDisplayValue(sheet, "mod");
-  const fohStaff = String(getFieldValue(sheet, "fohStaff") || "").trim();
-  const bohStaff = String(getFieldValue(sheet, "bohStaff") || "").trim();
   const netRevenue = parseFloat(getFieldValue(sheet, "netRevenue")) || 0;
 
   // Extract financial detail via Named Ranges
@@ -235,13 +233,9 @@ function extractShiftData_(sheetName) {
     dayOfWeek: Utilities.formatDate(date, INTEGRATION_CONFIG.timezone, "EEEE"),
     weekEnding: weekEnding,
     mod: mod,
-    fohStaff: fohStaff,
-    bohStaff: bohStaff,
     netRevenue: netRevenue,
     cashTotal: cashTotal,
     cashTips: cashTips,
-    cardTips: cardTips,
-    surchargeTips: surchargeTips,
     tipsTotal: tipsTotal,
     totalTips: totalTips,
     productionAmount: productionAmount,
@@ -368,11 +362,7 @@ function logToDataWarehouse_(shiftData) {
       shiftData.totalTips,        // J: Total Tips (computed: cashTips + cardTips + surchargeTips)
       shiftData.productionAmount, // K: Production Amount
       shiftData.discounts,        // L: Discounts
-      shiftData.deposit,          // M: Deposit
-      shiftData.fohStaff,         // N: FOH Staff
-      shiftData.bohStaff,         // O: BOH Staff
-      shiftData.cardTips,         // P: Card Tips
-      shiftData.surchargeTips     // Q: Surcharge Tips
+      shiftData.deposit           // M: Deposit
     ]);
     Logger.log(`  Logged financial data to warehouse`);
     logResult.financialLogged = true;
@@ -893,10 +883,6 @@ function runWeeklyBackfill_() {
       `${logged} logged, ${skipped} already existed, ${failed} failed`
     );
 
-  } catch (error) {
-    notifyError_('runWeeklyBackfill_', error);
-    Logger.log('runWeeklyBackfill_ error: ' + error.message);
-    throw error;
   } finally {
     lock.releaseLock();
   }
@@ -918,18 +904,14 @@ function setupWeeklyBackfillTrigger() {
   ScriptApp.newTrigger('runWeeklyBackfill_')
     .timeBased()
     .onWeekDay(ScriptApp.WeekDay.MONDAY)
-    .atHour(8) // 8am Monday Sydney time (aligned with Waratah)
+    .atHour(2) // 2am Monday Sydney time (adjust if needed)
     .create();
 
-  Logger.log('Weekly backfill trigger installed: runs every Monday at 8am.');
-  try {
-    SpreadsheetApp.getUi().alert(
-      'Trigger Installed',
-      'runWeeklyBackfill_() will run every Monday at 8am.\n\n' +
-      'To remove: Apps Script editor → Triggers (clock icon) → delete the trigger.',
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
-  } catch (e) {
-    Logger.log('Backfill trigger created (Monday 8am) — UI skipped in trigger context');
-  }
+  Logger.log('Weekly backfill trigger installed: runs every Monday at 2am.');
+  SpreadsheetApp.getUi().alert(
+    'Trigger Installed',
+    'runWeeklyBackfill_() will run every Monday at 2am.\n\n' +
+    'To remove: Apps Script editor → Triggers (clock icon) → delete the trigger.',
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
 }
