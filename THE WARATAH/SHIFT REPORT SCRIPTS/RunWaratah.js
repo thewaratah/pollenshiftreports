@@ -785,3 +785,101 @@ function verifyAndFixNamedRanges_(spreadsheet) {
 
   Logger.log(`Named range verification complete — fixed: ${totalCreated}, already OK: ${totalSkipped}`);
 }
+
+
+// ============================================================================
+// SHEET PROTECTION
+// ============================================================================
+
+/**
+ * Applies whole-sheet protection to a single day sheet.
+ * Protects structural cells (headers, labels, formulas) while leaving
+ * all FIELD_CONFIG input fields (isFormula: false) fully editable.
+ *
+ * Uses setWarningOnly(true) so GAS scripts (rollover, clearContent calls)
+ * can still write to any cell without restriction. Staff/managers see a
+ * warning dialog if they accidentally edit protected structure cells,
+ * but are not hard-blocked.
+ *
+ * @param {Sheet} sheet
+ */
+function setupSheetProtection_(sheet) {
+  // Remove any existing protections on this sheet
+  const existing = sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+  existing.forEach(p => p.remove());
+
+  // Protect the whole sheet (warning-only — scripts always have full access)
+  const protection = sheet.protect().setDescription('Shift Report Structure');
+  protection.setWarningOnly(true);
+
+  // Build editable ranges from all non-formula FIELD_CONFIG entries
+  const clearableKeys = getClearableFieldKeys_();  // auto-excludes isFormula: true
+  const editableRanges = clearableKeys.map(key => getFieldRange(sheet, key));
+
+  protection.setUnprotectedRanges(editableRanges);
+  Logger.log(`Protection set on "${sheet.getName()}": ${editableRanges.length} editable ranges carved out`);
+}
+
+/**
+ * Menu function: Apply sheet protection to all day sheets (WEDNESDAY–SUNDAY).
+ * Loops VALID_DAY_PREFIXES, finds each sheet, and calls setupSheetProtection_().
+ * Password-gated via pw_setupAllSheetsProtection() in Menu.js.
+ */
+function setupAllSheetsProtection() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const allSheets = spreadsheet.getSheets();
+  const summary = [];
+
+  for (const dayPrefix of VALID_DAY_PREFIXES) {
+    const sheet = allSheets.find(s => s.getName().startsWith(dayPrefix));
+    if (!sheet) {
+      summary.push(`${dayPrefix}: sheet not found — skipped`);
+      continue;
+    }
+    try {
+      setupSheetProtection_(sheet);
+      summary.push(`${sheet.getName()}: protection applied`);
+    } catch (e) {
+      summary.push(`${sheet.getName()}: FAILED — ${e.message}`);
+      Logger.log(`setupAllSheetsProtection: failed on ${sheet.getName()}: ${e.message}`);
+    }
+  }
+
+  const message = `Sheet Protection Setup Complete\n\n${summary.join('\n')}`;
+  try {
+    SpreadsheetApp.getUi().alert('Protection Applied', message, SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (e) {
+    Logger.log(message);
+  }
+}
+
+/**
+ * Menu function: Remove all sheet protections from all day sheets.
+ * Use before bulk edits or if protection configuration needs to be
+ * rebuilt from scratch.
+ * Password-gated via pw_removeAllSheetsProtection() in Menu.js.
+ */
+function removeAllSheetsProtection() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const allSheets = spreadsheet.getSheets();
+  let removed = 0;
+  const summary = [];
+
+  for (const dayPrefix of VALID_DAY_PREFIXES) {
+    const sheet = allSheets.find(s => s.getName().startsWith(dayPrefix));
+    if (!sheet) continue;
+
+    const protections = sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+    protections.forEach(p => { p.remove(); removed++; });
+    summary.push(protections.length > 0
+      ? `${sheet.getName()}: ${protections.length} protection(s) removed`
+      : `${sheet.getName()}: no protections found`);
+  }
+
+  const message = `Removed ${removed} protection(s)\n\n${summary.join('\n')}`;
+  try {
+    SpreadsheetApp.getUi().alert('Protections Removed', message, SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (e) {
+    Logger.log(message);
+  }
+}

@@ -67,6 +67,10 @@ function pw_diagnoseAllSheets()                 { if (requirePassword_()) diagno
 function pw_createNamedRangesOnActiveSheet()    { if (requirePassword_()) createNamedRangesOnActiveSheet(); }
 function pw_createNamedRangesOnAllSheets()      { if (requirePassword_()) createNamedRangesOnAllSheets(); }
 function pw_forceUpdateNamedRangesOnAllSheets() { if (requirePassword_()) forceUpdateNamedRangesOnAllSheets(); }
+// === PASSWORD-GATED WRAPPERS: Sheet Protection ===
+function pw_setupAllSheetsProtection()  { if (requirePassword_()) setupAllSheetsProtection(); }
+function pw_removeAllSheetsProtection() { if (requirePassword_()) removeAllSheetsProtection(); }
+
 
 // === PASSWORD-GATED WRAPPERS: Weekly Digest ===
 function pw_sendWeeklyRevenueDigest_Waratah()      { if (requirePassword_()) sendWeeklyRevenueDigest_Waratah(); }
@@ -138,7 +142,11 @@ function onOpen() {
             .addItem('Create on Active Sheet', 'pw_createNamedRangesOnActiveSheet')
             .addItem('Create on ALL Sheets', 'pw_createNamedRangesOnAllSheets')
             .addSeparator()
-            .addItem('Force Update ALL Sheets', 'pw_forceUpdateNamedRangesOnAllSheets'))))
+            .addItem('Force Update ALL Sheets', 'pw_forceUpdateNamedRangesOnAllSheets'))
+          .addSeparator()
+          .addSubMenu(ui.createMenu('Sheet Protection')
+            .addItem('Apply Protection (All Sheets)', 'pw_setupAllSheetsProtection')
+            .addItem('Remove Protection (All Sheets)', 'pw_removeAllSheetsProtection'))))
 
       .addToUi();
   } catch (error) {
