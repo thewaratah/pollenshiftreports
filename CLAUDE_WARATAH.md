@@ -396,7 +396,7 @@ NEW → TO DO → IN PROGRESS → DONE
 **Note:** Daily maintenance was decomposed into individual triggers (Mar 6, 2026). `runDailyTaskMaintenance()` no longer exists as a bundled function.
 
 **Staff with Slack DM:**
-- Evan, Cynthia, Andie, Adam, Lily, Blade, Dipti
+- Evan, Cynthia, Adam, Lily, Dipti
 
 See [DEEP_DIVE_ARCHITECTURE.md](docs/waratah/DEEP_DIVE_ARCHITECTURE.md#enhanced-task-management-system) for full details.
 
@@ -409,7 +409,7 @@ See [DEEP_DIVE_ARCHITECTURE.md](docs/waratah/DEEP_DIVE_ARCHITECTURE.md#enhanced-
 - [ ] Test menu functionality (all items accessible)
 - [ ] Confirm Slack notifications send (check #managers)
 - [ ] Validate data warehouse writes (check 4 sheets)
-- [ ] Verify email delivery (check 9 recipients)
+- [ ] Verify email delivery (check 7 recipients)
 - [ ] Preview rollover before running live
 
 ---

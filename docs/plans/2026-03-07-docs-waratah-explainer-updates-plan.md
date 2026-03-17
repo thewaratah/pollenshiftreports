@@ -93,7 +93,7 @@ Alternative: Use `python-docx` to programmatically edit the `.docx` files. But t
 | Item | Doc says | Actual | Action |
 |------|----------|--------|--------|
 | Nightly export steps | "9 steps" | Verify - may still be 9 | **Verify against code** |
-| Email recipients | "all 9 recipients" | 9 confirmed (Evan, Andie, Cynthia, Dipti, Chef, Howie, Adam, Lily, Blade) | **Correct** |
+| Email recipients | "all 7 recipients" | 7 confirmed (Evan, Cynthia, Dipti, Chef, Howie, Adam, Lily) | **Correct** |
 | Weekly backfill | "Wednesday at 2am" | Code confirms "Wednesday at 2am" | **Correct** |
 | NIGHTLY_FINANCIAL | "22 columns" | 22 columns A-V confirmed | **Correct** |
 | Archive path format | `Archive > 2026 > 2026-03 > pdfs > Waratah_Shift_Report_WE_DD.MM.YYYY.pdf` | Verify format | **Verify** |

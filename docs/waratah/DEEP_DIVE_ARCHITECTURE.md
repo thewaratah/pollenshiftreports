@@ -112,7 +112,7 @@ WARATAH_SLACK_WEBHOOK_LIVE: "https://hooks.slack.com/services/..."
 WARATAH_SLACK_WEBHOOK_TEST: "https://hooks.slack.com/services/..."
 
 // Email (JSON object: email → name)
-WARATAH_EMAIL_RECIPIENTS: '{"evan@...": "Evan", "andie@...": "Andie", ...}'
+WARATAH_EMAIL_RECIPIENTS: '{"evan@...": "Evan", "cynthia@...": "Cynthia", ...}'
 
 // Spreadsheet IDs
 WARATAH_SHIFT_REPORT_CURRENT_ID: "[current_week_spreadsheet_id]"
@@ -154,7 +154,7 @@ resetScriptProperties()
 **File:** [`EnhancedTaskManagementWaratah.gs`](../../THE%20WARATAH/TASK%20MANAGEMENT%20SCRIPTS/EnhancedTaskManagementWaratah.gs)
 
 **Staff List (with Slack DM integration):**
-- Evan, Cynthia, Andie, Adam, Lily, Blade, Dipti (individual DM webhooks configured)
+- Evan, Cynthia, Adam, Lily, Dipti (individual DM webhooks configured)
 - Bar Team, Kitchen Team, FOH Team, General Management, Marketing Explicit (group assignments)
 - All, Contractor (special categories)
 

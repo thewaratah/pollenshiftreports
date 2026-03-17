@@ -12,7 +12,7 @@ The Integration Hub orchestrates data flow between:
 1. **Shift Reports** → Data Warehouse (4 sheets)
 2. **Shift Reports** → Cash Reconciliation
 3. **Shift Reports** → Slack (#managers)
-4. **Shift Reports** → Email (9 recipients)
+4. **Shift Reports** → Email (7 recipients)
 5. **Shift Reports** → Master Actionables (tasks)
 
 **Primary File:** [`IntegrationHub.js`](../../THE%20WARATAH/SHIFT%20REPORT%20SCRIPTS/IntegrationHub.js)
