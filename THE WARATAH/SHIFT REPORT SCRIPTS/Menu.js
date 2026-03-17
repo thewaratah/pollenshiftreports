@@ -61,6 +61,17 @@ function pw_backfillShiftToWarehouse()      { if (requirePassword_()) backfillSh
 function pw_setupWeeklyBackfillTrigger()    { if (requirePassword_()) setupWeeklyBackfillTrigger(); }
 function pw_showIntegrationLogStats()       { if (requirePassword_()) showIntegrationLogStats(); }
 
+// === PASSWORD-GATED WRAPPERS: Named Ranges ===
+function pw_diagnoseNamedRanges()               { if (requirePassword_()) diagnoseNamedRanges(); }
+function pw_diagnoseAllSheets()                 { if (requirePassword_()) diagnoseAllSheets(); }
+function pw_createNamedRangesOnActiveSheet()    { if (requirePassword_()) createNamedRangesOnActiveSheet(); }
+function pw_createNamedRangesOnAllSheets()      { if (requirePassword_()) createNamedRangesOnAllSheets(); }
+function pw_forceUpdateNamedRangesOnAllSheets() { if (requirePassword_()) forceUpdateNamedRangesOnAllSheets(); }
+// === PASSWORD-GATED WRAPPERS: Sheet Protection ===
+function pw_setupAllSheetsProtection()  { if (requirePassword_()) setupAllSheetsProtection(); }
+function pw_removeAllSheetsProtection() { if (requirePassword_()) removeAllSheetsProtection(); }
+
+
 // === PASSWORD-GATED WRAPPERS: Weekly Digest ===
 function pw_sendWeeklyRevenueDigest_Waratah()      { if (requirePassword_()) sendWeeklyRevenueDigest_Waratah(); }
 function pw_sendWeeklyRevenueDigest_Waratah_Test() { if (requirePassword_()) sendWeeklyRevenueDigest_Waratah_Test(); }
@@ -99,7 +110,7 @@ function onOpen() {
           .addItem('Send Revenue Digest (LIVE)', 'pw_sendWeeklyRevenueDigest_Waratah')
           .addItem('Send Revenue Digest (TEST)', 'pw_sendWeeklyRevenueDigest_Waratah_Test')
           .addSeparator()
-          .addItem('Setup Wednesday Digest Trigger', 'pw_setupWeeklyDigestTrigger_Waratah'))
+          .addItem('Setup Monday Digest Trigger', 'pw_setupWeeklyDigestTrigger_Waratah'))
 
         .addSeparator()
 
@@ -122,7 +133,20 @@ function onOpen() {
         .addSubMenu(ui.createMenu('Setup & Utilities')
           .addItem('Fix Tab Names & Date Format (One-Off)', 'pw_fixSheetNamesAndDateFormat')
           .addSeparator()
-          .addItem('Backfill TO-DOs (All Days)', 'pw_backfillAllDaysTodos')))
+          .addItem('Backfill TO-DOs (All Days)', 'pw_backfillAllDaysTodos')
+          .addSeparator()
+          .addSubMenu(ui.createMenu('Named Ranges')
+            .addItem('Diagnose Active Sheet', 'pw_diagnoseNamedRanges')
+            .addItem('Diagnose All Sheets', 'pw_diagnoseAllSheets')
+            .addSeparator()
+            .addItem('Create on Active Sheet', 'pw_createNamedRangesOnActiveSheet')
+            .addItem('Create on ALL Sheets', 'pw_createNamedRangesOnAllSheets')
+            .addSeparator()
+            .addItem('Force Update ALL Sheets', 'pw_forceUpdateNamedRangesOnAllSheets'))
+          .addSeparator()
+          .addSubMenu(ui.createMenu('Sheet Protection')
+            .addItem('Apply Protection (All Sheets)', 'pw_setupAllSheetsProtection')
+            .addItem('Remove Protection (All Sheets)', 'pw_removeAllSheetsProtection'))))
 
       .addToUi();
   } catch (error) {

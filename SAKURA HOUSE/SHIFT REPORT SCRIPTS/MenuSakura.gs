@@ -81,6 +81,10 @@ function pw_createNamedRangesOnActiveSheet()   { if (requirePassword_()) createN
 function pw_createNamedRangesOnAllSheets()     { if (requirePassword_()) createNamedRangesOnAllSheets(); }
 function pw_testPushTodosToActionables()       { if (requirePassword_()) testPushTodosToActionables(); }
 function pw_forceUpdateNamedRangesOnAllSheets() { if (requirePassword_()) forceUpdateNamedRangesOnAllSheets(); }
+// === PASSWORD-GATED WRAPPERS: Sheet Protection ===
+function pw_setupAllSheetsProtection()  { if (requirePassword_()) setupAllSheetsProtection(); }
+function pw_removeAllSheetsProtection() { if (requirePassword_()) removeAllSheetsProtection(); }
+
 function pw_backfillAllDaysTodos()             { if (requirePassword_()) backfillAllDaysTodos(); }
 function pw_pushCurrentSheetTodosToActionables() { if (requirePassword_()) pushCurrentSheetTodosToActionables(); }
 
@@ -149,7 +153,11 @@ function onOpen() {
           .addItem('Force Update Named Ranges (ALL Sheets)', 'pw_forceUpdateNamedRangesOnAllSheets')
           .addItem('Test Task Push to Actionables', 'pw_testPushTodosToActionables')
           .addItem('Backfill TO-DOs (All Days)', 'pw_backfillAllDaysTodos')
-          .addItem('Push TO-DOs (This Sheet)', 'pw_pushCurrentSheetTodosToActionables')))
+          .addItem('Push TO-DOs (This Sheet)', 'pw_pushCurrentSheetTodosToActionables')
+          .addSeparator()
+          .addSubMenu(ui.createMenu('Sheet Protection')
+            .addItem('Apply Protection (All Sheets)', 'pw_setupAllSheetsProtection')
+            .addItem('Remove Protection (All Sheets)', 'pw_removeAllSheetsProtection'))))
 
       .addToUi();
   } catch (error) {

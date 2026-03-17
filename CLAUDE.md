@@ -1,6 +1,6 @@
 # SHIFT REPORTS 3.0 - Navigation Guide
 
-**Last Updated:** March 7, 2026
+**Last Updated:** March 6, 2026
 **Project Type:** Google Apps Script (Multi-Venue Hospitality Management System)
 **Venues:** Sakura House, The Waratah
 
@@ -10,34 +10,70 @@
 
 **Claude must follow these dispatch rules automatically — no user prompt required.**
 
+### Pipeline commands (preferred — run the full chain)
+
+| Command | What it does |
+|---------|-------------|
+| `/saks [task]` | **Full Sakura pipeline:** scope → sakura-gas-agent (+extras in parallel) → gas-code-review-agent → documentation-agent → deployment-agent + Drive sync |
+| `/tah [task]` | **Full Waratah pipeline:** scope → waratah-gas-agent (+extras in parallel) → gas-code-review-agent → documentation-agent → deployment-agent + Drive sync |
+| `/orchestrate [task]` | **Both venues in parallel:** orchestrator dispatches `/saks` + `/tah` streams simultaneously; use for cross-venue features |
+
+### Single-agent commands (use when you need one step only)
+
+| Command | Agent dispatched | When to use |
+|---------|-----------------|-------------|
+| `/sakura [task]` | `sakura-gas-agent` | Code-only investigation or quick fix — no review/deploy needed |
+| `/waratah [task]` | `waratah-gas-agent` | Code-only investigation or quick fix — no review/deploy needed |
+| `/review [files]` | `gas-code-review-agent` | Review already-written code before deploy |
+| `/deploy [venue]` | `deployment-agent` | Deploy code that has already been reviewed and documented |
+| `/docs [what changed]` | `documentation-agent` | Update docs without deploying |
+| `/plan [feature]` | `shift-report-orchestrator` | Plan only — no code written |
+| `/rollover [task]` | `rollover-trigger-agent` | Rollover/trigger management |
+| `/slack [task]` | `slack-block-kit-agent` | Block Kit design or webhook debug |
+
+### Auto-routing (triggered without slash commands)
+
 | Trigger | Agent to dispatch |
 |---------|------------------|
-| Any task touching Sakura House files | `sakura-gas-agent` |
-| Any task touching Waratah files | `waratah-gas-agent` |
-| Task spans both venues | `shift-report-orchestrator` → parallelises into both venue agents |
-| After any code change (>5 lines modified) | `gas-code-review-agent` |
-| Before any `clasp push` | `deployment-agent` |
-| Any rollover, trigger create/remove, schedule | `rollover-trigger-agent` |
-| Any Slack Block Kit design or webhook debug | `slack-block-kit-agent` |
-| Any CLAUDE.md / doc update | `documentation-agent` |
-| Multi-step feature with 3+ files across venues | `shift-report-orchestrator` |
-| Claude API calls via UrlFetchApp in GAS | `claude-api-agent` |
-| Warehouse queries, backfill, analytics | `data-warehouse-agent` |
-| Deputy API, OAuth2, external REST | `external-integrations-agent` |
-| Task management 8-status workflow, escalation | `task-management-agent` |
+| Task touching Sakura files only | `/saks` pipeline |
+| Task touching Waratah files only | `/tah` pipeline |
+| Task spans both venues | `/orchestrate` → parallelises `/saks` + `/tah` |
+| Any code change >5 lines | `gas-code-review-agent` (auto, before deploy) |
+| Before any `clasp push` | `documentation-agent` first, then `deployment-agent` |
+| Rollover / trigger create / remove / schedule | `rollover-trigger-agent` |
+| Slack Block Kit design or webhook debug | `slack-block-kit-agent` |
+| Doc update only (no code) | `documentation-agent` |
+| Claude API via UrlFetchApp | `claude-api-agent` |
+| Warehouse queries / backfill / analytics | `data-warehouse-agent` |
+| Deputy API / OAuth2 / external REST | `external-integrations-agent` |
+| Task management 8-status workflow | `task-management-agent` |
 
-**Slash commands** (type in chat):
-| Command | Purpose |
-|---------|---------|
-| `/review [files]` | Run gas-code-review-agent on changed files |
-| `/sakura [task]` | Dispatch sakura-gas-agent |
-| `/waratah [task]` | Dispatch waratah-gas-agent |
-| `/plan [feature]` | Orchestrator plans without writing code |
-| `/orchestrate [task]` | Orchestrator plans + executes end-to-end |
-| `/deploy [venue]` | Run deployment checklist + clasp push |
-| `/docs [what changed]` | Patch affected CLAUDE.md files |
-| `/rollover [task]` | Rollover/trigger management |
-| `/slack [task]` | Block Kit design or webhook debug |
+### Pipeline architecture (`/saks` and `/tah`)
+
+```
+Phase 0 — Scope analysis (inline, no agent)
+  ↓ classifies: code change / docs only / deploy only
+  ↓ identifies extra agents needed (rollover, Slack, task mgmt, warehouse)
+
+Phase 1 — Implementation  ←── PARALLEL
+  sakura-gas-agent (or waratah-gas-agent)
+  + rollover-trigger-agent   (if rollover/trigger changes)
+  + slack-block-kit-agent    (if Slack notification changes)
+  + task-management-agent    (if 8-status workflow changes)
+  + data-warehouse-agent     (if warehouse schema changes)
+
+Phase 2 — Review  ←── sequential (waits for Phase 1)
+  gas-code-review-agent
+  → if blocking issues: re-dispatch venue agent → re-review (loop until CLEAR TO DEPLOY)
+
+Phase 3 — Documentation  ←── sequential (waits for CLEAR TO DEPLOY)
+  documentation-agent
+  → updates CLAUDE_*.md + docs/sakura/ or docs/waratah/ + FILE EXPLAINERS/
+
+Phase 4 — Deployment  ←── sequential (waits for Phase 3)
+  deployment-agent
+  → clasp push → git commit → sync-explainers-to-drive.js
+```
 
 ---
 
@@ -50,14 +86,14 @@
 - Named range system
 - In-place weekly rollover ✅
 - 6-day operation (closed Sundays)
-- ~9,900 lines of code (13 .gs + 4 .html SR + 9 .gs + 1 .html task mgmt)
+- ~9,500 lines of code (13 .gs + 9 .gs task mgmt + HTML)
 
 ### Working on THE WARATAH?
 
 **Quick Reference (START HERE):**
 → **[`CLAUDE_WARATAH.md`](CLAUDE_WARATAH.md)** 🟢 **PRODUCTION READY**
 - 343 lines - Modular with on-demand detail links
-- Hardcoded cell references
+- Named range system active (`WEDNESDAY_SR_NetRevenue`) via `RunWaratah.js` — fallback to hardcoded cells
 - In-place weekly rollover ✅
 - 5-day operation (Wed-Sun)
 
@@ -66,6 +102,7 @@
 - 📋 Shift Reports: [`WORKFLOW_SHIFT_REPORTS.md`](WORKFLOW_SHIFT_REPORTS.md) (updated Mar 6)
 - 🏗️ Architecture: [`docs/waratah/DEEP_DIVE_ARCHITECTURE.md`](docs/waratah/DEEP_DIVE_ARCHITECTURE.md)
 - 🔌 Integrations: [`docs/waratah/INTEGRATION_FLOWS.md`](docs/waratah/INTEGRATION_FLOWS.md)
+- 📖 Manager Explainers: [`docs/waratah/explainers/`](docs/waratah/explainers/) (6-tier: Basic/Intermediate/Advanced for Shift Reports + Task Mgmt)
 
 ### Need Shared Patterns?
 → **Read [`CLAUDE_SHARED.md`](CLAUDE_SHARED.md)**
@@ -97,7 +134,7 @@ SHIFT REPORTS 3.0 is a comprehensive hospitality automation system that manages 
 ```
 SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/pollenshiftreports
 ├── SAKURA HOUSE/
-│   ├── SHIFT REPORT SCRIPTS/         # 13 .gs + 4 .html, ~6,100 LOC
+│   ├── SHIFT REPORT SCRIPTS/         # 13 .gs + 3 .html, ~5,700 LOC
 │   ├── TASK MANAGEMENT SCRIPTS/      # 9 .gs + 1 .html, ~3,800 LOC
 │   └── CODE_REVIEW_REPORTS_2026-02-16/  # Deployment & testing guides
 ├── THE WARATAH/
@@ -105,7 +142,9 @@ SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/polle
 │   └── TASK MANAGEMENT SCRIPTS/      # 6 .gs + 1 .html, ~3,400 LOC
 ├── docs/
 │   ├── brainstorms/                  # Design documents
-│   └── plans/                        # Implementation plans
+│   ├── plans/                        # Implementation plans
+│   └── waratah/
+│       └── explainers/              # 6-tier manager-facing explainers (Shift Reports + Task Mgmt)
 ├── .claude/
 │   └── agents/                       # 12 specialist agents (excluded from git)
 ├── .gitignore                        # Excludes _SETUP_*, .clasp*, .claude/, etc.
@@ -116,7 +155,7 @@ SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/polle
 └── CODE_ANALYSIS.md                  # Full code analysis
 ```
 
-**Total:** ~19,900 lines of code across 44 .gs/.js files + 10 .html files (54 files total)
+**Total:** ~19,200 lines of code across 44 .gs/.js files + 9 .html files (53 files total)
 
 ---
 
@@ -124,10 +163,10 @@ SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/polle
 
 | Feature | Sakura House | The Waratah |
 |---------|--------------|-------------|
-| **Cell References** | Named ranges (`MONDAY_SR_NetRevenue`) | Hardcoded cells (`B34`) |
+| **Cell References** | Named ranges (`MONDAY_SR_NetRevenue`) | Named ranges (`WEDNESDAY_SR_NetRevenue`) — fallback to hardcoded |
 | **Operating Days** | 6 days (Mon-Sat) | 5 days (Wed-Sun) |
 | **Weekly Rollover** | In-place system ✅ | In-place system ✅ |
-| **Code Volume** | ~9,900 LOC (23 files) | ~9,700 LOC (22 files) |
+| **Code Volume** | ~9,500 LOC (22 files) | ~9,700 LOC (22 files) |
 | **Documentation** | `CLAUDE_SAKURA.md` | `CLAUDE_WARATAH.md` |
 | **Status** | Production Ready ✅ | Production Ready ✅ |
 
@@ -195,6 +234,21 @@ Standard workflow: **edit code --> `clasp push` (deploy to Google) --> `git comm
 
 The `.gitignore` excludes: `_SETUP_*` files (contain Slack webhook secrets), `docs/_archive/`, `docs/_archive_analysis/`, `.clasp.json`, `.clasprc.json`, `.DS_Store`, `.claude/`, `node_modules/`, `.vscode/`, `.idea/`
 
+**Git Branching (Venue Independence):**
+
+```
+main                          ← stable, merged code only
+├── sakura/develop            ← ongoing Sakura House work
+└── waratah/develop           ← ongoing Waratah work
+```
+
+- **`main`** — receives merges only; never commit directly
+- **`sakura/develop`** — all Sakura House development; `clasp push` from `SAKURA HOUSE/` directories
+- **`waratah/develop`** — all Waratah development; `clasp push` from `THE WARATAH/` directories
+- **Feature branches** — for larger changes, branch off the venue branch: `sakura/fix-rollover`, `waratah/add-dashboard`
+- **Shared file edits** (CLAUDE.md, docs/) — commit on whichever venue branch you're on; merge conflicts are rare since venue files don't overlap
+- **Merging** — when a venue branch is stable: `git checkout main && git merge sakura/develop && git push`
+
 ---
 
 ## Quick Reference
@@ -211,22 +265,33 @@ The `.gitignore` excludes: `_SETUP_*` files (contain Slack webhook secrets), `do
 
 ---
 
-**Last Updated:** March 7, 2026
+**Last Updated:** March 18, 2026
 **Status:** Both venues fully operational and production-ready ✅
 
-**Recent Updates (Mar 7, 2026):**
-- Sakura SR Alignment Phases 0-4: notifyError_ utility, NIGHTLY_FINANCIAL 13->17 cols, rollover wizard UI, webhook TEST->LIVE, backfill trigger Mon 2am->8am (9 files, 1 new)
+**Recent Updates (Mar 18, 2026):**
+- Both venues: `/saks` + `/tah` pipeline commands upgraded — Phase 0 classification output block, file-scope declaration for parallel agents, max-2-retry ceiling in Phase 2 re-review loop
+- Both venues: All 12 agents enhanced — `model:` + `color:` fields added, `<example>` routing blocks added to all agents
+- Both venues: `gas-code-review-agent` major upgrade — 3-phase review (Context→Comparison→Assessment), confidence threshold, caller-impact check, re-review protocol with 2-retry ceiling
+- Both venues: Venue agents (`sakura-gas-agent`, `waratah-gas-agent`) upgraded — parallel read-only exploration phase, 5 modular constraint fragments, no-clasp-push-from-pipeline rule clarified
+- Both venues: `shift-report-orchestrator` upgraded — intent-extraction template (Verb/System/Venue/Urgency) + complexity→model hint table
+- Both venues: `deployment-agent` upgraded — reversibility-first language (authorization-doesn't-persist, blast-radius principle)
+- New: `docs/pipeline-learnings.md` created — institutional memory log seeded with 4 known incidents
+- New: `.claude/skills/gas-debugging/SKILL.md` — 4-phase GAS debugging skill with known-gotchas table
+- Waratah: Named range system now active — `usesNamedRanges: true` confirmed in `VenueConfig.js`; named ranges operational via `RunWaratah.js` (32-field `FIELD_CONFIG`, self-healing rollover, graceful fallback)
+
+**Recent Updates (Mar 6, 2026):**
 - Waratah SR Phase 0+1: 3 critical bug fixes + performance/code quality improvements (6 files, net -42 lines)
-- Waratah: 6-tier manager-facing explainer docs added to `docs/waratah/explainers/`
 - Both venues: Git branching strategy documented in CLAUDE.md (main, sakura/develop, waratah/develop)
+- Waratah: Task Management v1.2.0 — sort order, daily maintenance decomposed, 6 menu items removed, bug fixes
 - Waratah: Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor/avgCheck removed; full B5-B29 financial breakdown added
 
-**Deployment (Mar 7, 2026):**
-- Sakura Shift Reports Phases 0-4: 9 files (SlackBlockKitSakuraSR, WeeklyRolloverInPlace, IntegrationHubSakura, WeeklyDigestSakura, NightlyExportSakura, AnalyticsDashboardSakura, UIServerSakura, MenuSakura + rollover-wizard.html NEW)
-
-**Previous Deployment (Mar 6, 2026):**
+**Deployment (Mar 6, 2026):**
 - Waratah Shift Reports Phase 0+1: 6 files (IntegrationHub, NightlyExport, SlackBlockKit, UIServer, WeeklyDigest, WeeklyRollover)
+- Waratah Shift Reports: 21 files pushed (NightlyExport.js + WeeklyRolloverInPlace.js hardened)
 - Waratah Task Management: 8 files pushed (v1.2.0 restructure)
+
+**Previous Deployment (Feb 28, 2026):**
+- Sakura Shift Reports: 17 files pushed (NightlyBasicExportSakura.gs added; NIGHTLY_FINANCIAL schema 10→13 cols; rollover multi-sheet PDF + trigger safety; analytics fixes)
 
 **💡 To avoid "prompt too long" errors:**
 - Start with venue-specific quick references (CLAUDE_WARATAH.md or CLAUDE_SAKURA.md)

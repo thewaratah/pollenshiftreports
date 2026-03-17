@@ -1,0 +1,223 @@
+Your Task Management System
+A Complete Walkthrough
+
+
+Last updated: March 6, 2026
+Audience: All venue managers; no technical knowledge required
+When to read: Your first week as a manager, or anytime you need a refresher on how tasks work
+
+
+This guide walks you through the Waratah task management system. After reading it, you will know how to create tasks, update their status, and understand what the system does automatically behind the scenes.
+
+
+
+What You Are Working With
+
+The task management system lives in a separate Google Spreadsheet called Master Actionables. It is not part of the shift report spreadsheet. It tracks tasks across the entire venue; things that need doing, who is responsible, and whether they are done.
+
+When you open it, you will see three tabs across the bottom:
+
+   - MASTER ACTIONABLES SHEET
+      - The main view. All active and recent tasks live here.
+
+   - TASK DASHBOARD
+      - A summary page showing how many tasks are open, overdue, and completed.
+
+   - AUDIT LOG
+      - A record of every change made to every task. You do not need to use this directly.
+
+There is also an ARCHIVE tab where completed tasks are moved after 30 days.
+
+
+
+The Columns
+
+Each task is a row with 14 columns:
+
+   - Priority - How urgent the task is
+   - Status - Where the task is in its lifecycle
+   - Staff Allocated - Who is responsible
+   - Area - Which department (FOH, BOH, Bar, Kitchen, Admin, etc.)
+   - Description - What needs to be done
+   - Due Date - When it should be finished (optional)
+   - Date Created - Filled in automatically when the task is created
+   - Date Completed - Filled in automatically when marked Done or Cancelled
+   - Days Open - Calculated automatically. Shows how long the task has been active.
+   - Blocker Notes - Required if the task is Blocked. Explain what is preventing progress.
+   - Source - Where the task came from (Shift Report, Meeting, or Ad-hoc)
+   - Recurrence - Whether this task repeats (None, Weekly, Fortnightly, Monthly)
+   - Last Updated - Filled in automatically when any edit is made
+   - Updated By - Filled in automatically with the email of whoever edited it
+
+
+
+Task Statuses
+
+Every task has one of 9 statuses. These control how the task appears and how the system treats it.
+
+
+Active Statuses (the task still needs attention)
+
+   - NEW - Just created, not yet triaged or assigned
+   - TO DO - Ready to be worked on
+   - IN PROGRESS - Someone is actively working on it
+   - TO DISCUSS - Needs discussion before it can move forward
+   - BLOCKED - Cannot proceed until something is resolved
+   - DEFERRED - Postponed to a later date
+   - RECURRING - A repeating task template
+
+
+Completed Statuses (the task is finished)
+
+   - DONE - Completed successfully
+   - CANCELLED - No longer relevant or needed
+
+
+Each status has a colour so you can scan the sheet quickly:
+   - NEW is blue
+   - TO DO is orange
+   - IN PROGRESS is yellow
+   - TO DISCUSS is light purple
+   - BLOCKED is red
+   - DEFERRED is orange
+   - DONE is green with a strikethrough
+   - CANCELLED is grey with a strikethrough
+   - RECURRING is purple
+
+
+
+Priority Levels
+
+Every task has one of 5 priority levels:
+
+   - URGENT - Needs immediate attention. The entire row highlights red.
+   - HIGH - Important, should be done soon
+   - MEDIUM - Standard priority (default for shift report tasks)
+   - LOW - Can wait, no rush
+   - ONE DAY - Nice to have, no deadline pressure
+
+
+
+How to Create a Task
+
+Option 1: Directly in the spreadsheet
+
+   1. Open the Master Actionables spreadsheet
+   2. Find the first empty row at the bottom
+   3. Fill in: Priority, Status, Staff Allocated, Area, Description
+   4. Optionally add a Due Date
+   5. Press Enter
+   6. The system automatically fills in Date Created, Last Updated, and Updated By
+   7. The sheet re-sorts itself so your task appears in the right position
+
+Option 2: From the Task Manager dialog
+
+   1. Open the Master Actionables spreadsheet
+   2. Click Task Management (menu at the top) then Open Task Manager
+   3. A dialog opens showing all active tasks
+   4. Click the Create button to add a new task
+   5. Fill in the fields and save
+
+Option 3: Automatically from shift reports
+
+   When a shift report is exported (see 01-BASIC), any tasks in the TO-DOs section are automatically created in the Master Actionables sheet with Status = NEW, Priority = MEDIUM, and Source = Shift Report.
+
+
+
+How to Update a Task
+
+   1. Find the task in the Master Actionables sheet
+   2. Change the Status column to the new status (use the dropdown)
+   3. The system automatically:
+      - Updates Last Updated with the current time
+      - Updates Updated By with your email
+      - Re-sorts the sheet
+      - Logs the change in the Audit Log
+
+When you change a task to BLOCKED:
+   - The Blocker Notes cell turns red
+   - A note appears asking you to describe what is blocking the task
+   - Fill in the Blocker Notes column to explain the issue
+
+When you change a task to DONE or CANCELLED:
+   - Date Completed is filled in automatically
+   - The row gets a strikethrough and turns green (Done) or grey (Cancelled)
+   - After 30 days, the task is automatically moved to the Archive
+
+
+
+What Happens Automatically
+
+You do not need to press anything for these. They run on timers.
+
+   - Every 2 hours
+      - Empty rows are removed
+      - Tasks are re-sorted
+
+   - Every day at 6am
+      - The Staff Workload section of the dashboard is refreshed
+
+   - Every Sunday at 9am
+      - An overdue task summary is posted to the managers Slack channel
+      - Each staff member gets a personal Slack message listing their overdue tasks
+
+   - Every Monday at 6am
+      - Tasks marked Done or Cancelled more than 30 days ago are moved to the Archive
+
+   - Every Monday at 10am
+      - A weekly summary of all active tasks is posted to the managers Slack channel
+      - Each staff member gets a personal Slack message listing their active tasks
+
+
+
+The Task Dashboard
+
+The TASK DASHBOARD tab gives you a quick overview without scrolling through all the tasks.
+
+It shows:
+
+   - Total active tasks and how many are overdue
+   - A count for each status (how many tasks are New, To Do, In Progress, etc.)
+   - A count for each priority level
+   - Staff workload (how many tasks each person has, how many are overdue)
+   - Weekly trend (how many tasks were created and completed each week)
+
+This dashboard updates automatically. You do not need to rebuild it.
+
+
+
+Common Mistakes and How to Avoid Them
+
+   - Leaving Blocker Notes empty when a task is Blocked
+      - What happens: The cell stays highlighted red as a reminder
+      - How to avoid: Always explain what is blocking the task when you set it to Blocked
+
+   - Not assigning a Staff member
+      - What happens: The task appears under "Unassigned" in weekly summaries
+      - How to avoid: Always set the Staff Allocated field
+
+   - Editing the Days Open column
+      - What happens: The formula breaks
+      - How to avoid: Days Open is calculated automatically. Do not type in this cell.
+
+   - Editing Date Created, Last Updated, or Updated By
+      - What happens: The audit trail becomes inaccurate
+      - How to avoid: These are filled in automatically. Do not edit them.
+
+   - Forgetting to check the Master Actionables sheet
+      - What happens: Tasks pile up and nothing gets done
+      - How to avoid: Check the sheet daily, or rely on the Slack summaries
+
+
+
+Quick Reference
+
+Once you are familiar with the system:
+
+   1. Check the Master Actionables sheet or your Slack notifications
+   2. Update task statuses as you work through them
+   3. Add Blocker Notes if something is stuck
+   4. Create new tasks directly in the sheet or via the Task Manager dialog
+   5. Tasks from shift reports appear automatically after the nightly export
+
+The system handles sorting, archiving, notifications, and tracking for you.

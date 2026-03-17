@@ -17,7 +17,7 @@
  *   - Bi-hourly: cleanupAndSortMasterActionables()
  *   - Daily 6am: runScheduledStaffWorkload()
  *   - Weekly Mon 6am: runScheduledArchive()
- *   - Weekly Mon 9am: sendWeeklyActiveTasksSummary() [optional]
+ *   - Weekly Mon 10am: sendWeeklyActiveTasksSummary() [optional]
  *   - Weekly Sun 9am: runScheduledOverdueSummary()
  *   - onEdit: onTaskSheetEditWithAutoSort(e) [installable trigger]
  *
@@ -1634,13 +1634,13 @@ function runDailyTaskMaintenance() {
 
 
 /* ==========================================================================
-   WEEKLY ACTIVE TASKS SUMMARY (Monday 9am)
+   WEEKLY ACTIVE TASKS SUMMARY (Monday 10am)
    ========================================================================== */
 
 /**
  * Posts all active tasks (excluding DONE, BLOCKED, CANCELLED) to the
  * managers Slack channel, grouped by staff member.
- * Designed to run automatically every Monday at 9am via trigger.
+ * Designed to run automatically every Monday at 10am via trigger.
  */
 function sendWeeklyActiveTasksSummary() {
   try {
@@ -1881,7 +1881,7 @@ function createDailyMaintenanceTrigger() {
 
 
 /**
- * Creates the weekly summary trigger (Monday 9am).
+ * Creates the weekly summary trigger (Monday 10am).
  * Run once to set up.
  */
 function createWeeklySummaryTrigger() {
@@ -1895,15 +1895,15 @@ function createWeeklySummaryTrigger() {
   ScriptApp.newTrigger("sendWeeklyActiveTasksSummary")
     .timeBased()
     .onWeekDay(ScriptApp.WeekDay.MONDAY)
-    .atHour(9)
+    .atHour(10)
     .nearMinute(0)
     .create();
 
-  Logger.log("Created weekly summary trigger (Monday 9am).");
+  Logger.log("Created weekly summary trigger (Monday 10am).");
   try {
     SpreadsheetApp.getUi().alert(
       "✅ Weekly Summary Trigger Created",
-      "Weekly active tasks summary will be posted to Slack every Monday at 9am.",
+      "Weekly active tasks summary will be posted to Slack every Monday at 10am.",
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   } catch (e) { Logger.log('UI alert skipped — trigger context'); }

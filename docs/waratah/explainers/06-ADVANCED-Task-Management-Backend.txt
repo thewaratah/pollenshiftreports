@@ -1,0 +1,596 @@
+Complete Backend Reference
+The Waratah Task Management System
+
+
+Last updated: March 6, 2026
+Audience: Managers who want to understand the complete system, or anyone receiving a technical handover
+Prerequisite: Read 04-BASIC and 05-INTERMEDIATE first; this guide assumes you understand the task lifecycle and automated processes
+
+This document describes every code file, every function, every automated trigger, and every configuration value in the Waratah task management system. It explains what each piece does and how they work together.
+
+
+
+File Inventory
+
+The system consists of 6 Google Apps Script files and 1 HTML file. Together they contain approximately 3,640 lines of code. The HTML file is a bundled React application (54 lines, 210KB compiled).
+
+
+Core Files (Used Every Day)
+
+   - EnhancedTaskManagementWaratah.gs (2,433 lines)
+      - The core engine
+      - Contains all configuration, status definitions, sort logic, cleanup, archival, escalation, recurring tasks, overdue tracking, the onEdit trigger handler, weekly summaries, trigger management, task creation, and test functions
+
+   - TaskDashboardWaratah.gs (430 lines)
+      - Dashboard builder
+      - Creates the TASK DASHBOARD tab with formulas, formatting, and staff workload statistics
+
+   - Menu_Updated_Waratah.gs (255 lines)
+      - Builds the "Task Management" menu when the spreadsheet opens
+      - Password-gates all admin functions
+      - Version 1.2.0
+
+   - SlackBlockKitWaratah.gs (162 lines)
+      - Builds formatted Slack messages
+      - Provides 7 block-type functions (header, section, fields, divider, context, buttons, list) plus a posting function
+      - Standalone library with no dependencies on other task management files
+
+
+Supporting Files
+
+   - UIServerWaratah.gs (122 lines)
+      - Bridge between the HTML dialog and server-side functions
+      - Provides getActiveTasks(), updateTask(), createTaskFromUI()
+
+   - _SETUP_ScriptProperties.gs (238 lines)
+      - One-time setup script that creates all configuration properties
+      - Contains webhook secrets; excluded from version control
+
+
+HTML Dialog File
+
+   - task-manager.html (54 lines, 210KB)
+      - A bundled React application that provides the Task Manager dialog
+      - Loaded via google.script.run to communicate with UIServerWaratah.gs
+      - Provides task viewing, filtering, editing, and creation in a modal window
+
+
+
+How the Files Depend on Each Other
+
+The files form a layered architecture.
+
+
+Foundation Layer (no dependencies)
+   - SlackBlockKitWaratah.gs - Every file that posts to Slack depends on this
+
+
+Core Layer (depends on foundation)
+   - EnhancedTaskManagementWaratah.gs - Uses SlackBlockKit for all Slack messages
+
+
+Application Layer (depends on core)
+   - TaskDashboardWaratah.gs - Uses functions and constants from EnhancedTaskManagement
+   - UIServerWaratah.gs - Calls functions from EnhancedTaskManagement
+
+
+Entry Point
+   - Menu_Updated_Waratah.gs - Calls functions from all other files via menu items
+
+
+UI Layer
+   - task-manager.html - Calls getActiveTasks(), updateTask(), createTaskFromUI() in UIServerWaratah.gs
+
+
+
+Configuration Constants
+
+All configuration is defined at the top of EnhancedTaskManagementWaratah.gs.
+
+
+TASK_CONFIG
+
+   - sheets.master - "MASTER ACTIONABLES SHEET"
+   - sheets.audit - "AUDIT LOG"
+   - sheets.archive - "ARCHIVE"
+   - timezone - "Australia/Sydney"
+   - escalation.blockedDaysBeforeEscalate - 14
+   - escalation.escalateToName - "Evan"
+   - archive.daysBeforeArchive - 30
+
+
+Column Positions (0-indexed)
+
+   - 0 (Column A) - Priority
+   - 1 (Column B) - Status
+   - 2 (Column C) - Staff Allocated
+   - 3 (Column D) - Area
+   - 4 (Column E) - Description
+   - 5 (Column F) - Due Date
+   - 6 (Column G) - Date Created
+   - 7 (Column H) - Date Completed
+   - 8 (Column I) - Days Open (formula)
+   - 9 (Column J) - Blocker Notes
+   - 10 (Column K) - Source
+   - 11 (Column L) - Recurrence
+   - 12 (Column M) - Last Updated
+   - 13 (Column N) - Updated By
+
+
+Statuses (9 values)
+
+   - NEW (sort position 1, active)
+   - TO DO (sort position 2, active)
+   - IN PROGRESS (sort position 3, active)
+   - TO DISCUSS (sort position 4, active)
+   - BLOCKED (sort position 5, active)
+   - DEFERRED (sort position 6, active)
+   - RECURRING (sort position 7, sorted with completed group)
+   - DONE (sort position 8, terminal)
+   - CANCELLED (sort position 9, terminal)
+
+Note: RECURRING tasks are sorted into the completed group because the sort threshold is position 6 or below = active.
+
+
+Priorities (5 values)
+
+   - URGENT (sort position 1)
+   - HIGH (sort position 2)
+   - MEDIUM (sort position 3)
+   - LOW (sort position 4)
+   - ONE DAY (sort position 5)
+
+
+Areas (10 values)
+   - FOH, BOH, Bar, Kitchen, Admin, Maintenance, Marketing, Events, Training, General
+
+
+Sources (3 values)
+   - Shift Report, Meeting, Ad-hoc
+
+
+Recurrence Options (4 values)
+   - None, Weekly, Fortnightly, Monthly
+
+
+Staff List
+   - Evan, Cynthia, Andie, Adam, Lily, Blade, Bar Team, Dipti, Howie, Kitchen Team, All, Contractor, FOH Team, General Management, Management
+
+
+
+Function Reference
+
+Every function in the system, organised by file.
+
+
+EnhancedTaskManagementWaratah.gs - Core Functions
+
+   - cleanupAndSortMasterActionables()
+      - Called from: Bi-hourly trigger + Menu (Cleanup and Sort)
+      - What it does: Removes empty rows, re-sorts all tasks. Uses LockService to prevent concurrent execution.
+
+   - removeEmptyRows_()
+      - Called from: cleanupAndSortMasterActionables
+      - What it does: Scans all rows and deletes any that are completely blank. Processes in reverse order to maintain row numbers.
+
+   - sortMasterActionablesAdvanced()
+      - Called from: cleanupAndSortMasterActionables, onEdit handler, Menu (Sort Tasks)
+      - What it does: Sorts all data rows by active/completed, then priority, then status, then staff name alphabetically.
+
+   - applySheetFormatting_(sheet)
+      - Called from: reapplyFormattingAndValidation, buildTaskDashboard
+      - What it does: Sets column widths, header formatting, and freezes the header row.
+
+   - applyDataValidation_(sheet)
+      - Called from: reapplyFormattingAndValidation
+      - What it does: Creates dropdown menus for Status, Priority, Staff, Area, Source, and Recurrence columns.
+
+   - applyConditionalFormatting_(sheet)
+      - Called from: reapplyFormattingAndValidation
+      - What it does: Applies colour rules for each status and priority level. DONE/CANCELLED get strikethrough and grey text. URGENT gets a red row tint.
+
+   - addDaysOpenFormula_(sheet)
+      - Called from: reapplyFormattingAndValidation, createTask
+      - What it does: Writes the Days Open formula to all data rows. Formula: if Date Created is blank, blank; if Date Completed exists, Date Completed minus Date Created; otherwise Today minus Date Created.
+
+   - logAuditEntry_(action, user, notes, taskId, details)
+      - Called from: Multiple functions
+      - What it does: Appends a row to the AUDIT LOG sheet with timestamp, action type, user email, task reference, and notes.
+
+   - archiveOldCompletedTasks_()
+      - Called from: runScheduledArchive (Monday 6am trigger)
+      - What it does: Finds all DONE/CANCELLED tasks where Date Completed is older than 30 days. Backfills Date Completed if missing (falls back to Last Updated, then Date Created). Appends rows to ARCHIVE sheet, then deletes from Master in reverse order.
+
+   - processRecurringTasks_()
+      - Called from: Menu (currently manual only; not on a timer)
+      - What it does: Finds all DONE tasks with Recurrence not equal to None. For each, creates a new TO DO task with a calculated next due date. Sets the original task's Recurrence to None to prevent duplicate regeneration.
+
+   - calculateNextDueDate_(lastDueDate, recurrence)
+      - Called from: processRecurringTasks_
+      - What it does: Calculates the next due date based on recurrence type. Weekly: next Monday. Fortnightly: 14 days ahead, then next Monday. Monthly: same day of month plus one month.
+
+   - escalateBlockedTasks_()
+      - Called from: Menu (Check Blocked Escalations Now)
+      - What it does: Finds all BLOCKED tasks with Days Open >= 14. Sends an email and Slack DM to Evan for each.
+
+   - sendOverdueTasksSummary_()
+      - Called from: runScheduledOverdueSummary (Sunday 9am trigger)
+      - What it does: Finds all active tasks where Due Date has passed. Groups by assignee. Posts a summary to the managers Slack channel. Calls sendOverdueTasksDMs_ for individual notifications.
+
+   - sendOverdueTasksDMs_(tasksByAssignee)
+      - Called from: sendOverdueTasksSummary_
+      - What it does: Sends individual Slack DMs to each assignee listing their overdue tasks.
+
+   - onTaskSheetEditWithAutoSort(e)
+      - Called from: Installable onEdit trigger
+      - What it does: Fires on every cell edit. Logs an audit entry, updates Last Updated and Updated By, handles status change side effects (Date Completed, Blocker Notes highlighting), then re-sorts the sheet.
+
+   - handleStatusChange_(sheet, row, oldStatus, newStatus, user)
+      - Called from: onTaskSheetEditWithAutoSort
+      - What it does: DONE/CANCELLED: sets Date Completed. BLOCKED: highlights Blocker Notes red with a note. Active from DONE/CANCELLED: clears Date Completed. Active from BLOCKED: clears Blocker Notes highlight.
+
+   - sendWeeklyActiveTasksSummary()
+      - Called from: Monday 10am trigger + Menu (LIVE)
+      - What it does: Public wrapper. Calls core function with the live webhook URL. Wrapped in try/catch with Slack error notification.
+
+   - sendWeeklyActiveTasksSummary_Test()
+      - Called from: Menu (TEST to Evan)
+      - What it does: Calls core function with Evan's DM webhook.
+
+   - _sendWeeklyActiveTasksSummaryCore(webhookUrl, isTest)
+      - Called from: sendWeeklyActiveTasksSummary, sendWeeklyActiveTasksSummary_Test
+      - What it does: Reads all tasks. Filters out DONE, BLOCKED, CANCELLED. Groups remaining by staff. Sorts each person's tasks by priority. Builds Block Kit message with task list. Posts to Slack. Calls DM function for individual notifications.
+
+   - _sendWeeklyActiveTasksDMs_(staffMap, today, tz, isTest)
+      - Called from: _sendWeeklyActiveTasksSummaryCore
+      - What it does: Sends individual Slack DMs to each staff member with their active tasks grouped by priority.
+
+   - createTask(taskData)
+      - Called from: createTaskFromUI (via UIServer), appendShiftReportTodos, testCreateTask
+      - What it does: Creates a new task row with all 14 columns populated. Adds the Days Open formula. Logs an audit entry. Returns the row number.
+
+   - appendShiftReportTodos(todos, weekEndingDate)
+      - Called from: NightlyExport.js in the Shift Report project (cross-project call)
+      - What it does: Iterates an array of shift report TO-DOs and calls createTask for each.
+
+   - reapplyFormattingAndValidation()
+      - Called from: Menu (Reapply Dropdowns and Formatting)
+      - What it does: Re-runs all formatting, validation, conditional formatting, and Days Open formulas without touching any data.
+
+
+EnhancedTaskManagementWaratah.gs - Trigger Management Functions
+
+   - createBiHourlyCleanupTrigger()
+      - Creates an every-2-hours trigger for cleanupAndSortMasterActionables
+
+   - removeBiHourlyCleanupTrigger()
+      - Removes the bi-hourly cleanup trigger
+
+   - createWeeklySummaryTrigger()
+      - Creates a Monday 10am trigger for sendWeeklyActiveTasksSummary
+
+   - createOnEditTrigger()
+      - Creates an installable onEdit trigger for onTaskSheetEditWithAutoSort
+
+   - createDailyStaffWorkloadTrigger()
+      - Creates a daily 6am trigger for runScheduledStaffWorkload
+
+   - createWeeklyArchiveTrigger()
+      - Creates a Monday 6am trigger for runScheduledArchive
+
+   - createWeeklyOverdueSummaryTrigger()
+      - Creates a Sunday 9am trigger for runScheduledOverdueSummary
+
+   - removeAllTaskTriggers()
+      - Removes all 9 known task-related triggers at once
+
+   - setupAllTriggers()
+      - Called from: Menu (Setup All Scheduled Triggers)
+      - What it does: Creates all triggers in one step. Removes existing triggers first.
+
+
+EnhancedTaskManagementWaratah.gs - Scheduled Wrappers
+
+These are public functions that wrap core functions with try/catch and LockService for safe trigger execution.
+
+   - runScheduledArchive()
+      - Wraps archiveOldCompletedTasks_ for Monday 6am trigger
+
+   - runScheduledOverdueSummary()
+      - Wraps sendOverdueTasksSummary_ for Sunday 9am trigger
+
+   - runScheduledStaffWorkload()
+      - Wraps refreshStaffWorkload (from TaskDashboardWaratah.gs) for daily 6am trigger
+
+
+EnhancedTaskManagementWaratah.gs - Test Functions
+
+   - testCreateTask() - Creates a sample task
+   - testAuditLog() - Creates a test audit log entry
+   - previewArchival() - Shows what would be archived without actually doing it
+   - runDailyTaskMaintenance() - Legacy bundled maintenance function (no longer triggered; decomposed in v1.2.0)
+   - createDailyMaintenanceTrigger() - Legacy trigger creation
+   - removeDailyMaintenanceTrigger() - Legacy trigger removal
+
+
+TaskDashboardWaratah.gs - Dashboard Functions
+
+   - buildTaskDashboard()
+      - Called from: Menu (Build / Rebuild Task Dashboard)
+      - What it does: Creates or recreates the TASK DASHBOARD tab. Writes all section headers, formulas (COUNTIFS, QUERY, AVERAGEIFS, SUMPRODUCT), and formatting. Calls refreshStaffWorkload at the end.
+
+   - refreshStaffWorkload()
+      - Called from: runScheduledStaffWorkload (daily 6am trigger), buildTaskDashboard, Menu
+      - What it does: Reads the Master Actionables data and computes per-staff metrics that cannot be auto-calculated by QUERY formulas (overdue count, completed in last 30 days, average days open). Writes results to the Staff Workload section of the dashboard.
+
+
+Menu_Updated_Waratah.gs - Menu Functions
+
+   - onOpen()
+      - Called from: Automatic; when the spreadsheet opens
+      - What it does: Builds the "Task Management (v1.2.0)" menu with all items and submenus.
+
+   - requirePassword_(action)
+      - Called from: Before any admin function
+      - What it does: Prompts for the admin password. Blocks execution if incorrect.
+
+   - Menu wrapper functions
+      - Each password-protected menu item has a wrapper function that calls requirePassword_ then the actual function. Examples: menuBuildDashboard_(), menuCleanupAndSort_(), menuSendWeeklySummaryLive_(), etc.
+
+
+SlackBlockKitWaratah.gs - Slack Functions
+
+   - bk_header(text) - Creates a header block (large bold text)
+   - bk_section(mrkdwn) - Creates a markdown text section
+   - bk_fields(pairs) - Creates a 2-column field grid
+   - bk_divider() - Creates a horizontal rule
+   - bk_context(texts) - Creates small metadata text
+   - bk_buttons(buttons) - Creates action buttons with URLs
+   - bk_list(items, style) - Creates a rich text bulleted or ordered list
+   - bk_post(webhookUrl, blocks, fallbackText) - Posts a Block Kit message to a Slack webhook. Returns true on success, false on failure. Uses muteHttpExceptions so it never throws.
+
+
+UIServerWaratah.gs - Dialog Bridge Functions
+
+   - openTaskManager()
+      - Called from: Menu (Open Task Manager)
+      - What it does: Opens the task-manager.html dialog as a 600x700 modal
+
+   - getActiveTasks()
+      - Called from: task-manager.html via google.script.run
+      - What it does: Reads all rows from the Master Actionables sheet, returns them as an array of objects
+
+   - updateTask(rowNum, updates)
+      - Called from: task-manager.html via google.script.run
+      - What it does: Updates specific cells in a task row. Sets Last Updated and Updated By.
+
+   - createTaskFromUI(taskData)
+      - Called from: task-manager.html via google.script.run
+      - What it does: Calls createTask from EnhancedTaskManagement and returns the new row number
+
+
+
+Automated Triggers
+
+Six time-based triggers and one edit trigger run the automated components.
+
+   - Bi-Hourly Cleanup
+      - Schedule: Every 2 hours
+      - Function: cleanupAndSortMasterActionables()
+      - File: EnhancedTaskManagementWaratah.gs
+      - Purpose: Remove empty rows, re-sort
+
+   - Daily Staff Workload
+      - Schedule: Daily at 6am AEST
+      - Function: runScheduledStaffWorkload()
+      - File: EnhancedTaskManagementWaratah.gs
+      - Purpose: Refresh dashboard staff metrics
+
+   - Weekly Archive
+      - Schedule: Monday at 6am AEST
+      - Function: runScheduledArchive()
+      - File: EnhancedTaskManagementWaratah.gs
+      - Purpose: Archive completed tasks older than 30 days
+
+   - Weekly Active Summary
+      - Schedule: Monday at 10am AEST
+      - Function: sendWeeklyActiveTasksSummary()
+      - File: EnhancedTaskManagementWaratah.gs
+      - Purpose: Post active tasks to Slack, send individual DMs
+
+   - Overdue Summary
+      - Schedule: Sunday at 9am AEST
+      - Function: runScheduledOverdueSummary()
+      - File: EnhancedTaskManagementWaratah.gs
+      - Purpose: Post overdue tasks to Slack, send individual DMs
+
+   - onEdit Auto-Sort
+      - Event: Any cell edit on the Master Actionables sheet
+      - Function: onTaskSheetEditWithAutoSort(e)
+      - File: EnhancedTaskManagementWaratah.gs
+      - Purpose: Audit logging, metadata update, status change handling, auto-sort
+
+Note: The daily staff workload trigger is separate from the others because it calls a function in TaskDashboardWaratah.gs via a wrapper in EnhancedTaskManagement.
+
+To check if triggers are active: Extensions then Apps Script then Triggers (clock icon on the left sidebar).
+
+
+
+Script Properties (System Configuration)
+
+The system reads configuration from Google Apps Script Script Properties.
+
+   - TASK_MANAGEMENT_SPREADSHEET_ID
+      - Google Sheets ID of the Master Actionables spreadsheet
+
+   - MENU_PASSWORD
+      - Password required for admin menu functions
+
+   - ESCALATION_EMAIL
+      - Email address for blocked task escalation alerts (Evan)
+
+   - ESCALATION_SLACK_WEBHOOK
+      - Slack webhook URL for escalation DMs to Evan
+
+   - SLACK_MANAGERS_CHANNEL_WEBHOOK
+      - Slack webhook URL for the managers channel (summaries, overdue alerts)
+
+   - SLACK_DM_WEBHOOKS
+      - JSON object mapping staff names to personal Slack webhook URLs
+      - Example: {"Evan": "https://hooks.slack.com/...", "Cynthia": "https://hooks.slack.com/...", ...}
+
+Important: All Slack webhooks and email addresses are read at runtime from Script Properties using helper functions. They are NOT stored in TASK_CONFIG. This is a critical distinction; TASK_CONFIG contains only spreadsheet, sheet, timezone, and threshold settings.
+
+Helper functions for Script Properties:
+   - getManagersChannelWebhook_() - Reads SLACK_MANAGERS_CHANNEL_WEBHOOK
+   - getSlackDmWebhooks_() - Reads and parses SLACK_DM_WEBHOOKS as JSON
+   - getEscalationSlackWebhook_() - Reads ESCALATION_SLACK_WEBHOOK
+   - getEscalationEmail_() - Reads ESCALATION_EMAIL
+   - getTaskSpreadsheetId_() - Reads TASK_MANAGEMENT_SPREADSHEET_ID
+
+
+
+The Sort Algorithm
+
+The sort function (sortMasterActionablesAdvanced) reads all data rows, sorts them in memory, then writes the sorted data back.
+
+Sort order:
+   1. Active tasks (status position 1-6) above completed tasks (position 7-9)
+   2. Within each group, URGENT (position 1) first through ONE DAY (position 5) last
+   3. Within the same priority, statuses ordered by their position number
+   4. Within the same status, staff names alphabetical (blanks sorted last)
+
+The sort preserves all cell values and formulas. After sorting, the Days Open formula is reapplied to all rows.
+
+
+
+Conditional Formatting Rules
+
+Applied by applyConditionalFormatting_():
+
+
+Status Colours (applied to column B)
+   - NEW - Blue (#4285f4)
+   - TO DO - Orange (#ff6d01)
+   - IN PROGRESS - Yellow (#fbbc04)
+   - TO DISCUSS - Light purple
+   - BLOCKED - Red (#ea4335); entire row gets light red tint
+   - DEFERRED - Orange (#ff6d01)
+   - DONE - Green (#34a853); entire row gets strikethrough and grey text
+   - CANCELLED - Grey (#9aa0a6); entire row gets strikethrough and grey text
+   - RECURRING - Purple (#a142f4)
+
+
+Priority Colours (applied to column A)
+   - URGENT - Red (#ea4335); entire row gets light red tint and bold text
+   - HIGH - Orange (#ff6d01)
+   - MEDIUM - Yellow (#fbbc04)
+   - LOW - Light blue (#c9daf8)
+   - ONE DAY - Light grey
+
+
+Special Rules
+   - Blocker Notes (column J) turns red (#ffcdd2) when empty and Status = BLOCKED
+
+
+
+Audit Logging
+
+Every task change is logged in the AUDIT LOG sheet.
+
+Each audit entry contains:
+   - Timestamp (when the change happened)
+   - Action (CREATED, EDIT, STATUS_CHANGE, ARCHIVED, RECURRING_REGENERATED, REFORMAT, WEEKLY_SUMMARY, etc.)
+   - User (email address of who made the change)
+   - Task ID / Row Number
+   - Field Changed (which column was edited)
+   - Notes (details such as "Status: TO DO to BLOCKED")
+
+The onEdit trigger logs every cell change. Manual actions (archive, escalation, reformat) also create audit entries.
+
+
+
+Data Flow
+
+This shows how data moves through the system.
+
+
+Into the System
+   - Manual entry in the Master Actionables spreadsheet
+   - Task Manager dialog (creates tasks via UIServerWaratah.gs)
+   - Shift report TO-DOs (created during nightly export via cross-project call)
+
+
+Within the System
+   - onEdit trigger updates metadata and re-sorts
+   - Bi-hourly cleanup removes empty rows
+   - processRecurringTasks_ creates copies of completed recurring tasks
+
+Out of the System
+   - Slack messages (weekly summaries, overdue alerts, escalation DMs)
+   - Email (escalation alerts to Evan)
+   - Archive sheet (completed tasks after 30 days)
+   - Task Dashboard (formula-driven analytics)
+
+
+
+Error Handling
+
+   - All trigger-fired functions are wrapped in try/catch
+      - If any automated function fails, a Slack message is sent to Evan with the error details
+      - The error does not propagate to the user
+
+   - LockService is used on concurrent-eligible functions
+      - cleanupAndSortMasterActionables uses LockService.getScriptLock().tryLock(30000)
+      - runScheduledArchive and runScheduledOverdueSummary also use LockService
+      - This prevents two instances of the same function from running simultaneously
+
+   - bk_post (Slack posting) uses muteHttpExceptions
+      - Failed Slack posts return false instead of throwing
+      - The calling function can check the return value and handle failures
+
+   - UI functions are wrapped for trigger context
+      - Any SpreadsheetApp.getUi() calls are wrapped in try/catch
+      - When running from a trigger (non-interactive), the UI call silently fails and the function continues
+
+
+
+Key Technical Rules
+
+
+Days Open Formula Must Not Be Edited
+   - Column I contains a formula that calculates automatically
+   - It is reapplied during sorts and when new tasks are created
+   - If manually edited, it will be overwritten on the next sort
+
+Date Created, Last Updated, and Updated By Are Automatic
+   - These columns are set by the onEdit trigger and createTask function
+   - Manual edits will be overwritten on the next edit to the same row
+
+TASK_CONFIG Does Not Contain Slack or Email Settings
+   - This was a critical bug in February 2026
+   - All Slack webhooks and email addresses must be read via helper functions
+   - Never access TASK_CONFIG.slack or TASK_CONFIG.email; they do not exist
+
+The onEdit Trigger Must Be Installable
+   - The auto-sort and metadata update rely on an installable onEdit trigger
+   - Simple onEdit(e) functions do not have permission to write to other cells
+   - If the trigger is removed, auto-sort stops working
+   - Recreate via Menu: Setup Triggers then Create Edit Trigger
+
+LockService on Concurrent Functions
+   - Any function that can run from both a trigger and a manual menu action must use LockService
+   - Without it, two simultaneous runs can corrupt data (duplicate rows, sort conflicts)
+
+Legacy Functions Still in Code
+   - runDailyTaskMaintenance() is the old bundled daily maintenance function
+   - It was decomposed into individual triggers in v1.2.0 (March 6, 2026)
+   - The function still exists in the code but is no longer triggered
+   - createDailyMaintenanceTrigger() and removeDailyMaintenanceTrigger() are also legacy
+
+Cross-Project Communication
+   - The Shift Report project and Task Management project are separate Google Apps Script projects
+   - They share the Master Actionables spreadsheet via its ID (stored in Script Properties)
+   - The Shift Report project writes tasks directly to the spreadsheet
+   - The Task Management project also writes tasks to the same spreadsheet
+   - Both use duplicate prevention (checking for matching descriptions on the same date)

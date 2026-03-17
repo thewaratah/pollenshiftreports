@@ -1,14 +1,42 @@
 # THE WARATAH - Quick Reference
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 18, 2026
 **Status:** 🟢 PRODUCTION READY
 **Operating Days:** 5 days (Wed-Sun)
-**Cell References:** Hardcoded (see [CELL_REFERENCE_MAP.md](docs/waratah/CELL_REFERENCE_MAP.md))
+**Cell References:** Named range system (`WEDNESDAY_SR_NetRevenue`) via `RunWaratah.js` — falls back to hardcoded cells when ranges absent. See [CELL_REFERENCE_MAP.md](docs/waratah/CELL_REFERENCE_MAP.md)
 **Rollover:** In-place system ✅ Automated
 
 ---
 
-## 🆕 DEPLOYMENT (March 6, 2026)
+## 🆕 Named Range System (March 18, 2026)
+
+`RunWaratah.js` added — mirrors Sakura's `RunSakura.gs` architecture. All field-to-cell mappings now live in `FIELD_CONFIG` (32 fields). Consumer files (`WeeklyRolloverInPlace.js`, `IntegrationHub.js`, `TEST_DataExtractionVerification.js`, `Menu.js`) updated.
+
+**Status: Active.** `usesNamedRanges: true` is set in `VenueConfig.js`. Named ranges are live and routing through `RunWaratah.js`. If a named range is missing from the spreadsheet, reads/writes fall back gracefully to hardcoded cells (no user-visible failure).
+
+**To create missing ranges:** `Waratah Tools → Admin Tools → Setup & Utilities → Named Ranges → Create on ALL Sheets` (creates 5 sheets × 32 fields = 160 ranges).
+
+---
+
+## 🆕 SR Phase 0+1 (March 6, 2026)
+
+**6 files modified — 3 critical bug fixes + performance/code quality (net -42 lines)**
+
+**Phase 0 — Critical Bugs Fixed:**
+1. **Rollover silent failure** (WeeklyRolloverInPlace.js) — `performWeeklyRollover()` catch block now calls `notifyError_()` for Slack alert before UI try/catch
+2. **Malformed email recipients** (WeeklyRolloverInPlace.js) — `WARATAH_EMAIL_RECIPIENTS` JSON parsed via `Object.keys()` instead of raw string
+3. **Dead executeRollover()** (UIServer.js) — rewrote as thin wrapper around `performWeeklyRollover()` (was calling 5 non-existent functions from old rollover)
+
+**Phase 1 — Performance & Code Quality:**
+1. **Batch cell reads** (IntegrationHub.js) — `extractShiftData_()` replaced ~30 individual `getRange().getValue()` with 3 batched reads (B3:B39, A43:A65, A53:F61)
+2. **Shared `notifyError_()`** (SlackBlockKitWaratahSR.js) — consolidated error notification utility; applied to WeeklyDigestWaratah.js, NightlyExport.js (`sendWeeklyTodoSummary_WARATAH`), IntegrationHub.js (`runWeeklyBackfill_`)
+3. **Weekly Digest trigger** — `setupWeeklyDigestTrigger_Waratah()` exists but needs manual activation from Apps Script editor
+
+**Improvement plan:** `docs/plans/2026-03-06-waratah-shift-report-scripts-improvement-plan.md` (Phases 2-6 pending)
+
+---
+
+## DEPLOYMENT (March 6, 2026)
 
 **clasp push — Waratah Shift Reports: 21 files + Task Management: 8 files**
 
@@ -27,7 +55,7 @@
    - `buildTodoAggregationSheet_()`: `appendRow()` loop → batch `setValues()`
 
 2. **EnhancedTaskManagementWaratah.gs `sendWeeklyActiveTasksSummary()`**
-   - Trigger timing: 6am → **9am** (`.atHour(9).nearMinute(0)`)
+   - Trigger timing: 6am → **10am** (`.atHour(10).nearMinute(0)`)
    - BLOCKED tasks remain excluded from weekly summary (by design)
 
 3. **WeeklyRolloverInPlace.js `performWeeklyRollover()`**
@@ -84,7 +112,8 @@ THE WARATAH/
 │   ├── NightlyBasicExport.js         # Standalone basic report (261 LOC)
 │   ├── TEST_DataExtractionVerification.js  # Data extraction tests (332 LOC)
 │   ├── UIServer.js                   # HTML dialog serving (308 LOC)
-│   ├── VenueConfig.js                # Hardcoded cell configuration (276 LOC)
+│   ├── RunWaratah.js                 # Named range infrastructure — FIELD_CONFIG, helpers, diagnostics (NEW)
+│   ├── VenueConfig.js                # Venue configuration (usesNamedRanges: true → routes through RunWaratah.js)
 │   ├── _SETUP_ScriptProperties.js    # Script Properties setup (222 LOC)
 │   ├── TEST_VenueConfig.js           # VenueConfig tests (212 LOC)
 │   ├── WeeklyDigestWaratah.js        # Weekly revenue Slack digest (202 LOC)
@@ -156,19 +185,23 @@ runValidationReport()    // Full system validation
    - Never test destructive operations on production files
    - Create copies for testing rollover and menu changes
 
-4. **Hardcoded Cells**
-   - The Waratah uses hardcoded cell references (B34, A43, etc.)
-   - NOT named ranges (that's Sakura House)
+4. **Named Range System** (`RunWaratah.js`)
+   - All field definitions live in `FIELD_CONFIG` — single source of truth
+   - Helpers: `getFieldValue(sheet, 'netRevenue')`, `getFieldDisplayValue(sheet, 'mod')`, `getFieldValues(sheet, 'todoTasks')`
+   - Falls back to hardcoded cells automatically when named ranges don't exist in the spreadsheet
+   - Create ranges: `Admin Tools → Setup & Utilities → Named Ranges → Create on ALL Sheets`
+   - Diagnostics: `Named Ranges → Diagnose Active Sheet` (or All Sheets)
 
 5. **Merged Cell Clearing**
    - Narrative cells are merged A:F — value lives in column A
    - `clearContent()` on B:F of a merged A:F range does **NOT** clear the value
    - Always use `A##:F##` (not `B##:F##`) when clearing merged narrative cells
 
-6. **Formula Cells (B37:B40) — DO NOT CLEAR**
-   - B37 (Total Tips) is a formula — warehoused in col U
-   - B38 (Labor Hours), B39 (Labor Cost) are formulas — NOT warehoused (ignored)
-   - Clearing any of them during rollover destroys the formulas
+6. **Formula Cells — DO NOT CLEAR** (enforced automatically by `isFormula: true` in FIELD_CONFIG)
+   - B15 (cashTakings), B16 (grossSalesIncCash), B26-B29 (financial breakdown formulas)
+   - B34 (netRevenue), B37 (totalTips)
+   - `getClearableFieldKeys_()` auto-excludes all formula cells — no manual list needed
+   - B38/B39 (Labor Hours/Cost) are formulas — NOT warehoused (ignored entirely)
 
 ---
 
@@ -182,12 +215,37 @@ runValidationReport()    // Full system validation
 - 📗 [WORKFLOW_WEEKLY.md](docs/waratah/WORKFLOW_WEEKLY.md) - Weekly rollover workflow (automation, archiving, dates)
 
 **Reference:**
-- 📙 [CELL_REFERENCE_MAP.md](docs/waratah/CELL_REFERENCE_MAP.md) - All hardcoded cell references (B34, B52, etc.)
+- 📙 [CELL_REFERENCE_MAP.md](docs/waratah/CELL_REFERENCE_MAP.md) - FIELD_CONFIG table, named range names, fallback cells
 - 📙 [INTEGRATION_FLOWS.md](docs/waratah/INTEGRATION_FLOWS.md) - Data warehouse, Slack, email, task integrations
+
+**Manager Explainers (Google Docs-ready .txt, non-technical audience):**
+- 📖 [01-BASIC-Daily-Shift-Report-Guide.txt](docs/waratah/explainers/01-BASIC-Daily-Shift-Report-Guide.txt) - How to fill out and send shift reports
+- 📖 [02-INTERMEDIATE-How-The-System-Works.txt](docs/waratah/explainers/02-INTERMEDIATE-How-The-System-Works.txt) - What happens behind the scenes
+- 📖 [03-ADVANCED-Complete-Backend-Reference.txt](docs/waratah/explainers/03-ADVANCED-Complete-Backend-Reference.txt) - Full backend reference for power users
+- 📖 [04-BASIC-Task-Management-Guide.txt](docs/waratah/explainers/04-BASIC-Task-Management-Guide.txt) - How to use task management day-to-day
+- 📖 [05-INTERMEDIATE-Task-Management-System.txt](docs/waratah/explainers/05-INTERMEDIATE-Task-Management-System.txt) - Task system mechanics and automation
+- 📖 [06-ADVANCED-Task-Management-Backend.txt](docs/waratah/explainers/06-ADVANCED-Task-Management-Backend.txt) - Full task management backend reference
 
 ---
 
 ## 🔑 Key Files & Functions
+
+### RunWaratah.js (Named Range Infrastructure)
+```javascript
+FIELD_CONFIG                          // 32-field config — single source of truth
+VALID_DAY_PREFIXES                    // ["WEDNESDAY","THURSDAY","FRIDAY","SATURDAY","SUNDAY"]
+extractDayPrefix(sheetName)           // "WEDNESDAY 19/03/2026" → "WEDNESDAY"
+buildNamedRangeName(dayPrefix, suffix) // "WEDNESDAY", "SR_NetRevenue" → "WEDNESDAY_SR_NetRevenue"
+getFieldRange(sheet, fieldKey)        // tries named range, falls back to FIELD_CONFIG.fallback
+getFieldValue(sheet, fieldKey)        // getFieldRange().getValue()
+getFieldDisplayValue(sheet, fieldKey) // getFieldRange().getDisplayValue().trim()
+getFieldValues(sheet, fieldKey)       // getFieldRange().getValues() (2D array)
+getClearableFieldKeys_()              // all keys where isFormula === false (24 keys)
+diagnoseNamedRanges()                 // menu: Diagnose Active Sheet
+diagnoseAllSheets()                   // menu: Diagnose All Sheets
+createNamedRangesOnAllSheets()        // menu: Create on ALL Sheets (5 × 32 = 160 ranges)
+verifyAndFixNamedRanges_(spreadsheet) // called by rollover — silently recreates missing ranges
+```
 
 ### NightlyExport.js
 ```javascript
@@ -319,18 +377,18 @@ sendWeeklyRevenueDigest_Waratah()       // Main — posts to LIVE Slack webhook
 sendWeeklyRevenueDigest_Waratah_Test()  // Posts to TEST Slack webhook
 computeWeeklyStats_Waratah_(warehouseId) // Reads NIGHTLY_FINANCIAL, computes stats
 buildWeeklyDigestBlocks_Waratah_(stats)  // Block Kit message with change arrows, best day, tips
-setupWeeklyDigestTrigger_Waratah()       // Installs Wednesday 8am trigger (safe to re-run)
+setupWeeklyDigestTrigger_Waratah()       // Installs Monday 9am trigger (safe to re-run)
 ```
 
 **Menu:** `Admin Tools → Weekly Digest`
 - Send Revenue Digest (LIVE)
 - Send Revenue Digest (TEST)
-- Setup Wednesday Digest Trigger
+- Setup Monday Digest Trigger
 
 **Data Source:** NIGHTLY_FINANCIAL sheet via `getIntegrationConfig_().dataWarehouseId`
 
-**Trigger:** Wednesday 8am (Australia/Sydney) -- NOT YET SET UP. Must be installed manually via:
-- Menu: `Admin Tools → Weekly Digest → Setup Wednesday Digest Trigger`, or
+**Trigger:** Monday 9am (Australia/Sydney) -- NOT YET SET UP. Must be installed manually via:
+- Menu: `Admin Tools → Weekly Digest → Setup Monday Digest Trigger`, or
 - Run `setupWeeklyDigestTrigger_Waratah()` from the Apps Script editor
 
 ---
@@ -386,7 +444,7 @@ NEW → TO DO → IN PROGRESS → DONE
 | Staff Workload Refresh | Daily 6am | `runScheduledStaffWorkload()` |
 | Archive Old Tasks | Monday 6am | `runScheduledArchive()` |
 | Overdue Summary | Sunday 9am | `runScheduledOverdueSummary()` |
-| Weekly Summary | Mon 9am (optional) | `sendWeeklyActiveTasksSummary()` |
+| Weekly Summary | Mon 10am (optional) | `sendWeeklyActiveTasksSummary()` |
 | onEdit Auto-sort | Every edit | `onTaskSheetEditWithAutoSort()` |
 | Weekly Rollover | Monday 10am | `performWeeklyRollover()` |
 
@@ -459,7 +517,7 @@ const webhook = PropertiesService.getScriptProperties()
 | **Venue Name** | THE WARATAH | Script Property: VENUE_NAME |
 | **Operating Days** | 5 (Wed-Sun) | Closed Mon-Tue |
 | **Sheet Names** | WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY | Exactly 5 sheets |
-| **Cell Strategy** | Hardcoded | B34, A53, etc. (not named ranges) |
+| **Cell Strategy** | Named ranges | `WEDNESDAY_SR_NetRevenue` etc. (fallback: B34, A53) |
 | **Rollover Type** | In-place | Same file ID persists |
 | **Rollover Time** | Monday 10:00am | Australia/Sydney timezone |
 | **Admin Password** | chocolateteapot | TODO: Rotate |
@@ -480,26 +538,31 @@ const webhook = PropertiesService.getScriptProperties()
 
 **Deployment workflow (clasp push + git push):**
 ```
-1. Edit code locally
-2. clasp push                    # Deploy to Google Apps Script (production)
-3. git add <files> && git commit # Version history
-4. git push origin main          # Push to GitHub (independent of clasp)
+1. git checkout waratah/develop       # Ensure correct branch
+2. Edit code locally
+3. clasp push                         # Deploy to Google Apps Script (production)
+4. git add "THE WARATAH/..." && git commit -m "deploy: Waratah SR — description"
+5. git push origin waratah/develop    # Push to GitHub (independent of clasp)
 ```
+Branches: `waratah/develop` for ongoing work, `waratah/*` for features. Never push directly to `main`.
 Note: `_SETUP_*` files are gitignored (they contain Slack webhook secrets). `.clasp.json` and `.clasprc.json` are also excluded.
 
-**Read a value:**
+**Read a value (preferred — uses named range with fallback):**
 ```javascript
-const netRevenue = sheet.getRange('B34').getValue();  // Direct reference
+const netRevenue = parseFloat(getFieldValue(sheet, 'netRevenue')) || 0;
+const mod = getFieldDisplayValue(sheet, 'mod');
+const todoRows = getFieldValues(sheet, 'todoTasks');  // returns 2D array
 ```
 
-**Write a value:**
+**Read a value (direct — only use in batch/perf-sensitive code):**
 ```javascript
-sheet.getRange('B34').setValue(2450.00);  // Direct reference
+const netRevenue = sheet.getRange('B34').getValue();
 ```
 
-**Clear content (rollover):**
+**Clear content (rollover — handled automatically via CLEARABLE_FIELD_KEYS):**
 ```javascript
-sheet.getRange('B34').clearContent();  // NOT clear()!
+// Formula cells (B34, B37, etc.) are automatically excluded via isFormula flag
+getFieldRange(sheet, 'mod').clearContent();  // NOT clear()!
 ```
 
 **Get venue config:**
@@ -512,9 +575,9 @@ if (config.name === 'THE WARATAH') {
 
 ---
 
-**Last Updated:** March 6, 2026
-**Version:** 3.1
+**Last Updated:** March 18, 2026
+**Version:** 3.2
 **Status:** ✅ Fully operational and production-ready
-**Total LOC:** ~9,371 lines across 22 code files + 5 HTML files
+**Total LOC:** ~9,371 lines across 22 code files + 5 HTML files (+ RunWaratah.js ~800 LOC)
 
 **For detailed information, load the specific guide you need from `docs/waratah/`**

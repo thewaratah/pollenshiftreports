@@ -565,6 +565,13 @@ try {
 - Standard workflow: edit --> `clasp push` --> `git commit` + `git push`
 - `_SETUP_*` files (webhook secrets), `.clasp.json`, and `.claude/` are gitignored
 
+**7. Git branching (venue independence):**
+- `main` — stable, merged code only; never commit directly
+- `sakura/develop` — ongoing Sakura House work
+- `waratah/develop` — ongoing Waratah work
+- Feature branches: `sakura/fix-rollover`, `waratah/add-dashboard`, etc.
+- Merge to `main` when a venue branch is stable: `git checkout main && git merge [venue]/develop && git push`
+
 ---
 
 ## Testing Strategy

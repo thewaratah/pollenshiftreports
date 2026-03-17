@@ -1,0 +1,354 @@
+How the Task Management System Works
+Behind the Scenes
+
+
+Last updated: March 6, 2026
+Audience: Managers who want to understand what happens behind the scenes
+Prerequisite: Read 04-BASIC first; this guide builds on it
+
+You know how to create and update tasks. This guide explains the automated processes, how tasks move through the system, what the Slack notifications contain, and how the task system connects to shift reports.
+
+
+
+The System at a Glance
+
+The task management system has six automated components:
+
+   - Bi-Hourly Cleanup
+      - Removes empty rows and re-sorts tasks
+      - Runs every 2 hours
+
+   - Daily Staff Workload Refresh
+      - Updates the dashboard with current staff metrics
+      - Runs daily at 6am
+
+   - Overdue Summary
+      - Posts overdue tasks to Slack and sends individual DMs
+      - Runs Sunday at 9am
+
+   - Weekly Archive
+      - Moves completed tasks older than 30 days to the Archive tab
+      - Runs Monday at 6am
+
+   - Weekly Active Tasks Summary
+      - Posts all active tasks to Slack, grouped by staff
+      - Runs Monday at 10am
+
+   - Auto-Sort on Edit
+      - Re-sorts the sheet whenever a task's status or priority changes
+      - Runs instantly on every edit
+
+
+
+The Status Lifecycle in Detail
+
+Tasks move through statuses based on what is happening with them. Some transitions trigger automated actions.
+
+
+Creating a Task
+
+When a task is created (manually or from a shift report):
+   - Status starts as NEW
+   - Date Created is set to today
+   - Days Open formula begins counting
+   - The sheet re-sorts to place the task in the correct position
+   - An audit log entry is created
+
+
+Working Through a Task
+
+The typical path is NEW then TO DO then IN PROGRESS then DONE. But tasks can move between active statuses in any order.
+
+   - NEW to TO DO
+      - Someone has triaged the task and decided it is ready to work on
+
+   - TO DO to IN PROGRESS
+      - Someone has started working on it
+
+   - Any active status to TO DISCUSS
+      - The task needs discussion before it can move forward
+      - Useful for tasks that need management input at the next meeting
+
+   - Any active status to BLOCKED
+      - Something is preventing progress
+      - The system highlights the Blocker Notes cell red and prompts you to explain
+      - If a task stays Blocked for 14 or more days, escalation kicks in (see below)
+
+   - Any active status to DEFERRED
+      - The task is valid but postponed to a later date
+
+   - IN PROGRESS to DONE
+      - The task is complete
+      - Date Completed is set automatically
+      - The row gets a green background with strikethrough text
+
+   - Any status to CANCELLED
+      - The task is no longer relevant
+      - Date Completed is set automatically
+      - The row gets a grey background with strikethrough text
+
+
+Reopening a Completed Task
+
+If you change a task from DONE or CANCELLED back to an active status:
+   - Date Completed is cleared
+   - The strikethrough and colour are removed
+   - Days Open resumes counting from the original Date Created
+
+
+
+Auto-Escalation: What Happens When Tasks Are Stuck
+
+If a task is Blocked for 14 consecutive days, the system can escalate it.
+
+How it works:
+   - The system checks all Blocked tasks and counts how many days each has been in that status
+   - If a task has been Blocked for 14 or more days, it sends an alert
+   - The alert goes to Evan via both email and Slack DM
+   - The alert includes the task description, who it is assigned to, how many days it has been blocked, and the blocker notes
+
+This check is currently triggered manually from the menu (Task Management then Manual Actions then Check Blocked Escalations Now). It is not automated on a timer.
+
+
+
+Recurring Tasks: How They Work
+
+Some tasks repeat on a schedule. The system handles this through the Recurrence field.
+
+Setting up a recurring task:
+   1. Create a task as normal
+   2. Set the Recurrence field to Weekly, Fortnightly, or Monthly
+   3. Set a Due Date
+
+When a recurring task is marked Done:
+   1. The original task stays as Done (it will be archived after 30 days)
+   2. The system creates a new copy of the task with:
+      - Status set to TO DO
+      - A new Due Date calculated from the recurrence schedule
+         - Weekly: next Monday after the original due date
+         - Fortnightly: 14 days after the original due date
+         - Monthly: same day of the month, one month later
+      - Same priority, staff, area, and description
+      - Source set to the same as the original
+      - Updated By set to "System (Recurring)"
+   3. The original task's Recurrence is changed to None to prevent duplicate regeneration
+
+Processing recurring tasks is done manually via the menu. It is not automated on a timer.
+
+
+
+The Sort Order
+
+The sheet automatically re-sorts whenever you change a task's status or priority. The sort order is:
+
+   1. Active tasks appear above completed tasks
+      - Active: NEW, TO DO, IN PROGRESS, TO DISCUSS, BLOCKED, DEFERRED
+      - Completed: RECURRING, DONE, CANCELLED
+
+   2. Within each group, higher priority appears first
+      - URGENT first, then HIGH, MEDIUM, LOW, ONE DAY last
+
+   3. Within the same priority, statuses are ordered
+      - NEW first, then TO DO, IN PROGRESS, TO DISCUSS, BLOCKED, DEFERRED
+
+   4. Within the same status, staff names are alphabetical
+
+
+
+The Task Dashboard in Detail
+
+The TASK DASHBOARD tab has five sections. All sections update automatically via formulas, except Staff Workload which is refreshed daily at 6am.
+
+
+Current Snapshot
+   - Total Active Tasks (everything except Done and Cancelled)
+   - Overdue Count (active tasks where the due date has passed)
+   - Status Breakdown (count and percentage for each of the 9 statuses)
+   - Priority Breakdown (count for each of the 5 priority levels, active tasks only)
+   - Source Breakdown (count by source: Shift Report, Meeting, Ad-hoc)
+
+
+Throughput
+   - Last 7 Days: tasks created, completed, and net change
+   - Last 30 Days: same metrics
+   - All Time: same metrics
+   - Completion Rate (completed divided by created, as a percentage)
+   - Average Days to Close (how long tasks take from creation to completion)
+
+
+Area Breakdown
+   - For each department (FOH, BOH, Bar, Kitchen, Admin, Maintenance, Marketing, Events, Training, General):
+      - Number of active tasks
+      - Number of overdue tasks
+
+
+Staff Workload
+   - For each staff member:
+      - Active task count
+      - Overdue task count
+      - Tasks completed in the last 30 days
+      - Average days open for completed tasks
+
+
+Weekly Trend
+   - Last 8 weeks showing:
+      - Week starting date
+      - Tasks created that week
+      - Tasks completed that week
+      - Net open (created minus completed)
+
+
+
+The Menu: What Each Item Does
+
+The Task Management menu appears at the top of the Master Actionables spreadsheet.
+
+
+No Password Required
+
+   - Open Task Manager
+      - Opens a dialog showing all active tasks with filtering and editing
+
+
+Password Required (all items below)
+
+   - Weekly Summary
+      - Send Weekly Active Tasks (LIVE)
+         - Posts a summary of all active tasks to the managers Slack channel and sends individual DMs
+      - Send Weekly Active Tasks (TEST to Evan)
+         - Same as above but only sends to Evan
+
+   - Dashboard
+      - Build / Rebuild Task Dashboard
+         - Recreates the TASK DASHBOARD tab with all formulas and formatting
+      - Refresh Staff Workload Stats
+         - Updates the staff workload section of the dashboard
+
+   - Cleanup
+      - Remove Empty Rows
+         - Deletes any blank rows in the Master Actionables sheet
+      - Sort Tasks
+         - Re-sorts all tasks by active/completed, priority, status, staff
+      - Cleanup and Sort (Both)
+         - Runs both of the above in one step
+      - Reapply Dropdowns and Formatting
+         - Fixes missing dropdown menus, conditional formatting, and column widths
+
+   - Setup Triggers
+      - Setup All Scheduled Triggers
+         - Creates all 6 automated timers at once
+      - Create Edit Trigger (Auto-sort)
+         - Creates the trigger that auto-sorts on every edit
+      - Remove All Task Triggers
+         - Removes all automated timers. The system stops running until they are recreated.
+
+   - Manual Actions
+      - Archive Old Tasks Now
+         - Immediately moves completed tasks older than 30 days to Archive
+      - Check Blocked Escalations Now
+         - Checks for tasks blocked 14 or more days and sends alerts
+      - Send Overdue Summary Now
+         - Posts the overdue task summary to Slack immediately
+
+   - Testing
+      - Test Audit Log Entry
+         - Creates a test entry in the Audit Log to verify it is working
+
+
+
+Integration with the Shift Report System
+
+The task management system connects to the shift report system in one key place: task creation.
+
+When a manager exports a nightly shift report (see 02-INTERMEDIATE, Step 6), any tasks written in the TO-DOs section of the shift report are automatically pushed to the Master Actionables sheet.
+
+Each task arrives with:
+   - Status: NEW
+   - Priority: MEDIUM
+   - Staff: From the shift report's assignee column
+   - Area: General (can be changed later)
+   - Description: From the shift report's task description
+   - Source: Shift Report
+   - Date Created: Today
+
+These tasks then follow the same lifecycle as any other task. They appear in summaries, dashboards, and Slack notifications.
+
+The two systems are separate Google Apps Script projects attached to different spreadsheets. They communicate through direct spreadsheet writes; the shift report code opens the Master Actionables spreadsheet by ID and appends rows.
+
+
+
+Slack Notifications: What Gets Sent and When
+
+
+Weekly Active Tasks (Monday 10am)
+
+Posted to the managers Slack channel:
+   - Header showing the week starting date
+   - Tasks grouped by staff member
+   - Each task shows its priority emoji and description
+   - Overdue tasks are flagged
+   - Total count of active tasks and staff members
+
+Each staff member also receives a personal Slack DM with only their tasks.
+
+
+Overdue Summary (Sunday 9am)
+
+Posted to the managers Slack channel:
+   - All active tasks where the due date has passed
+   - Grouped by assignee
+   - Shows task description and how many days overdue
+
+Each assignee also receives a personal Slack DM listing their overdue tasks.
+
+
+Escalation Alert (Manual trigger)
+
+Sent to Evan only (email and Slack DM):
+   - Task description
+   - Who it is assigned to
+   - How many days it has been blocked
+   - The blocker notes
+
+
+Error Notifications
+
+If any automated process fails, Evan receives a Slack message with details of the error. Managers do not see these.
+
+
+
+If Something Goes Wrong
+
+
+Tasks are not sorting correctly
+   - What to do: Task Management then Cleanup then Cleanup and Sort (Both)
+   - If that does not fix it: Task Management then Cleanup then Reapply Dropdowns and Formatting
+
+Dropdown menus are missing
+   - What to do: Task Management then Cleanup then Reapply Dropdowns and Formatting
+
+No Slack notifications are arriving
+   - Check if the triggers are active: Extensions then Apps Script then Triggers (clock icon)
+   - If no triggers exist: Task Management then Setup Triggers then Setup All Scheduled Triggers
+
+A task was accidentally deleted
+   - Check the AUDIT LOG tab to find what was changed
+   - If it was archived, check the ARCHIVE tab
+
+The weekly summary did not send
+   - Run it manually: Task Management then Weekly Summary then Send Weekly Active Tasks (LIVE)
+
+
+
+Glossary of Task Management Terms
+
+   - Master Actionables - The spreadsheet that tracks all tasks across the venue
+   - Active Task - Any task that is not Done or Cancelled
+   - Terminal Status - Done or Cancelled; the task is finished
+   - Escalation - An alert sent when a task has been Blocked for 14 or more days
+   - Recurring Task - A task that automatically creates a new copy when completed
+   - Audit Log - A record of every change made to every task
+   - Archive - Where completed tasks are moved after 30 days
+   - Staff Workload - Dashboard section showing how many tasks each person has
+   - Throughput - Dashboard section showing how many tasks are created and completed over time
+   - Auto-Sort - The system automatically re-orders tasks by priority and status on every edit

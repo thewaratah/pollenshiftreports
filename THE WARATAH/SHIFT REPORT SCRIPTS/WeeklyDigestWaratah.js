@@ -3,7 +3,7 @@
  * THE WARATAH — WEEKLY REVENUE DIGEST
  * ============================================================================
  * Posts a weekly revenue performance summary to Slack.
- * Scheduled to run every Wednesday via time-based trigger.
+ * Scheduled to run every Monday at 9am via time-based trigger.
  *
  * Reads from: NIGHTLY_FINANCIAL in WARATAH_DATA_WAREHOUSE_ID
  * Posts to:   WARATAH_SLACK_WEBHOOK_LIVE
@@ -34,20 +34,7 @@ function sendWeeklyRevenueDigest_Waratah() {
     bk_post(webhook, blocks, 'The Waratah — Weekly Revenue Digest');
     Logger.log('Weekly revenue digest sent successfully.');
   } catch (e) {
-    Logger.log('sendWeeklyRevenueDigest_Waratah failed: ' + e.message);
-    try {
-      const testWebhook = PropertiesService.getScriptProperties().getProperty('WARATAH_SLACK_WEBHOOK_TEST');
-      if (testWebhook) {
-        UrlFetchApp.fetch(testWebhook, {
-          method: 'post',
-          contentType: 'application/json',
-          payload: JSON.stringify({ text: '❌ Weekly Revenue Digest (Waratah) FAILED: ' + e.message }),
-          muteHttpExceptions: true
-        });
-      }
-    } catch (slackErr) {
-      Logger.log('Slack error notification also failed: ' + slackErr.message);
-    }
+    notifyError_('sendWeeklyRevenueDigest_Waratah', e);
   }
 }
 
@@ -180,7 +167,7 @@ function buildWeeklyDigestBlocks_Waratah_(stats) {
 }
 
 /**
- * Install a Wednesday morning trigger for the weekly digest.
+ * Install a Monday morning trigger for the weekly digest.
  * Safe to re-run — removes any existing digest trigger first.
  */
 function setupWeeklyDigestTrigger_Waratah() {
@@ -190,14 +177,14 @@ function setupWeeklyDigestTrigger_Waratah() {
 
   ScriptApp.newTrigger('sendWeeklyRevenueDigest_Waratah')
     .timeBased()
-    .onWeekDay(ScriptApp.WeekDay.WEDNESDAY)
-    .atHour(8)
+    .onWeekDay(ScriptApp.WeekDay.MONDAY)
+    .atHour(9)
     .create();
 
   try {
     SpreadsheetApp.getUi().alert(
       'Trigger Installed',
-      'Weekly revenue digest will be sent every Wednesday at 8am.\n\nTo remove: Apps Script editor → Triggers → delete.',
+      'Weekly revenue digest will be sent every Monday at 9am.\n\nTo remove: Apps Script editor → Triggers → delete.',
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   } catch (e) { Logger.log('UI alert skipped — trigger context'); }

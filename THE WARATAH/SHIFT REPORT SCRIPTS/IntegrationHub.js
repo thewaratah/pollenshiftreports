@@ -181,6 +181,9 @@ function parseCellDate_(value) {
  * Extract all relevant data from shift report
  * Returns standardized data object
  *
+ * Uses batched reads (3 API calls) instead of individual cell reads (~30 calls)
+ * for significantly better performance in GAS.
+ *
  * @param {string} sheetName - Name of the shift report sheet
  * @param {Object} [config]  - Optional pre-loaded INTEGRATION_CONFIG
  * @returns {Object} Standardized shift data
@@ -194,109 +197,71 @@ function extractShiftData_(sheetName, config) {
     throw new Error(`Sheet "${sheetName}" not found in this spreadsheet`);
   }
 
-  // Extract core data (using authoritative cell references per user 2026-03-06)
-  let dateValue;
+  // --- BATCH READ 1: Financial data B3:B39 (37 rows) ---
+  // Single API call replaces ~20 individual getRange().getValue() calls.
+  // Intentionally bypasses getFieldRange() helpers for performance — GAS charges
+  // per API call, so one batch read is significantly faster than 20 named range lookups.
+  // Cell mapping: FIELD_CONFIG fallback cells in RunWaratah.js are authoritative.
+  let finValues;
   try {
-    dateValue = sheet.getRange("B3").getValue();
+    finValues = sheet.getRange("B3:B39").getValues(); // 37 rows x 1 col → [[val], [val], ...]
   } catch (e) {
-    Logger.log('extractShiftData_: could not read B3 — ' + e.message);
+    Logger.log('extractShiftData_: could not read B3:B39 — ' + e.message);
+    return null;
+  }
+
+  // Helper: extract value by row number (1-indexed cell ref → 0-indexed array)
+  const fin = (row) => finValues[row - 3] ? finValues[row - 3][0] : null;
+  const finNum = (row) => parseFloat(fin(row)) || 0;
+
+  // Also need display values for text fields (MOD, staff)
+  let finDisplay;
+  try {
+    finDisplay = sheet.getRange("B3:B5").getDisplayValues();
+  } catch (e) {
+    Logger.log('extractShiftData_: could not read B3:B5 display — ' + e.message);
+    finDisplay = [[""], [""], [""]];
+  }
+
+  const dateValue = fin(3);
+  if (!dateValue) {
+    Logger.log('extractShiftData_: B3 (date) is empty');
     return null;
   }
   const date = parseCellDate_(dateValue);
 
-  let mod;
-  try {
-    mod = sheet.getRange("B4").getDisplayValue().trim();
-  } catch (e) {
-    Logger.log('extractShiftData_: could not read B4 — ' + e.message);
-    return null;
+  const mod = (finDisplay[1][0] || "").trim();   // B4 display
+  if (!mod) {
+    Logger.log('extractShiftData_: B4 (MOD) is empty');
+    // Don't return null — MOD can be empty for partial data
   }
+  const staff = (finDisplay[2][0] || "").trim();  // B5 display
 
-  // Staff — B5
-  let staff = "";
-  try { staff = sheet.getRange("B5").getDisplayValue().trim(); } catch(e) { Logger.log("extractShiftData_: could not read B5 — " + e.message); }
+  // --- BATCH READ 2: Narrative + incident cells (A43:A65, odd rows) ---
+  // Single API call replaces 7 individual getDisplayValue() calls.
+  // Narrative fields are merged A:F — value lives in col A only (see FIELD_CONFIG in RunWaratah.js).
+  let narrativeValues;
+  try {
+    narrativeValues = sheet.getRange("A43:A65").getDisplayValues(); // 23 rows
+  } catch (e) {
+    Logger.log('extractShiftData_: could not read A43:A65 — ' + e.message);
+    narrativeValues = [];
+  }
+  // Helper: extract by row number (A43 = index 0, A45 = index 2, etc.)
+  const narr = (row) => {
+    const idx = row - 43;
+    return (narrativeValues[idx] && narrativeValues[idx][0]) ? narrativeValues[idx][0].trim() : "";
+  };
 
-  // --- Revenue & Production ---
-  // Net Revenue — B34
-  let netRevenue = 0;
-  try { netRevenue = parseFloat(sheet.getRange("B34").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B34 — " + e.message); }
-
-  // Production Amount — B8
-  let productionAmount = 0;
-  try { productionAmount = parseFloat(sheet.getRange("B8").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B8 — " + e.message); }
-
-  // --- Cash Flow ---
-  // Cash Takings — B15 (formula)
-  let cashTakings = 0;
-  try { cashTakings = parseFloat(sheet.getRange("B15").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B15 — " + e.message); }
-
-  // Gross Sales Inc Cash — B16 (formula)
-  let grossSalesIncCash = 0;
-  try { grossSalesIncCash = parseFloat(sheet.getRange("B16").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B16 — " + e.message); }
-
-  // --- Deductions (merged cell pairs — value in first cell) ---
-  // Cash Returns — B17 (merged B17:B18)
-  let cashReturns = 0;
-  try { cashReturns = parseFloat(sheet.getRange("B17").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B17 — " + e.message); }
-
-  // CD Discount — B19 (merged B19:B20)
-  let cdDiscount = 0;
-  try { cdDiscount = parseFloat(sheet.getRange("B19").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B19 — " + e.message); }
-
-  // Refunds — B21 (merged B21:B22)
-  let refunds = 0;
-  try { refunds = parseFloat(sheet.getRange("B21").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B21 — " + e.message); }
-
-  // CD Redeem — B23 (merged B23:B24)
-  let cdRedeem = 0;
-  try { cdRedeem = parseFloat(sheet.getRange("B23").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B23 — " + e.message); }
-
-  // Total Discount — B25 (input)
-  let totalDiscount = 0;
-  try { totalDiscount = parseFloat(sheet.getRange("B25").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B25 — " + e.message); }
-
-  // Discounts & Comps Exc CD — B26 (formula)
-  let discountsCompsExcCD = 0;
-  try { discountsCompsExcCD = parseFloat(sheet.getRange("B26").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B26 — " + e.message); }
-
-  // --- Tax ---
-  // Gross Taxable Sales — B27 (formula)
-  let grossTaxableSales = 0;
-  try { grossTaxableSales = parseFloat(sheet.getRange("B27").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B27 — " + e.message); }
-
-  // Taxes — B28 (formula)
-  let taxes = 0;
-  try { taxes = parseFloat(sheet.getRange("B28").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B28 — " + e.message); }
-
-  // Net Sales w Tips — B29 (formula)
-  let netSalesWTips = 0;
-  try { netSalesWTips = parseFloat(sheet.getRange("B29").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B29 — " + e.message); }
-
-  // --- Tips ---
-  // Card Tips — B32
-  let cardTips = 0;
-  try { cardTips = parseFloat(sheet.getRange("B32").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B32 — " + e.message); }
-
-  // Cash Tips — B33
-  let cashTips = 0;
-  try { cashTips = parseFloat(sheet.getRange("B33").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B33 — " + e.message); }
-
-  // Total Tips — B37 (formula)
-  let tipsTotal = 0;
-  try { tipsTotal = parseFloat(sheet.getRange("B37").getValue()) || 0; } catch(e) { Logger.log("extractShiftData_: could not read B37 — " + e.message); }
-
-  // Calculate week ending (next Sunday from this date)
-  const weekEnding = new Date(date);
-  const daysUntilSunday = (7 - weekEnding.getDay()) % 7;
-  weekEnding.setDate(weekEnding.getDate() + daysUntilSunday);
-
-  // Extract TO-DOs (rows 53-61, task text in columns A-E, assignee in column F)
+  // --- BATCH READ 3: TO-DOs A53:F61 (9 rows) ---
+  // Combined A:F read — intentional. Accesses task description (col A, merged A:E)
+  // and assignee (col F) in one call. FIELD_CONFIG splits these into todoTasks/todoAssignees
+  // but this single batch read is more efficient for extraction.
   let todoRange = [];
   try { todoRange = sheet.getRange("A53:F61").getValues(); } catch(e) { Logger.log("extractShiftData_: could not read A53:F61 — " + e.message); }
   const todos = [];
-
   todoRange.forEach(row => {
-    const description = row[0]; // Column A (merged A-E, we read from A)
+    const description = row[0]; // Column A (merged A-E, value in A)
     const assignee = row[5];    // Column F
     if (description && description.toString().trim() !== "") {
       todos.push({
@@ -305,6 +270,11 @@ function extractShiftData_(sheetName, config) {
       });
     }
   });
+
+  // Calculate week ending (next Sunday from this date)
+  const weekEnding = new Date(date);
+  const daysUntilSunday = (7 - weekEnding.getDay()) % 7;
+  weekEnding.setDate(weekEnding.getDate() + daysUntilSunday);
 
   return {
     // Core identifiers
@@ -315,43 +285,43 @@ function extractShiftData_(sheetName, config) {
     staff: staff,
 
     // Revenue & production
-    netRevenue: netRevenue,         // B34
-    productionAmount: productionAmount, // B8
+    netRevenue: finNum(34),         // B34
+    productionAmount: finNum(8),    // B8
 
     // Cash flow
-    cashTakings: cashTakings,       // B15 (formula)
-    grossSalesIncCash: grossSalesIncCash, // B16 (formula)
+    cashTakings: finNum(15),        // B15 (formula)
+    grossSalesIncCash: finNum(16),  // B16 (formula)
 
-    // Deductions
-    cashReturns: cashReturns,       // B17 (merged B17:B18)
-    cdDiscount: cdDiscount,         // B19 (merged B19:B20)
-    refunds: refunds,               // B21 (merged B21:B22)
-    cdRedeem: cdRedeem,             // B23 (merged B23:B24)
-    totalDiscount: totalDiscount,   // B25 (input)
-    discountsCompsExcCD: discountsCompsExcCD, // B26 (formula)
+    // Deductions (merged cell pairs — value in first cell of pair)
+    cashReturns: finNum(17),        // B17 (merged B17:B18)
+    cdDiscount: finNum(19),         // B19 (merged B19:B20)
+    refunds: finNum(21),            // B21 (merged B21:B22)
+    cdRedeem: finNum(23),           // B23 (merged B23:B24)
+    totalDiscount: finNum(25),      // B25 (input)
+    discountsCompsExcCD: finNum(26), // B26 (formula)
 
     // Tax
-    grossTaxableSales: grossTaxableSales, // B27 (formula)
-    taxes: taxes,                   // B28 (formula)
-    netSalesWTips: netSalesWTips,   // B29 (formula)
+    grossTaxableSales: finNum(27),  // B27 (formula)
+    taxes: finNum(28),              // B28 (formula)
+    netSalesWTips: finNum(29),      // B29 (formula)
 
     // Tips
-    cardTips: cardTips,             // B32
-    cashTips: cashTips,             // B33
-    tipsTotal: tipsTotal,           // B37 (formula)
+    cardTips: finNum(32),           // B32
+    cashTips: finNum(33),           // B33
+    tipsTotal: finNum(37),          // B37 (formula)
 
     // Operational events
     todos: todos,
 
-    // Qualitative / narrative fields (merged cells starting at column A)
-    shiftSummary: (() => { try { return sheet.getRange("A43").getDisplayValue().trim(); } catch(e) { Logger.log("extractShiftData_: could not read A43 — " + e.message); return ""; } })(),
-    guestsOfNote: (() => { try { return sheet.getRange("A45").getDisplayValue().trim(); } catch(e) { Logger.log("extractShiftData_: could not read A45 — " + e.message); return ""; } })(),
-    theGood:      (() => { try { return sheet.getRange("A47").getDisplayValue().trim(); } catch(e) { Logger.log("extractShiftData_: could not read A47 — " + e.message); return ""; } })(),
-    theBad:       (() => { try { return sheet.getRange("A49").getDisplayValue().trim(); } catch(e) { Logger.log("extractShiftData_: could not read A49 — " + e.message); return ""; } })(),
-    kitchenNotes: (() => { try { return sheet.getRange("A51").getDisplayValue().trim(); } catch(e) { Logger.log("extractShiftData_: could not read A51 — " + e.message); return ""; } })(),
-    wastageComps: (() => { try { return sheet.getRange("A63").getDisplayValue().trim(); } catch(e) { Logger.log("extractShiftData_: could not read A63 — " + e.message); return ""; } })(),
-    maintenance:  "",
-    rsaIncidents: (() => { try { return sheet.getRange("A65").getDisplayValue().trim(); } catch(e) { Logger.log("extractShiftData_: could not read A65 — " + e.message); return ""; } })(),
+    // Qualitative / narrative fields (merged A:F, value in col A)
+    shiftSummary: narr(43),         // A43
+    guestsOfNote: narr(45),         // A45
+    theGood: narr(47),              // A47
+    theBad: narr(49),               // A49
+    kitchenNotes: narr(51),         // A51
+    wastageComps: narr(63),         // A63
+    maintenance: "",
+    rsaIncidents: narr(65),         // A65
 
     // Metadata
     sheetName: sheetName
@@ -1003,7 +973,7 @@ function backfillShiftToWarehouse() {
 
 /**
  * Iterate all shift report sheets and backfill any not yet in the data warehouse.
- * Designed to be called by a weekly time-based trigger (Wednesday morning).
+ * Designed to be called by a weekly time-based trigger (Monday 8am).
  */
 function runWeeklyBackfill_() {
   const INTEGRATION_CONFIG = getIntegrationConfig_();
@@ -1077,6 +1047,9 @@ function runWeeklyBackfill_() {
       `runWeeklyBackfill_ complete: ${processed} sheets checked, ` +
       `${logged} logged, ${skipped} already existed, ${failed} failed`
     );
+  } catch (e) {
+    notifyError_('runWeeklyBackfill_', e);
+    throw e;
   } finally {
     lock.releaseLock();
   }
@@ -1094,15 +1067,15 @@ function setupWeeklyBackfillTrigger() {
 
   ScriptApp.newTrigger('runWeeklyBackfill_')
     .timeBased()
-    .onWeekDay(ScriptApp.WeekDay.WEDNESDAY) // Waratah week starts Wednesday
-    .atHour(2)
+    .onWeekDay(ScriptApp.WeekDay.MONDAY)
+    .atHour(8)
     .create();
 
-  Logger.log('Weekly backfill trigger installed: runs every Wednesday at 2am.');
+  Logger.log('Weekly backfill trigger installed: runs every Monday at 8am.');
   try {
     SpreadsheetApp.getUi().alert(
       'Trigger Installed',
-      'runWeeklyBackfill_() will run every Wednesday at 2am.\n\n' +
+      'runWeeklyBackfill_() will run every Monday at 8am.\n\n' +
       'To remove: Apps Script editor → Triggers (clock icon) → delete the trigger.',
       SpreadsheetApp.getUi().ButtonSet.OK
     );
