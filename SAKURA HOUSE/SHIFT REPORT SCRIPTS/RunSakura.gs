@@ -31,21 +31,25 @@ const FIELD_CONFIG = {
   date: {
     suffix: "SR_Date",
     fallback: "B3:D3",
+    isFormula: false,
     description: "Report date (merged cell)"
   },
   mod: {
     suffix: "SR_MOD",
     fallback: "B4:D4",
+    isFormula: false,
     description: "Manager on Duty (merged cell)"
   },
   fohStaff: {
     suffix: "SR_FOHStaff",
     fallback: "B6:D6",
+    isFormula: false,
     description: "FOH staff on shift"
   },
   bohStaff: {
     suffix: "SR_BOHStaff",
     fallback: "B7:D7",
+    isFormula: false,
     description: "BOH staff on shift"
   },
 
@@ -53,16 +57,19 @@ const FIELD_CONFIG = {
   cashCount: {
     suffix: "SR_CashCount",
     fallback: "C10:E17",
+    isFormula: false,
     description: "Cash count breakdown"
   },
   cashRecord: {
     suffix: "SR_CashRecord",
     fallback: "C22:D23",
+    isFormula: false,
     description: "Cash record totals"
   },
   pettyCashTransactions: {
     suffix: "SR_PettyCashTransactions",
     fallback: "B40:B45",
+    isFormula: false,
     description: "Petty cash transactions"
   },
 
@@ -70,13 +77,15 @@ const FIELD_CONFIG = {
   netRevenue: {
     suffix: "SR_NetRevenue",
     fallback: "B54",
-    description: "Net revenue less tips & accounts"
+    isFormula: true,
+    description: "Net revenue less tips & accounts (formula — do not clear)"
   },
 
   // --- SHIFT REPORT ---
   shiftSummary: {
     suffix: "SR_ShiftSummary",
     fallback: "A59:D59",
+    isFormula: false,
     description: "General overview / shift summary"
   },
 
@@ -84,11 +93,13 @@ const FIELD_CONFIG = {
   todoTasks: {
     suffix: "SR_TodoTasks",
     fallback: "A69:A84",
+    isFormula: false,
     description: "To-do task descriptions — cells A69:C69 are merged; value lives in column A (first cell of merge)"
   },
   todoAssignees: {
     suffix: "SR_TodoAssignees",
     fallback: "D69:D84",
+    isFormula: false,
     description: "To-do assignee dropdowns"
   },
   // todoFullRange was removed Feb 2026 — it was never read by any production function.
@@ -99,31 +110,37 @@ const FIELD_CONFIG = {
   cashTips: {
     suffix: "SR_CashTips",
     fallback: "C29",
+    isFormula: false,
     description: "Tips - Cash"
   },
   cardTips: {
     suffix: "SR_CardTips",
     fallback: "C30",
+    isFormula: false,
     description: "Tips - Card"
   },
   surchargeTips: {
     suffix: "SR_SurchargeTips",
     fallback: "C31",
+    isFormula: false,
     description: "Tips - Surcharge"
   },
   productionAmount: {
     suffix: "SR_ProductionAmount",
     fallback: "B37",
+    isFormula: false,
     description: "Production amount (from Lightspeed)"
   },
   deposit: {
     suffix: "SR_Deposit",
     fallback: "B38",
+    isFormula: false,
     description: "Deposit / revenue outside Lightspeed"
   },
   discounts: {
     suffix: "SR_Discounts",
     fallback: "B50",
+    isFormula: false,
     description: "Total discounts (from Lightspeed)"
   },
 
@@ -131,36 +148,43 @@ const FIELD_CONFIG = {
   guestsOfNote: {
     suffix: "SR_GuestsOfNote",
     fallback: "A61:D61",
+    isFormula: false,
     description: "Guest of note - VIPs, regulars"
   },
   goodNotes: {
     suffix: "SR_GoodNotes",
     fallback: "A63:D63",
+    isFormula: false,
     description: "Good notes - positive feedback"
   },
   issues: {
     suffix: "SR_Issues",
     fallback: "A65:D65",
+    isFormula: false,
     description: "Issues / improvements"
   },
   kitchenNotes: {
     suffix: "SR_KitchenNotes",
     fallback: "A67:D67",
+    isFormula: false,
     description: "Kitchen notes (from chef)"
   },
   wastageComps: {
     suffix: "SR_WastageComps",
     fallback: "A86:D86",
+    isFormula: false,
     description: "Wastage / comps / discounts"
   },
   maintenance: {
     suffix: "SR_Maintenance",
     fallback: "A88:D88",
+    isFormula: false,
     description: "Maintenance items"
   },
   rsaIncidents: {
     suffix: "SR_RSAIncidents",
     fallback: "A90:D90",
+    isFormula: false,
     description: "RSA / intox / refusals"
   }
 };
@@ -616,4 +640,114 @@ function forceUpdateNamedRangesOnAllSheets() {
 
   ui.alert("Force-Update Results", message, ui.ButtonSet.OK);
   Logger.log(message);
+}
+
+
+// ============================================================================
+// SHEET PROTECTION
+// ============================================================================
+
+/**
+ * Returns an array of all FIELD_CONFIG keys. Sakura's FIELD_CONFIG does not
+ * use an isFormula flag to exclude formula cells from editable/clearable lists.
+ * This mirrors getClearableFieldKeys_() in RunWaratah.js.
+ *
+ * @returns {string[]}
+ */
+function getAllFieldKeys_() {
+  return Object.keys(FIELD_CONFIG).filter(key => !FIELD_CONFIG[key].isFormula);
+}
+
+/**
+ * Applies whole-sheet protection to a single day sheet.
+ * Protects structural cells (headers, labels, formulas) while leaving
+ * all FIELD_CONFIG input fields fully editable.
+ *
+ * Uses setWarningOnly(true) so GAS scripts (rollover, clearContent calls)
+ * can still write to any cell without restriction. Staff/managers see a
+ * warning dialog if they accidentally edit protected structure cells,
+ * but are not hard-blocked.
+ *
+ * @param {Sheet} sheet
+ */
+function setupSheetProtection_(sheet) {
+  // Remove any existing protections on this sheet
+  const existing = sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+  existing.forEach(p => p.remove());
+
+  // Protect the whole sheet (warning-only — scripts always have full access)
+  const protection = sheet.protect().setDescription('Shift Report Structure');
+  protection.setWarningOnly(true);
+
+  // Build editable ranges from non-formula FIELD_CONFIG entries only
+  // getAllFieldKeys_() filters out isFormula:true fields (e.g. netRevenue B54)
+  const inputKeys = getAllFieldKeys_();
+  const editableRanges = inputKeys.map(key => getFieldRange(sheet, key));
+
+  protection.setUnprotectedRanges(editableRanges);
+  Logger.log(`Protection set on "${sheet.getName()}": ${editableRanges.length} editable ranges carved out (formula cells protected)`);
+}
+
+/**
+ * Menu function: Apply sheet protection to all day sheets (MONDAY–SATURDAY).
+ * Loops VALID_DAY_PREFIXES, finds each sheet, and calls setupSheetProtection_().
+ * Password-gated via pw_setupAllSheetsProtection() in MenuSakura.gs.
+ */
+function setupAllSheetsProtection() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const allSheets = spreadsheet.getSheets();
+  const summary = [];
+
+  for (const dayPrefix of VALID_DAY_PREFIXES) {
+    const sheet = allSheets.find(s => s.getName().startsWith(dayPrefix));
+    if (!sheet) {
+      summary.push(`${dayPrefix}: sheet not found — skipped`);
+      continue;
+    }
+    try {
+      setupSheetProtection_(sheet);
+      summary.push(`${sheet.getName()}: protection applied`);
+    } catch (e) {
+      summary.push(`${sheet.getName()}: FAILED — ${e.message}`);
+      Logger.log(`setupAllSheetsProtection: failed on ${sheet.getName()}: ${e.message}`);
+    }
+  }
+
+  const message = `Sheet Protection Setup Complete\n\n${summary.join('\n')}`;
+  try {
+    SpreadsheetApp.getUi().alert('Protection Applied', message, SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (e) {
+    Logger.log(message);
+  }
+}
+
+/**
+ * Menu function: Remove all sheet protections from all day sheets.
+ * Use before bulk edits or if protection configuration needs to be
+ * rebuilt from scratch.
+ * Password-gated via pw_removeAllSheetsProtection() in MenuSakura.gs.
+ */
+function removeAllSheetsProtection() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const allSheets = spreadsheet.getSheets();
+  let removed = 0;
+  const summary = [];
+
+  for (const dayPrefix of VALID_DAY_PREFIXES) {
+    const sheet = allSheets.find(s => s.getName().startsWith(dayPrefix));
+    if (!sheet) continue;
+
+    const protections = sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+    protections.forEach(p => { p.remove(); removed++; });
+    summary.push(protections.length > 0
+      ? `${sheet.getName()}: ${protections.length} protection(s) removed`
+      : `${sheet.getName()}: no protections found`);
+  }
+
+  const message = `Removed ${removed} protection(s)\n\n${summary.join('\n')}`;
+  try {
+    SpreadsheetApp.getUi().alert('Protections Removed', message, SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (e) {
+    Logger.log(message);
+  }
 }

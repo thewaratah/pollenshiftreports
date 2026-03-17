@@ -257,6 +257,28 @@ U=TotalTips, V=LoggedAt
 
 ---
 
+## Sheet Protection
+
+Protects structural cells (headers, labels, formula cells) while keeping all input fields editable. Implemented in `RunWaratah.js`.
+
+**Mode:** `setWarningOnly(true)` — staff see a warning if they accidentally edit protected cells but are not hard-blocked. GAS scripts (rollover, exports) always have full write access.
+
+**Editable ranges:** All `FIELD_CONFIG` entries where `isFormula: false` (24 fields). The 8 formula cells are protected: cashTakings(B15), grossSalesIncCash(B16), discountsCompsExcCD(B26), grossTaxableSales(B27), taxes(B28), netSalesWTips(B29), netRevenue(B34), totalTips(B37).
+
+**Menu:** `Waratah Tools → Admin Tools → Setup & Utilities → Sheet Protection`
+- `Apply Protection (All Sheets)` — calls `setupAllSheetsProtection()`
+- `Remove Protection (All Sheets)` — calls `removeAllSheetsProtection()`
+
+**Functions in RunWaratah.js:**
+```javascript
+setupSheetProtection_(sheet)     // protect one sheet; carve out 24 input ranges
+setupAllSheetsProtection()       // menu-callable; loops all 5 day sheets
+removeAllSheetsProtection()      // menu-callable; removes all protections
+getClearableFieldKeys_()         // returns non-formula field keys (used by both rollover + protection)
+```
+
+---
+
 ## Comparison with Sakura House
 
 | Aspect | Waratah | Sakura House |
@@ -265,7 +287,7 @@ U=TotalTips, V=LoggedAt
 | **Fallback** | Hardcoded cells (graceful degradation) | Hardcoded cells (graceful degradation) |
 | **Infrastructure File** | `RunWaratah.js` (FIELD_CONFIG + helpers) | `RunSakura.gs` (FIELD_CONFIG + helpers) |
 | **Day Prefixes** | WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY | MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY |
-| **Waratah Extra** | `isFormula` flag + `getClearableFieldKeys_()` | Not needed (no formula cell risk) |
+| **Formula protection** | `isFormula` flag (8 formula cells) + `getClearableFieldKeys_()` | `isFormula` flag (1 formula cell: B54) + `getAllFieldKeys_()` |
 | **Self-healing** | `verifyAndFixNamedRanges_()` called during rollover | Same pattern |
 
 ---
