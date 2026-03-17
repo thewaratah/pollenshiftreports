@@ -1,14 +1,18 @@
 # THE WARATAH - Cell Reference Map
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 18, 2026
 **Type:** Authoritative Reference
-**Purpose:** Complete mapping of hardcoded cell references for all Waratah day sheets
+**Purpose:** Complete mapping of cell references for all Waratah day sheets
 
 ---
 
 ## Overview
 
-The Waratah uses **hardcoded cell references** (not named ranges like Sakura House). This is the single source of truth for all cell positions.
+The Waratah uses a **named range system** mirroring Sakura House. Cell positions are defined in `FIELD_CONFIG` in `RunWaratah.js` — the single source of truth for all field-to-cell mappings.
+
+**Named range convention:** `{DAY}_SR_{Suffix}` — e.g. `WEDNESDAY_SR_NetRevenue`
+
+All helpers fall back to hardcoded cells automatically when named ranges haven't been created in the spreadsheet yet (graceful degradation). To create named ranges: `Waratah Tools → Admin Tools → Setup & Utilities → Named Ranges → Create on ALL Sheets`.
 
 **Sheet Names:** WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY
 
@@ -91,41 +95,56 @@ Row 64 = label          Row 65 = RSA/INJURIES            → A65:F65
 
 ---
 
-## VenueConfig.js Mapping
+## RunWaratah.js FIELD_CONFIG (Authoritative)
+
+**File:** `THE WARATAH/SHIFT REPORT SCRIPTS/RunWaratah.js`
+
+This is the single source of truth. All consumer files call `getFieldValue()`, `getFieldDisplayValue()`, or `getFieldValues()` using these keys. `isFormula: true` entries are excluded from rollover clearing.
+
+| Field Key | Suffix | Fallback Cell | isFormula | Named Range (WEDNESDAY example) |
+|-----------|--------|---------------|-----------|--------------------------------|
+| `date` | `SR_Date` | `B3:F3` | false | `WEDNESDAY_SR_Date` |
+| `mod` | `SR_MOD` | `B4:F4` | false | `WEDNESDAY_SR_MOD` |
+| `staff` | `SR_Staff` | `B5:F5` | false | `WEDNESDAY_SR_Staff` |
+| `productionAmount` | `SR_ProductionAmount` | `B8` | false | `WEDNESDAY_SR_ProductionAmount` |
+| `deposit` | `SR_Deposit` | `B9:B10` | false | `WEDNESDAY_SR_Deposit` |
+| `airbnbCovers` | `SR_AirbnbCovers` | `B11` | false | `WEDNESDAY_SR_AirbnbCovers` |
+| `cancellations` | `SR_Cancellations` | `B13:B14` | false | `WEDNESDAY_SR_Cancellations` |
+| `cashTakings` | `SR_CashTakings` | `B15` | **true** | `WEDNESDAY_SR_CashTakings` |
+| `grossSalesIncCash` | `SR_GrossSalesIncCash` | `B16` | **true** | `WEDNESDAY_SR_GrossSalesIncCash` |
+| `cashReturns` | `SR_CashReturns` | `B17:B18` | false | `WEDNESDAY_SR_CashReturns` |
+| `cdDiscount` | `SR_CDDiscount` | `B19:B20` | false | `WEDNESDAY_SR_CDDiscount` |
+| `refunds` | `SR_Refunds` | `B21:B22` | false | `WEDNESDAY_SR_Refunds` |
+| `cdRedeem` | `SR_CDRedeem` | `B23:B24` | false | `WEDNESDAY_SR_CDRedeem` |
+| `totalDiscount` | `SR_TotalDiscount` | `B25` | false | `WEDNESDAY_SR_TotalDiscount` |
+| `discountsCompsExcCD` | `SR_DiscountsCompsExcCD` | `B26` | **true** | `WEDNESDAY_SR_DiscountsCompsExcCD` |
+| `grossTaxableSales` | `SR_GrossTaxableSales` | `B27` | **true** | `WEDNESDAY_SR_GrossTaxableSales` |
+| `taxes` | `SR_Taxes` | `B28` | **true** | `WEDNESDAY_SR_Taxes` |
+| `netSalesWTips` | `SR_NetSalesWTips` | `B29` | **true** | `WEDNESDAY_SR_NetSalesWTips` |
+| `pettyCash` | `SR_PettyCash` | `B30` | false | `WEDNESDAY_SR_PettyCash` |
+| `cardTips` | `SR_CardTips` | `B32` | false | `WEDNESDAY_SR_CardTips` |
+| `cashTips` | `SR_CashTips` | `B33` | false | `WEDNESDAY_SR_CashTips` |
+| `netRevenue` | `SR_NetRevenue` | `B34` | **true** | `WEDNESDAY_SR_NetRevenue` |
+| `totalTips` | `SR_TotalTips` | `B37` | **true** | `WEDNESDAY_SR_TotalTips` |
+| `shiftSummary` | `SR_ShiftSummary` | `A43:F43` | false | `WEDNESDAY_SR_ShiftSummary` |
+| `guestsOfNote` | `SR_GuestsOfNote` | `A45:F45` | false | `WEDNESDAY_SR_GuestsOfNote` |
+| `theGood` | `SR_TheGood` | `A47:F47` | false | `WEDNESDAY_SR_TheGood` |
+| `theBad` | `SR_TheBad` | `A49:F49` | false | `WEDNESDAY_SR_TheBad` |
+| `kitchenNotes` | `SR_KitchenNotes` | `A51:F51` | false | `WEDNESDAY_SR_KitchenNotes` |
+| `todoTasks` | `SR_TodoTasks` | `A53:E61` | false | `WEDNESDAY_SR_TodoTasks` |
+| `todoAssignees` | `SR_TodoAssignees` | `F53:F61` | false | `WEDNESDAY_SR_TodoAssignees` |
+| `wastageComps` | `SR_WastageComps` | `A63:F63` | false | `WEDNESDAY_SR_WastageComps` |
+| `rsaIncidents` | `SR_RSAIncidents` | `A65:F65` | false | `WEDNESDAY_SR_RSAIncidents` |
+
+**Clearable fields (isFormula: false):** date, mod, staff, productionAmount, deposit, airbnbCovers, cancellations, cashReturns, cdDiscount, refunds, cdRedeem, totalDiscount, pettyCash, cardTips, cashTips, shiftSummary, guestsOfNote, theGood, theBad, kitchenNotes, todoTasks, todoAssignees, wastageComps, rsaIncidents (24 fields)
+
+**Formula cells — never clear:** cashTakings(B15), grossSalesIncCash(B16), discountsCompsExcCD(B26), grossTaxableSales(B27), taxes(B28), netSalesWTips(B29), netRevenue(B34), totalTips(B37) (8 fields)
+
+## VenueConfig.js (Legacy)
 
 **File:** `THE WARATAH/SHIFT REPORT SCRIPTS/VenueConfig.js`
 
-```javascript
-ranges: {
-  usesNamedRanges: false,
-
-  // Header
-  date: 'B3:F3',
-  mod: 'B4:F4',
-  staff: 'B5:F5',
-
-  // Financial
-  netRevenue: 'B34',
-  cardTips: 'B32',
-  cashTips: 'B33',
-  totalTips: 'B37',
-
-  // Narrative fields (odd rows = data, even rows = labels)
-  shiftSummary: 'A43:F43',
-  guestsOfNote: 'A45:F45',
-  theGood: 'A47:F47',
-  theBad: 'A49:F49',
-  kitchenNotes: 'A51:F51',
-
-  // Task management (9 rows: 53-61)
-  todoTask: 'A53:E61',
-  todoAssignee: 'F53:F61',
-
-  // Incidents and wastage
-  wastageComps: 'A63:F63',
-  rsaIncidents: 'A65:F65',
-}
-```
+`usesNamedRanges: true` — routes through `getFieldValue()` helpers from RunWaratah.js.
 
 ---
 
@@ -133,45 +152,18 @@ ranges: {
 
 **File:** `THE WARATAH/SHIFT REPORT SCRIPTS/IntegrationHub.js`
 
-The `extractShiftData_()` function reads these cells for the warehouse (22-col NIGHTLY_FINANCIAL schema, Mar 6 2026):
+The `extractShiftData_()` function uses **batch reads** (3 GAS API calls) for performance, then maps values against FIELD_CONFIG fallback positions. The batch-read approach was intentionally preserved — individual `getFieldValue()` calls per field would be ~20× more API calls.
 
 ```javascript
-const shiftData = {
-  // Core fields
-  date: sheet.getRange('B3').getValue(),
-  mod: sheet.getRange('B4').getDisplayValue(),
-  staff: sheet.getRange('B5').getDisplayValue(),
-  netRevenue: sheet.getRange('B34').getValue(),
+// BATCH READ 1: Financial data B3:B39
+// Maps to FIELD_CONFIG fallback cells (RunWaratah.js is authoritative)
+const financialValues = sheet.getRange("B3:B39").getValues();
 
-  // Financial breakdown (B8, B15-B29)
-  productionAmount: sheet.getRange('B8').getValue(),
-  cashTakings: sheet.getRange('B15').getValue(),
-  grossSalesIncCash: sheet.getRange('B16').getValue(),
-  cashReturns: sheet.getRange('B17').getValue(),       // merged B17:B18
-  cdDiscount: sheet.getRange('B19').getValue(),         // merged B19:B20
-  refunds: sheet.getRange('B21').getValue(),            // merged B21:B22
-  cdRedeem: sheet.getRange('B23').getValue(),           // merged B23:B24
-  totalDiscount: sheet.getRange('B25').getValue(),
-  discountsCompsExcCD: sheet.getRange('B26').getValue(),
-  grossTaxableSales: sheet.getRange('B27').getValue(),
-  taxes: sheet.getRange('B28').getValue(),
-  netSalesWTips: sheet.getRange('B29').getValue(),
+// BATCH READ 2: Narrative fields A43:A65
+const narrativeValues = sheet.getRange("A43:A65").getValues();
 
-  // Tips
-  cardTips: sheet.getRange('B32').getValue(),
-  cashTips: sheet.getRange('B33').getValue(),
-  tipsTotal: sheet.getRange('B37').getValue(),
-
-  // Narratives
-  shiftSummary: sheet.getRange('A43').getDisplayValue(),
-  guestsOfNote: sheet.getRange('A45').getDisplayValue(),
-  theGood: sheet.getRange('A47').getDisplayValue(),
-  theBad: sheet.getRange('A49').getDisplayValue(),
-  kitchenNotes: sheet.getRange('A51').getDisplayValue(),
-  wastageComps: sheet.getRange('A63').getDisplayValue(),
-  rsaIncidents: sheet.getRange('A65').getDisplayValue(),
-  // Tasks extracted separately from A53:F61
-};
+// BATCH READ 3: TO-DOs A53:F61 (combined — accesses task + assignee in one call)
+const todoValues = sheet.getRange("A53:F61").getValues();
 ```
 
 **NOT warehoused (ignored):** B35 (Cash Total), B36 (Covers), B38 (Labor Hours), B39 (Labor Cost)
@@ -182,36 +174,23 @@ const shiftData = {
 
 **File:** `THE WARATAH/SHIFT REPORT SCRIPTS/WeeklyRolloverInPlace.js`
 
-These fields are cleared during weekly rollover (structure preserved):
+Clearable fields are now derived programmatically from FIELD_CONFIG (no separate list to maintain):
 
 ```javascript
-const CLEARABLE_FIELDS = {
-  // Header
-  mod: 'B4:F4',
-  staff: 'B5:F5',
+// In RunWaratah.js:
+function getClearableFieldKeys_() {
+  return Object.keys(FIELD_CONFIG).filter(key => !FIELD_CONFIG[key].isFormula);
+}
 
-  // Financial (single cells only — B37:B40 are formulas, DO NOT CLEAR)
-  netRevenue: 'B34',
-  cashTips: 'B33',
-  cardTips: 'B32',
-
-  // Narrative fields (merged A:F — value lives in col A, must clear full merge)
-  shiftSummary: 'A43:F43',
-  vips: 'A45:F45',
-  theGood: 'A47:F47',
-  theBad: 'A49:F49',
-  kitchenComments: 'A51:F51',
-  wastageComps: 'A63:F63',
-  rsaIncidents: 'A65:F65',
-
-  // To-do fields (9 rows: 53-61, merged A:E for tasks)
-  todoTasks: 'A53:E61',
-  todoAllocations: 'F53:F61'
-
-  // Note: B3:F3 (date) is NOT cleared — updated with new dates
-  // Note: B37:B40 are formulas — NEVER clear
-};
+// In WeeklyRolloverInPlace.js:
+const CLEARABLE_FIELD_KEYS = getClearableFieldKeys_();
+// → ['date','mod','staff','productionAmount','deposit','airbnbCovers','cancellations',
+//    'cashReturns','cdDiscount','refunds','cdRedeem','totalDiscount','pettyCash',
+//    'cardTips','cashTips','shiftSummary','guestsOfNote','theGood','theBad',
+//    'kitchenNotes','todoTasks','todoAssignees','wastageComps','rsaIncidents']
 ```
+
+Formula cells are automatically excluded. No manual list to keep in sync.
 
 ### CRITICAL: Merged Cell Clearing
 
@@ -282,13 +261,14 @@ U=TotalTips, V=LoggedAt
 
 | Aspect | Waratah | Sakura House |
 |--------|---------|--------------|
-| **Cell Strategy** | Hardcoded (`B34`) | Named ranges (`MONDAY_SR_NetRevenue`) |
-| **Flexibility** | Lower (cells hardcoded) | Higher (ranges can move) |
-| **Maintenance** | Simpler (direct references) | Complex (range management) |
-| **Risk** | Cell movement breaks scripts | Range deletion breaks scripts |
-| **Abstraction** | Via `VenueConfig.js` | Via `getFieldRange()` |
+| **Cell Strategy** | Named ranges (`WEDNESDAY_SR_NetRevenue`) | Named ranges (`MONDAY_SR_NetRevenue`) |
+| **Fallback** | Hardcoded cells (graceful degradation) | Hardcoded cells (graceful degradation) |
+| **Infrastructure File** | `RunWaratah.js` (FIELD_CONFIG + helpers) | `RunSakura.gs` (FIELD_CONFIG + helpers) |
+| **Day Prefixes** | WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY | MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY |
+| **Waratah Extra** | `isFormula` flag + `getClearableFieldKeys_()` | Not needed (no formula cell risk) |
+| **Self-healing** | `verifyAndFixNamedRanges_()` called during rollover | Same pattern |
 
 ---
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 18, 2026
 **Key Insight:** All narrative cells are merged A:F — always clear from column A, never B:F

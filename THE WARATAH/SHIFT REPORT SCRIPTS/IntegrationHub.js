@@ -198,7 +198,10 @@ function extractShiftData_(sheetName, config) {
   }
 
   // --- BATCH READ 1: Financial data B3:B39 (37 rows) ---
-  // Single API call replaces ~20 individual getRange().getValue() calls
+  // Single API call replaces ~20 individual getRange().getValue() calls.
+  // Intentionally bypasses getFieldRange() helpers for performance — GAS charges
+  // per API call, so one batch read is significantly faster than 20 named range lookups.
+  // Cell mapping: FIELD_CONFIG fallback cells in RunWaratah.js are authoritative.
   let finValues;
   try {
     finValues = sheet.getRange("B3:B39").getValues(); // 37 rows x 1 col → [[val], [val], ...]
@@ -235,7 +238,8 @@ function extractShiftData_(sheetName, config) {
   const staff = (finDisplay[2][0] || "").trim();  // B5 display
 
   // --- BATCH READ 2: Narrative + incident cells (A43:A65, odd rows) ---
-  // Single API call replaces 7 individual getRange().getDisplayValue() calls
+  // Single API call replaces 7 individual getDisplayValue() calls.
+  // Narrative fields are merged A:F — value lives in col A only (see FIELD_CONFIG in RunWaratah.js).
   let narrativeValues;
   try {
     narrativeValues = sheet.getRange("A43:A65").getDisplayValues(); // 23 rows
@@ -250,6 +254,9 @@ function extractShiftData_(sheetName, config) {
   };
 
   // --- BATCH READ 3: TO-DOs A53:F61 (9 rows) ---
+  // Combined A:F read — intentional. Accesses task description (col A, merged A:E)
+  // and assignee (col F) in one call. FIELD_CONFIG splits these into todoTasks/todoAssignees
+  // but this single batch read is more efficient for extraction.
   let todoRange = [];
   try { todoRange = sheet.getRange("A53:F61").getValues(); } catch(e) { Logger.log("extractShiftData_: could not read A53:F61 — " + e.message); }
   const todos = [];

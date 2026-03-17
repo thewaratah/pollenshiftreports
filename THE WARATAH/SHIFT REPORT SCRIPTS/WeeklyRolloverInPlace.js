@@ -29,44 +29,25 @@ const DAY_SHEETS = [
 ];
 
 /**
- * Fields to clear during rollover
- * Each field specifies the range to clear for each day sheet
+ * Field keys (from FIELD_CONFIG in RunWaratah.js) to clear during rollover.
+ * Formula cells are excluded — they are protected by the isFormula flag in FIELD_CONFIG.
+ *
+ * Excluded formula cells: cashTakings (B15), grossSalesIncCash (B16),
+ * discountsCompsExcCD (B26), grossTaxableSales (B27), taxes (B28),
+ * netSalesWTips (B29), netRevenue (B34), totalTips (B37).
+ *
+ * During transition: if named ranges don't exist, getFieldRange() falls back
+ * to the hardcoded cells in FIELD_CONFIG automatically.
  */
-const CLEARABLE_FIELDS = {
-  // Header fields (clear for fresh entry)
-  date: 'B3:F3',
-  mod: 'B4:F4',
-  staff: 'B5:F5',
-
-  // Financial fields (B37:B40 are formulas — DO NOT CLEAR)
-  netRevenue: 'B34',
-  covers: 'B36',
-  productionAmount: 'B8',
-  deposit: 'B9:B10',
-  airbnbCovers: 'B11',
-  cancellations: 'B13:B14',
-  cashReturns: 'B17:B18',
-  cashDiscount: 'B19:B20',
-  refunds: 'B21:B22',
-  cdRedeem: 'B23:B24',
-  totalDiscounts: 'B25',
-  pettyCash: 'B30',
-  cardTips: 'B32',
-  cashTips: 'B33',
-
-  // Narrative fields (merged A:F — value lives in col A, must clear full merge)
-  shiftSummary: 'A43:F43',
-  vips: 'A45:F45',
-  theGood: 'A47:F47',
-  theBad: 'A49:F49',
-  kitchenComments: 'A51:F51',
-  wastageComps: 'A63:F63',
-  rsaIncidents: 'A65:F65',
-
-  // To-do fields (9 rows: 53-61, merged A:E for tasks)
-  todoTasks: 'A53:E61',
-  todoAllocations: 'F53:F61'
-};
+const CLEARABLE_FIELD_KEYS = [
+  'date', 'mod', 'staff',
+  'productionAmount', 'deposit', 'airbnbCovers', 'cancellations',
+  'cashReturns', 'cdDiscount', 'refunds', 'cdRedeem', 'totalDiscount',
+  'pettyCash', 'cardTips', 'cashTips',
+  'shiftSummary', 'guestsOfNote', 'theGood', 'theBad', 'kitchenNotes',
+  'todoTasks', 'todoAssignees',
+  'wastageComps', 'rsaIncidents'
+];
 
 /**
  * Date field to UPDATE (not clear)
@@ -151,6 +132,13 @@ function performWeeklyRollover() {
     Logger.log('Step 6: Updating dates to next week...');
     const nextWeekStart = updateDatesToNextWeek_();
     Logger.log(`✅ Dates updated to week starting: ${nextWeekStart}`);
+
+    // 6b. Verify/fix named ranges on all sheets (silent — logs only, non-blocking)
+    try {
+      verifyAndFixNamedRanges_(ss);
+    } catch (e) {
+      Logger.log(`Named range verify skipped (non-blocking): ${e.message}`);
+    }
 
     // 7. Send notifications (only if previous week was archived)
     if (summary && pdfFile && snapshotFile) {
@@ -258,7 +246,7 @@ function validatePreconditions_() {
     throw new Error('WEDNESDAY sheet not found');
   }
 
-  const wednesdayDate = wednesdaySheet.getRange('B3').getValue();
+  const wednesdayDate = getFieldValue(wednesdaySheet, 'date');
   if (wednesdayDate && wednesdayDate instanceof Date) {
     Logger.log(`Validation passed. Working file: ${ss.getName()}, Previous week starting: ${wednesdayDate}`);
   } else {
@@ -301,22 +289,23 @@ function generateWeekSummary_() {
     }
 
     // Get date
-    const date = sheet.getRange('B3').getValue();
+    const date = getFieldValue(sheet, 'date');
     if (date && date instanceof Date) {
       weekEndingDate = date; // Last day (Sunday) will be week ending
       shiftsCompleted++;
 
       // Get financial data
-      const netRev = parseFloat(sheet.getRange('B34').getValue()) || 0;
-      const cashTips = parseFloat(sheet.getRange('B33').getValue()) || 0;
-      const cardTips = parseFloat(sheet.getRange('B32').getValue()) || 0;
+      const netRev = parseFloat(getFieldValue(sheet, 'netRevenue')) || 0;
+      const cashTips = parseFloat(getFieldValue(sheet, 'cashTips')) || 0;
+      const cardTips = parseFloat(getFieldValue(sheet, 'cardTips')) || 0;
 
       totalNetRevenue += netRev;
       totalCashTips += cashTips;
       totalCardTips += cardTips;
 
       // Count to-dos (A53:E61 = 9 rows, merged A:E — value lives in col A)
-      const todoRange = sheet.getRange('A53:E61');
+      // Combined A:F read — intentional, accesses both task (col A) and assignee (col F)
+      const todoRange = sheet.getRange('A53:F61');
       const todoValues = todoRange.getValues();
       todoValues.forEach(row => {
         if (row[0]) totalTodos++; // If first column has content, count as todo
@@ -461,7 +450,7 @@ function getOrCreateFolder_(parentFolder, folderName) {
  * - clearContent() removes values only (preserves formatting, validation, formulas)
  * - clear() destroys everything (breaks merged cells, validation, formulas)
  *
- * Clears all fields defined in CLEARABLE_FIELDS constant
+ * Clears all fields in CLEARABLE_FIELD_KEYS using RunWaratah.js helpers
  */
 function clearAllSheetData_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -478,16 +467,14 @@ function clearAllSheetData_() {
 
     Logger.log(`Clearing ${sheet.getName()}...`);
 
-    // Clear each field
-    Object.keys(CLEARABLE_FIELDS).forEach(fieldKey => {
-      const rangeNotation = CLEARABLE_FIELDS[fieldKey];
-
+    // Clear each field via named range helper (falls back to hardcoded cell if range missing)
+    CLEARABLE_FIELD_KEYS.forEach(fieldKey => {
       try {
-        const range = sheet.getRange(rangeNotation);
+        const range = getFieldRange(sheet, fieldKey);
         range.clearContent(); // ✅ CRITICAL: clearContent() not clear()
         totalFieldsCleared++;
       } catch (e) {
-        Logger.log(`⚠️ Warning: Failed to clear ${dayName} ${fieldKey} (${rangeNotation}): ${e.message}`);
+        Logger.log(`⚠️ Warning: Failed to clear ${dayName} ${fieldKey}: ${e.message}`);
       }
     });
   });
@@ -784,10 +771,11 @@ function previewRollover() {
     }
 
     report += '🗑️ FIELDS TO CLEAR (per day sheet):\n';
-    Object.keys(CLEARABLE_FIELDS).forEach(fieldKey => {
-      report += `  ${fieldKey}: ${CLEARABLE_FIELDS[fieldKey]}\n`;
+    CLEARABLE_FIELD_KEYS.forEach(fieldKey => {
+      const fallback = FIELD_CONFIG[fieldKey] ? FIELD_CONFIG[fieldKey].fallback : '(unknown)';
+      report += `  ${fieldKey}: ${fallback}\n`;
     });
-    report += `\n  Total: ${Object.keys(CLEARABLE_FIELDS).length} fields × 5 days = ${Object.keys(CLEARABLE_FIELDS).length * 5} ranges\n\n`;
+    report += `\n  Total: ${CLEARABLE_FIELD_KEYS.length} fields × 5 days = ${CLEARABLE_FIELD_KEYS.length * 5} ranges\n\n`;
 
     report += '📅 NEW WEEK DATES (would update):\n';
     DAY_SHEETS.forEach((dayName, index) => {

@@ -127,7 +127,7 @@ SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/polle
 
 | Feature | Sakura House | The Waratah |
 |---------|--------------|-------------|
-| **Cell References** | Named ranges (`MONDAY_SR_NetRevenue`) | Hardcoded cells (`B34`) |
+| **Cell References** | Named ranges (`MONDAY_SR_NetRevenue`) | Named ranges (`WEDNESDAY_SR_NetRevenue`) — fallback to hardcoded |
 | **Operating Days** | 6 days (Mon-Sat) | 5 days (Wed-Sun) |
 | **Weekly Rollover** | In-place system ✅ | In-place system ✅ |
 | **Code Volume** | ~9,500 LOC (22 files) | ~9,700 LOC (22 files) |
@@ -229,16 +229,23 @@ main                          ← stable, merged code only
 
 ---
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 18, 2026
 **Status:** Both venues fully operational and production-ready ✅
+
+**Recent Updates (Mar 18, 2026):**
+- Waratah: Named range system implemented (`RunWaratah.js`) — mirrors Sakura's `RunSakura.gs` architecture
+  - 32-field `FIELD_CONFIG` with `isFormula` flag; `getClearableFieldKeys_()` auto-derives rollover-safe list
+  - `getFieldValue/getFieldDisplayValue/getFieldValues()` helpers with graceful fallback to hardcoded cells
+  - Named range diagnostics + setup menu: `Admin Tools → Setup & Utilities → Named Ranges`
+  - `verifyAndFixNamedRanges_()` called during rollover (self-healing)
+  - Fixed 4 key-name mismatches in rollover: `cashDiscount`→`cdDiscount`, `vips`→`guestsOfNote`, etc.
+  - **Pending manual step:** Create named ranges in spreadsheet, then flip `usesNamedRanges: true` in VenueConfig.js
 
 **Recent Updates (Mar 6, 2026):**
 - Waratah SR Phase 0+1: 3 critical bug fixes + performance/code quality improvements (6 files, net -42 lines)
-- Waratah: 6-tier manager-facing explainer docs added to `docs/waratah/explainers/`
 - Both venues: Git branching strategy documented in CLAUDE.md (main, sakura/develop, waratah/develop)
 - Waratah: Task Management v1.2.0 — sort order, daily maintenance decomposed, 6 menu items removed, bug fixes
 - Waratah: Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor/avgCheck removed; full B5-B29 financial breakdown added
-- Waratah: Weekly functions audit — 4 key functions reviewed, fixed, deployed
 
 **Deployment (Mar 6, 2026):**
 - Waratah Shift Reports Phase 0+1: 6 files (IntegrationHub, NightlyExport, SlackBlockKit, UIServer, WeeklyDigest, WeeklyRollover)
