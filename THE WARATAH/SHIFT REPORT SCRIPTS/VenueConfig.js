@@ -82,8 +82,9 @@ function getVenueConfig_() {
         wastageComps: 'A63:F63',
         rsaIncidents: 'A65:F65',
 
-        // Uses hardcoded cells (not named ranges)
-        usesNamedRanges: false,
+        // Uses named ranges (WEDNESDAY_SR_NetRevenue etc.) via RunWaratah.js
+        // Fallback to hardcoded cells when named ranges don't exist in spreadsheet
+        usesNamedRanges: true,
       },
 
       // Timezone
