@@ -10,34 +10,70 @@
 
 **Claude must follow these dispatch rules automatically — no user prompt required.**
 
+### Pipeline commands (preferred — run the full chain)
+
+| Command | What it does |
+|---------|-------------|
+| `/saks [task]` | **Full Sakura pipeline:** scope → sakura-gas-agent (+extras in parallel) → gas-code-review-agent → documentation-agent → deployment-agent + Drive sync |
+| `/tah [task]` | **Full Waratah pipeline:** scope → waratah-gas-agent (+extras in parallel) → gas-code-review-agent → documentation-agent → deployment-agent + Drive sync |
+| `/orchestrate [task]` | **Both venues in parallel:** orchestrator dispatches `/saks` + `/tah` streams simultaneously; use for cross-venue features |
+
+### Single-agent commands (use when you need one step only)
+
+| Command | Agent dispatched | When to use |
+|---------|-----------------|-------------|
+| `/sakura [task]` | `sakura-gas-agent` | Code-only investigation or quick fix — no review/deploy needed |
+| `/waratah [task]` | `waratah-gas-agent` | Code-only investigation or quick fix — no review/deploy needed |
+| `/review [files]` | `gas-code-review-agent` | Review already-written code before deploy |
+| `/deploy [venue]` | `deployment-agent` | Deploy code that has already been reviewed and documented |
+| `/docs [what changed]` | `documentation-agent` | Update docs without deploying |
+| `/plan [feature]` | `shift-report-orchestrator` | Plan only — no code written |
+| `/rollover [task]` | `rollover-trigger-agent` | Rollover/trigger management |
+| `/slack [task]` | `slack-block-kit-agent` | Block Kit design or webhook debug |
+
+### Auto-routing (triggered without slash commands)
+
 | Trigger | Agent to dispatch |
 |---------|------------------|
-| Any task touching Sakura House files | `sakura-gas-agent` |
-| Any task touching Waratah files | `waratah-gas-agent` |
-| Task spans both venues | `shift-report-orchestrator` → parallelises into both venue agents |
-| After any code change (>5 lines modified) | `gas-code-review-agent` |
-| Before any `clasp push` | `deployment-agent` |
-| Any rollover, trigger create/remove, schedule | `rollover-trigger-agent` |
-| Any Slack Block Kit design or webhook debug | `slack-block-kit-agent` |
-| Any CLAUDE.md / doc update | `documentation-agent` |
-| Multi-step feature with 3+ files across venues | `shift-report-orchestrator` |
-| Claude API calls via UrlFetchApp in GAS | `claude-api-agent` |
-| Warehouse queries, backfill, analytics | `data-warehouse-agent` |
-| Deputy API, OAuth2, external REST | `external-integrations-agent` |
-| Task management 8-status workflow, escalation | `task-management-agent` |
+| Task touching Sakura files only | `/saks` pipeline |
+| Task touching Waratah files only | `/tah` pipeline |
+| Task spans both venues | `/orchestrate` → parallelises `/saks` + `/tah` |
+| Any code change >5 lines | `gas-code-review-agent` (auto, before deploy) |
+| Before any `clasp push` | `documentation-agent` first, then `deployment-agent` |
+| Rollover / trigger create / remove / schedule | `rollover-trigger-agent` |
+| Slack Block Kit design or webhook debug | `slack-block-kit-agent` |
+| Doc update only (no code) | `documentation-agent` |
+| Claude API via UrlFetchApp | `claude-api-agent` |
+| Warehouse queries / backfill / analytics | `data-warehouse-agent` |
+| Deputy API / OAuth2 / external REST | `external-integrations-agent` |
+| Task management 8-status workflow | `task-management-agent` |
 
-**Slash commands** (type in chat):
-| Command | Purpose |
-|---------|---------|
-| `/review [files]` | Run gas-code-review-agent on changed files |
-| `/sakura [task]` | Dispatch sakura-gas-agent |
-| `/waratah [task]` | Dispatch waratah-gas-agent |
-| `/plan [feature]` | Orchestrator plans without writing code |
-| `/orchestrate [task]` | Orchestrator plans + executes end-to-end |
-| `/deploy [venue]` | Run deployment checklist + clasp push |
-| `/docs [what changed]` | Patch affected CLAUDE.md files |
-| `/rollover [task]` | Rollover/trigger management |
-| `/slack [task]` | Block Kit design or webhook debug |
+### Pipeline architecture (`/saks` and `/tah`)
+
+```
+Phase 0 — Scope analysis (inline, no agent)
+  ↓ classifies: code change / docs only / deploy only
+  ↓ identifies extra agents needed (rollover, Slack, task mgmt, warehouse)
+
+Phase 1 — Implementation  ←── PARALLEL
+  sakura-gas-agent (or waratah-gas-agent)
+  + rollover-trigger-agent   (if rollover/trigger changes)
+  + slack-block-kit-agent    (if Slack notification changes)
+  + task-management-agent    (if 8-status workflow changes)
+  + data-warehouse-agent     (if warehouse schema changes)
+
+Phase 2 — Review  ←── sequential (waits for Phase 1)
+  gas-code-review-agent
+  → if blocking issues: re-dispatch venue agent → re-review (loop until CLEAR TO DEPLOY)
+
+Phase 3 — Documentation  ←── sequential (waits for CLEAR TO DEPLOY)
+  documentation-agent
+  → updates CLAUDE_*.md + docs/sakura/ or docs/waratah/ + FILE EXPLAINERS/
+
+Phase 4 — Deployment  ←── sequential (waits for Phase 3)
+  deployment-agent
+  → clasp push → git commit → sync-explainers-to-drive.js
+```
 
 ---
 
@@ -233,6 +269,9 @@ main                          ← stable, merged code only
 **Status:** Both venues fully operational and production-ready ✅
 
 **Recent Updates (Mar 18, 2026):**
+- Both venues: `/saks` + `/tah` pipeline commands added — full 4-phase workflow (scope → code → review → docs → deploy) triggered by a single command; replaces manual chaining of `/sakura` + `/review` + `/docs` + `/deploy`
+- Both venues: FILE EXPLAINERS consolidated to canonical 5 docs per venue; 21 non-canonical Waratah explainers deleted; `scripts/sync-explainers-to-drive.js` file list corrected
+- Both venues: `deployment-agent` now enforces `documentation-agent` as Step 0 (must complete before any clasp push); full doc-path table added to pre-deploy checklist
 - Waratah: Named range system implemented (`RunWaratah.js`) — mirrors Sakura's `RunSakura.gs` architecture
   - 32-field `FIELD_CONFIG` with `isFormula` flag; `getClearableFieldKeys_()` auto-derives rollover-safe list
   - `getFieldValue/getFieldDisplayValue/getFieldValues()` helpers with graceful fallback to hardcoded cells
