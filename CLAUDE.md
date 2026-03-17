@@ -246,8 +246,10 @@ main                          ← stable, merged code only
 - **`sakura/develop`** — all Sakura House development; `clasp push` from `SAKURA HOUSE/` directories
 - **`waratah/develop`** — all Waratah development; `clasp push` from `THE WARATAH/` directories
 - **Feature branches** — for larger changes, branch off the venue branch: `sakura/fix-rollover`, `waratah/add-dashboard`
-- **Shared file edits** (CLAUDE.md, docs/) — commit on whichever venue branch you're on; merge conflicts are rare since venue files don't overlap
-- **Merging** — when a venue branch is stable: `git checkout main && git merge sakura/develop && git push`
+- **Shared file edits** (CLAUDE.md, docs/, FILE EXPLAINERS/) — commit on whichever venue branch you're on; then **immediately cross-merge** into the other venue branch to keep them in sync
+- **Cross-merge rule (CRITICAL):** After any commit to `waratah/develop` that touches shared files, run: `git checkout sakura/develop && git merge waratah/develop`. And vice versa. Never let the branches diverge on shared files.
+- **Merging to main** — when a venue branch is stable: `git checkout main && git merge sakura/develop && git push`
+- **Check for drift:** Before starting any session, run `git log --oneline waratah/develop ^sakura/develop` and `git log --oneline sakura/develop ^waratah/develop` — if either has commits the other doesn't, merge immediately before doing any work.
 
 ---
 
