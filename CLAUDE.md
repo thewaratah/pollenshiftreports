@@ -93,7 +93,7 @@ Phase 4 — Deployment  ←── sequential (waits for Phase 3)
 **Quick Reference (START HERE):**
 → **[`CLAUDE_WARATAH.md`](CLAUDE_WARATAH.md)** 🟢 **PRODUCTION READY**
 - 343 lines - Modular with on-demand detail links
-- Hardcoded cell references
+- Named range system active (`WEDNESDAY_SR_NetRevenue`) via `RunWaratah.js` — fallback to hardcoded cells
 - In-place weekly rollover ✅
 - 5-day operation (Wed-Sun)
 
@@ -269,16 +269,15 @@ main                          ← stable, merged code only
 **Status:** Both venues fully operational and production-ready ✅
 
 **Recent Updates (Mar 18, 2026):**
-- Both venues: `/saks` + `/tah` pipeline commands added — full 4-phase workflow (scope → code → review → docs → deploy) triggered by a single command; replaces manual chaining of `/sakura` + `/review` + `/docs` + `/deploy`
-- Both venues: FILE EXPLAINERS consolidated to canonical 5 docs per venue; 21 non-canonical Waratah explainers deleted; `scripts/sync-explainers-to-drive.js` file list corrected
-- Both venues: `deployment-agent` now enforces `documentation-agent` as Step 0 (must complete before any clasp push); full doc-path table added to pre-deploy checklist
-- Waratah: Named range system implemented (`RunWaratah.js`) — mirrors Sakura's `RunSakura.gs` architecture
-  - 32-field `FIELD_CONFIG` with `isFormula` flag; `getClearableFieldKeys_()` auto-derives rollover-safe list
-  - `getFieldValue/getFieldDisplayValue/getFieldValues()` helpers with graceful fallback to hardcoded cells
-  - Named range diagnostics + setup menu: `Admin Tools → Setup & Utilities → Named Ranges`
-  - `verifyAndFixNamedRanges_()` called during rollover (self-healing)
-  - Fixed 4 key-name mismatches in rollover: `cashDiscount`→`cdDiscount`, `vips`→`guestsOfNote`, etc.
-  - **Pending manual step:** Create named ranges in spreadsheet, then flip `usesNamedRanges: true` in VenueConfig.js
+- Both venues: `/saks` + `/tah` pipeline commands upgraded — Phase 0 classification output block, file-scope declaration for parallel agents, max-2-retry ceiling in Phase 2 re-review loop
+- Both venues: All 12 agents enhanced — `model:` + `color:` fields added, `<example>` routing blocks added to all agents
+- Both venues: `gas-code-review-agent` major upgrade — 3-phase review (Context→Comparison→Assessment), confidence threshold, caller-impact check, re-review protocol with 2-retry ceiling
+- Both venues: Venue agents (`sakura-gas-agent`, `waratah-gas-agent`) upgraded — parallel read-only exploration phase, 5 modular constraint fragments, no-clasp-push-from-pipeline rule clarified
+- Both venues: `shift-report-orchestrator` upgraded — intent-extraction template (Verb/System/Venue/Urgency) + complexity→model hint table
+- Both venues: `deployment-agent` upgraded — reversibility-first language (authorization-doesn't-persist, blast-radius principle)
+- New: `docs/pipeline-learnings.md` created — institutional memory log seeded with 4 known incidents
+- New: `.claude/skills/gas-debugging/SKILL.md` — 4-phase GAS debugging skill with known-gotchas table
+- Waratah: Named range system now active — `usesNamedRanges: true` confirmed in `VenueConfig.js`; named ranges operational via `RunWaratah.js` (32-field `FIELD_CONFIG`, self-healing rollover, graceful fallback)
 
 **Recent Updates (Mar 6, 2026):**
 - Waratah SR Phase 0+1: 3 critical bug fixes + performance/code quality improvements (6 files, net -42 lines)

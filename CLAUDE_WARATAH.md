@@ -12,13 +12,9 @@
 
 `RunWaratah.js` added — mirrors Sakura's `RunSakura.gs` architecture. All field-to-cell mappings now live in `FIELD_CONFIG` (32 fields). Consumer files (`WeeklyRolloverInPlace.js`, `IntegrationHub.js`, `TEST_DataExtractionVerification.js`, `Menu.js`) updated.
 
-**Pending manual step (requires browser access to Waratah spreadsheet):**
-1. `clasp push` to deploy RunWaratah.js and updated files
-2. Go to `Waratah Tools → Admin Tools → Setup & Utilities → Named Ranges → Create on ALL Sheets`
-3. Confirm 160 named ranges created (5 sheets × 32 fields)
-4. Flip `usesNamedRanges: false → true` in `VenueConfig.js` → `clasp push` again
+**Status: Active.** `usesNamedRanges: true` is set in `VenueConfig.js`. Named ranges are live and routing through `RunWaratah.js`. If a named range is missing from the spreadsheet, reads/writes fall back gracefully to hardcoded cells (no user-visible failure).
 
-Until step 2-4 are done, all reads/writes route through fallback hardcoded cells (functionally identical to before — no user-visible change).
+**To create missing ranges:** `Waratah Tools → Admin Tools → Setup & Utilities → Named Ranges → Create on ALL Sheets` (creates 5 sheets × 32 fields = 160 ranges).
 
 ---
 
