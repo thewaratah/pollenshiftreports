@@ -219,7 +219,6 @@ The `.gitignore` excludes: `_SETUP_*` files (contain Slack webhook secrets), `do
 - Waratah SR Phase 0+1: 3 critical bug fixes + performance/code quality improvements (6 files, net -42 lines)
 - Waratah: 6-tier manager-facing explainer docs added to `docs/waratah/explainers/`
 - Both venues: Git branching strategy documented in CLAUDE.md (main, sakura/develop, waratah/develop)
-- Waratah: Task Management v1.2.0 — sort order, daily maintenance decomposed, 6 menu items removed, bug fixes
 - Waratah: Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor/avgCheck removed; full B5-B29 financial breakdown added
 
 **Deployment (Mar 7, 2026):**

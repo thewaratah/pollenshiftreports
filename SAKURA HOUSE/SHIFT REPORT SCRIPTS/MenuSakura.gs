@@ -60,6 +60,7 @@ function pw_sendWeeklyTodoSummary()           { if (requirePassword_()) sendWeek
 function pw_sendWeeklyTodoSummary_TestToSelf() { if (requirePassword_()) sendWeeklyTodoSummary_TestToSelf(); }
 
 // === PASSWORD-GATED WRAPPERS: Weekly Rollover (In-Place) ===
+function pw_openRolloverWizard()              { if (requirePassword_()) openRolloverWizard(); }
 function pw_performInPlaceRollover()           { if (requirePassword_()) performInPlaceRollover(); }
 function pw_previewInPlaceRollover()           { if (requirePassword_()) previewInPlaceRollover(); }
 function pw_showRolloverConfig()              { if (requirePassword_()) showRolloverConfig(); }
@@ -119,6 +120,7 @@ function onOpen() {
           .addItem('Setup Monday Digest Trigger', 'pw_setupWeeklyDigestTrigger_Sakura'))
 
         .addSubMenu(ui.createMenu('Weekly Rollover')
+          .addItem('Open Rollover Wizard', 'pw_openRolloverWizard')
           .addItem('Run Rollover Now', 'pw_performInPlaceRollover')
           .addItem('Preview Rollover (Dry Run)', 'pw_previewInPlaceRollover')
           .addItem('Open Rollover Settings', 'pw_showRolloverConfig')
