@@ -349,6 +349,29 @@ function exportAndEmailPDF() {
     return;
   }
 
+  // --- M5: Shift input validation ---
+  var validation = validateShiftBeforeExport_(sheet);
+
+  if (validation.errors.length > 0) {
+    var errorMsg = 'Shift Report \u2014 Pre-Export Check\n\nERRORS (must fix before exporting):\n';
+    validation.errors.forEach(function(e) { errorMsg += '\u2022 ' + e + '\n'; });
+    errorMsg += '\nExport has been blocked. Please fix the above and try again.';
+    ui.alert('Export Blocked', errorMsg, ui.ButtonSet.OK);
+    return;
+  }
+
+  if (validation.warnings.length > 0) {
+    var warnMsg = 'Shift Report \u2014 Pre-Export Check\n\nWARNINGS (you can proceed):\n';
+    validation.warnings.forEach(function(w) { warnMsg += '\u2022 ' + w + '\n'; });
+    warnMsg += '\nPress OK to export anyway, or Cancel to fix these first.';
+    var warnResponse = ui.alert('Pre-Export Warnings', warnMsg, ui.ButtonSet.OK_CANCEL);
+    if (warnResponse !== ui.Button.OK) {
+      ui.alert('Export cancelled.');
+      return;
+    }
+    Logger.log('[M5] Pre-export warnings overridden by user for sheet: ' + sheetName + ' | Warnings: ' + validation.warnings.join(' | '));
+  }
+
   // Show pre-send checklist (timesheets + fruit); export continues from there
   showPreExportChecklist_(sheetName, false);
 }
