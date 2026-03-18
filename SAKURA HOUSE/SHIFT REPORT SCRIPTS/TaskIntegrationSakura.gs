@@ -161,6 +161,25 @@ function pushTodosToActionables(sheet, sheetName) {
         .getRange(firstNewRow, TASK_COLS.DAYS_OPEN, newRows.length, 1)
         .setFormulas(formulaValues);
 
+      // M3 — AI Task Classification (non-blocking, per-row).
+      // For each newly written row, call classifyTask_Sakura() and update
+      // Priority (col A), Area (col D), and Source (col K) if a result is returned.
+      // Failures are silently logged; the row retains its defaults.
+      for (let i = 0; i < newRows.length; i++) {
+        try {
+          const description = newRows[i][TASK_COLS.DESCRIPTION - 1]; // E = index 4
+          const classification = classifyTask_Sakura(description);
+          if (classification) {
+            const targetRow = firstNewRow + i;
+            masterSheet.getRange(targetRow, TASK_COLS.PRIORITY).setValue(classification.priority);
+            masterSheet.getRange(targetRow, TASK_COLS.AREA).setValue(classification.area);
+            masterSheet.getRange(targetRow, TASK_COLS.SOURCE).setValue('Shift Report (AI)');
+          }
+        } catch (classifyErr) {
+          Logger.log('M3 Classify (Sakura) row ' + (firstNewRow + i) + ' error (non-blocking): ' + classifyErr.message);
+        }
+      }
+
       pushed = newRows.length;
     }
 

@@ -539,6 +539,25 @@ function pushTodosDirectToMasterActionables_(todos, sheetName) {
   const startRow = masterSheet.getLastRow() + 1;
   masterSheet.getRange(startRow, 1, rows.length, rows[0].length).setValues(rows);
 
+  // M3 — AI Task Classification (non-blocking, per-row).
+  // For each newly written row, call classifyTask_Waratah() and update
+  // Priority (col A=1), Area (col D=4), and Source (col K=11) if a result is returned.
+  // Failures are silently logged; the row retains its defaults.
+  for (var ci = 0; ci < rows.length; ci++) {
+    try {
+      var classDescription = rows[ci][4]; // index 4 = Description (col E)
+      var classification = classifyTask_Waratah(classDescription);
+      if (classification) {
+        var targetRow = startRow + ci;
+        masterSheet.getRange(targetRow, 1).setValue(classification.priority);  // A: Priority
+        masterSheet.getRange(targetRow, 4).setValue(classification.area);       // D: Area
+        masterSheet.getRange(targetRow, 11).setValue('Shift Report (AI)');     // K: Source
+      }
+    } catch (classifyErr) {
+      Logger.log('M3 Classify (Waratah) row ' + (startRow + ci) + ' error (non-blocking): ' + classifyErr.message);
+    }
+  }
+
   Logger.log('Pushed ' + todos.length + ' TO-DOs directly to Master Actionables Sheet.');
 }
 
