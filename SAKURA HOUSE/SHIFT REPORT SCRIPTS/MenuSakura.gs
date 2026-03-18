@@ -106,7 +106,7 @@ function onOpen() {
   try {
     const ui = SpreadsheetApp.getUi();
 
-    // Silent trigger check: warn in Admin Tools label if key SR triggers are missing.
+    // S5: Silent trigger check — warn in Admin Tools label if key SR triggers are missing.
     // Falls back to 'Admin Tools' if anything goes wrong.
     let adminToolsLabel = 'Admin Tools';
     try {
