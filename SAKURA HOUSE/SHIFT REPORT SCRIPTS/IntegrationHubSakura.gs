@@ -512,6 +512,14 @@ function logToDataWarehouse_(shiftData, skipLock) {
     } catch (e) {
       Logger.log('Auto-build analytics: ' + e.message);
     }
+
+    // M2 — Revenue Anomaly Detection (non-blocking)
+    try {
+      const warehouseId = getDataWarehouseId_();
+      if (warehouseId) detectRevenueAnomalies_Sakura(shiftData, warehouseId);
+    } catch (e) {
+      Logger.log('M2 anomaly check error: ' + e.message);
+    }
   }
 
   return logResult;

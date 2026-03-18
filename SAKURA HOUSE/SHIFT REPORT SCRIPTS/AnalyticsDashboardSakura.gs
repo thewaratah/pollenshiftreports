@@ -222,6 +222,9 @@ function buildFinancialDashboard() {
 
   sheet.setFrozenRows(2);
 
+  // ─── M7: EXTENDED TRENDS ────────────────────────────────────────────
+  buildExtendedTrends_Sakura(sheet, src);
+
   Logger.log("Financial analytics dashboard built successfully.");
   SpreadsheetApp.getUi().alert("Financial Analytics dashboard has been built on the ANALYTICS tab.");
 }
@@ -486,4 +489,123 @@ function _sectionHeader_(sheet, row, title) {
   sheet.getRange(row, 1).setValue(title);
   sheet.getRange(row, 1).setFontSize(11).setFontWeight("bold").setFontColor("#1a73e8");
   sheet.getRange(row, 1, 1, 6).merge();
+}
+
+
+// ============================================================================
+// M7 — EXTENDED TREND WINDOWS (Sakura)
+// ============================================================================
+
+/**
+ * Appends the "Extended Trends" section to the ANALYTICS sheet.
+ * Uses AVERAGEIFS/SUMIFS formulas so the section auto-updates.
+ *
+ * Sections added (starting after row 27):
+ *   - 13-week & 26-week day-of-week average revenue table (Mon-Sat)
+ *   - Day-of-week revenue heatmap (green=best, red=worst)
+ *   - Year-to-Date summary (total revenue, shifts, avg per shift)
+ *
+ * Sakura NIGHTLY_FINANCIAL columns:
+ *   A=Date, B=Day, C=WeekEnding, D=MOD, E=NetRevenue, H=TotalTips
+ *
+ * @param {Sheet} sheet  - The ANALYTICS sheet object.
+ * @param {string} src   - Source sheet name ("NIGHTLY_FINANCIAL").
+ */
+function buildExtendedTrends_Sakura(sheet, src) {
+  // Start below the existing Day-of-Week section (rows 18-26) with a gap
+  let row = 29;
+
+  // ── Section header ───────────────────────────────────────────────────
+  _sectionHeader_(sheet, row, "EXTENDED TRENDS — DAY-OF-WEEK (13W / 26W)");
+
+  // ── Column headers ───────────────────────────────────────────────────
+  row = 30;
+  const etHeaders = ["Day", "13-Week Avg Rev", "26-Week Avg Rev", "13-Week Avg Tips", "26-Week Avg Tips", "Heatmap Rank"];
+  etHeaders.forEach((h, i) => sheet.getRange(row, i + 1).setValue(h));
+  sheet.getRange(row, 1, 1, etHeaders.length).setFontWeight("bold").setBackground("#f3f3f3");
+
+  // ── Per-day rows ─────────────────────────────────────────────────────
+  const sakuraDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+  sakuraDays.forEach((day, i) => {
+    const r = 31 + i;
+    sheet.getRange(r, 1).setValue(day);
+
+    // 13-week avg revenue (91 days)
+    sheet.getRange(r, 2).setFormula(
+      `=IFERROR(AVERAGEIFS(${src}!E:E,${src}!B:B,"${day}",${src}!A:A,">="&TODAY()-91),0)`
+    ).setNumberFormat("$#,##0");
+
+    // 26-week avg revenue (182 days)
+    sheet.getRange(r, 3).setFormula(
+      `=IFERROR(AVERAGEIFS(${src}!E:E,${src}!B:B,"${day}",${src}!A:A,">="&TODAY()-182),0)`
+    ).setNumberFormat("$#,##0");
+
+    // 13-week avg tips
+    sheet.getRange(r, 4).setFormula(
+      `=IFERROR(AVERAGEIFS(${src}!H:H,${src}!B:B,"${day}",${src}!A:A,">="&TODAY()-91),0)`
+    ).setNumberFormat("$#,##0");
+
+    // 26-week avg tips
+    sheet.getRange(r, 5).setFormula(
+      `=IFERROR(AVERAGEIFS(${src}!H:H,${src}!B:B,"${day}",${src}!A:A,">="&TODAY()-182),0)`
+    ).setNumberFormat("$#,##0");
+
+    // Rank by 13-week avg revenue (RANK: 1=highest)
+    sheet.getRange(r, 6).setFormula(`=IFERROR(RANK(B${r},B31:B36,0),"")`);
+  });
+
+  // ── Day-of-week heatmap: colour B31:B36 green→red by 13W avg revenue ──
+  // We evaluate the revenue values now for static colouring.
+  // The colour is applied at build time using AVERAGEIFS evaluated server-side.
+  // Green (#b7e1cd) = highest, Red (#f4c7c3) = lowest; 6 steps.
+  const heatmapColors = ["#34a853", "#81c995", "#b7e1cd", "#f6aea9", "#ea4335", "#c5221f"];
+  // Colours ordered best (rank 1) → worst (rank 6)
+
+  try {
+    // Read current 13W avg revenue for each day to assign colours now
+    const revenueVals = sheet.getRange(31, 2, 6, 1).getValues().map(r => r[0]);
+    if (revenueVals.some(v => v > 0)) {
+      // Sort indices by value descending (best first)
+      const sorted = revenueVals
+        .map((v, i) => ({ v, i }))
+        .sort((a, b) => b.v - a.v);
+      sorted.forEach(({ i }, rank) => {
+        sheet.getRange(31 + i, 2).setBackground(heatmapColors[rank] || "#ffffff");
+      });
+    }
+  } catch (e) {
+    // Heatmap colouring is best-effort; formulas still present
+    Logger.log(`Extended Trends heatmap skipped: ${e.message}`);
+  }
+
+  // ── Year to Date ─────────────────────────────────────────────────────
+  row = 38;
+  _sectionHeader_(sheet, row, "YEAR TO DATE");
+
+  row = 39;
+  sheet.getRange(row, 1).setValue("YTD Total Revenue");
+  sheet.getRange(row, 2).setFormula(
+    `=IFERROR(SUMPRODUCT((YEAR(${src}!A2:A)=YEAR(TODAY()))*${src}!E2:E),0)`
+  ).setNumberFormat("$#,##0");
+
+  sheet.getRange(row, 4).setValue("YTD Shifts");
+  sheet.getRange(row, 5).setFormula(
+    `=IFERROR(SUMPRODUCT((YEAR(${src}!A2:A)=YEAR(TODAY()))*(${src}!A2:A<>"")*1),0)`
+  ).setNumberFormat("#,##0");
+
+  row = 40;
+  sheet.getRange(row, 1).setValue("YTD Avg Revenue / Shift");
+  sheet.getRange(row, 2).setFormula(`=IFERROR(B39/E39,0)`).setNumberFormat("$#,##0");
+
+  sheet.getRange(row, 4).setValue("YTD Total Tips");
+  sheet.getRange(row, 5).setFormula(
+    `=IFERROR(SUMPRODUCT((YEAR(${src}!A2:A)=YEAR(TODAY()))*${src}!H2:H),0)`
+  ).setNumberFormat("$#,##0");
+
+  // Bold labels
+  sheet.getRange("A39:A40").setFontWeight("bold");
+  sheet.getRange("D39:D40").setFontWeight("bold");
+
+  Logger.log("M7 Extended Trends section built for Sakura.");
 }

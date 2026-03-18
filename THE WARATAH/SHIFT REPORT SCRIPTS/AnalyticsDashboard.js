@@ -239,6 +239,9 @@ function buildFinancialDashboard() {
   // Freeze header
   sheet.setFrozenRows(2);
 
+  // ─── M7: EXTENDED TRENDS ────────────────────────────────────────────
+  buildExtendedTrends_Waratah(sheet, src);
+
   Logger.log("Financial analytics dashboard built successfully.");
   try { SpreadsheetApp.getUi().alert("Financial Analytics dashboard has been built on the ANALYTICS tab."); }
   catch (e) { Logger.log('UI alert skipped — trigger context'); }
@@ -495,4 +498,117 @@ function _sectionHeader_(sheet, row, title) {
   sheet.getRange(row, 1).setValue(title);
   sheet.getRange(row, 1).setFontSize(11).setFontWeight("bold").setFontColor("#1a73e8");
   sheet.getRange(row, 1, 1, 6).merge();
+}
+
+
+// ============================================================================
+// M7 — EXTENDED TREND WINDOWS (Waratah)
+// ============================================================================
+
+/**
+ * Appends the "Extended Trends" section to the Waratah ANALYTICS sheet.
+ * Uses AVERAGEIFS/SUMIFS formulas so the section auto-updates.
+ *
+ * Sections added (starting after row 28, after existing Day-of-Week):
+ *   - 13-week & 26-week day-of-week average revenue table (Wed-Sun)
+ *   - Day-of-week revenue heatmap (green=best, red=worst)
+ *   - Year-to-Date summary (total revenue, shifts, avg per shift)
+ *
+ * Waratah NIGHTLY_FINANCIAL columns (22-col schema):
+ *   A=Date, B=Day, F=NetRevenue, U=TotalTips
+ *
+ * @param {Sheet} sheet  - The ANALYTICS sheet object.
+ * @param {string} src   - Source sheet name ("NIGHTLY_FINANCIAL").
+ */
+function buildExtendedTrends_Waratah(sheet, src) {
+  // Start below existing Day-of-Week section (rows 21-27) with a gap
+  let row = 30;
+
+  // ── Section header ───────────────────────────────────────────────────
+  _sectionHeader_(sheet, row, "EXTENDED TRENDS — DAY-OF-WEEK (13W / 26W)");
+
+  // ── Column headers ───────────────────────────────────────────────────
+  row = 31;
+  const etHeaders = ["Day", "13-Week Avg Rev", "26-Week Avg Rev", "13-Week Avg Tips", "26-Week Avg Tips", "Heatmap Rank"];
+  etHeaders.forEach((h, i) => sheet.getRange(row, i + 1).setValue(h));
+  sheet.getRange(row, 1, 1, etHeaders.length).setFontWeight("bold").setBackground("#f3f3f3");
+
+  // ── Per-day rows (Wed-Sun = 5 days) ─────────────────────────────────
+  const waratahDays = ["Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+  waratahDays.forEach((day, i) => {
+    const r = 32 + i;
+    sheet.getRange(r, 1).setValue(day);
+
+    // 13-week avg revenue (91 days) — F=NetRevenue
+    sheet.getRange(r, 2).setFormula(
+      `=IFERROR(AVERAGEIFS(${src}!F:F,${src}!B:B,"${day}",${src}!A:A,">="&TODAY()-91),0)`
+    ).setNumberFormat("$#,##0");
+
+    // 26-week avg revenue (182 days)
+    sheet.getRange(r, 3).setFormula(
+      `=IFERROR(AVERAGEIFS(${src}!F:F,${src}!B:B,"${day}",${src}!A:A,">="&TODAY()-182),0)`
+    ).setNumberFormat("$#,##0");
+
+    // 13-week avg tips — U=TotalTips
+    sheet.getRange(r, 4).setFormula(
+      `=IFERROR(AVERAGEIFS(${src}!U:U,${src}!B:B,"${day}",${src}!A:A,">="&TODAY()-91),0)`
+    ).setNumberFormat("$#,##0");
+
+    // 26-week avg tips
+    sheet.getRange(r, 5).setFormula(
+      `=IFERROR(AVERAGEIFS(${src}!U:U,${src}!B:B,"${day}",${src}!A:A,">="&TODAY()-182),0)`
+    ).setNumberFormat("$#,##0");
+
+    // Rank by 13-week avg revenue (RANK: 1=highest)
+    sheet.getRange(r, 6).setFormula(`=IFERROR(RANK(B${r},B32:B36,0),"")`);
+  });
+
+  // ── Day-of-week heatmap: colour B32:B36 green→red by 13W avg revenue ──
+  const heatmapColors = ["#34a853", "#81c995", "#b7e1cd", "#f6aea9", "#ea4335"];
+  // 5 steps for 5 Waratah days (best→worst)
+
+  try {
+    const revenueVals = sheet.getRange(32, 2, 5, 1).getValues().map(r => r[0]);
+    if (revenueVals.some(v => v > 0)) {
+      const sorted = revenueVals
+        .map((v, i) => ({ v, i }))
+        .sort((a, b) => b.v - a.v);
+      sorted.forEach(({ i }, rank) => {
+        sheet.getRange(32 + i, 2).setBackground(heatmapColors[rank] || "#ffffff");
+      });
+    }
+  } catch (e) {
+    Logger.log(`Extended Trends heatmap skipped: ${e.message}`);
+  }
+
+  // ── Year to Date ─────────────────────────────────────────────────────
+  row = 39;
+  _sectionHeader_(sheet, row, "YEAR TO DATE");
+
+  row = 40;
+  sheet.getRange(row, 1).setValue("YTD Total Revenue");
+  sheet.getRange(row, 2).setFormula(
+    `=IFERROR(SUMPRODUCT((YEAR(${src}!A2:A)=YEAR(TODAY()))*${src}!F2:F),0)` // F=NetRevenue
+  ).setNumberFormat("$#,##0");
+
+  sheet.getRange(row, 4).setValue("YTD Shifts");
+  sheet.getRange(row, 5).setFormula(
+    `=IFERROR(SUMPRODUCT((YEAR(${src}!A2:A)=YEAR(TODAY()))*(${src}!A2:A<>"")*1),0)`
+  ).setNumberFormat("#,##0");
+
+  row = 41;
+  sheet.getRange(row, 1).setValue("YTD Avg Revenue / Shift");
+  sheet.getRange(row, 2).setFormula(`=IFERROR(B40/E40,0)`).setNumberFormat("$#,##0");
+
+  sheet.getRange(row, 4).setValue("YTD Total Tips");
+  sheet.getRange(row, 5).setFormula(
+    `=IFERROR(SUMPRODUCT((YEAR(${src}!A2:A)=YEAR(TODAY()))*${src}!U2:U),0)` // U=TotalTips
+  ).setNumberFormat("$#,##0");
+
+  // Bold labels
+  sheet.getRange("A40:A41").setFontWeight("bold");
+  sheet.getRange("D40:D41").setFontWeight("bold");
+
+  Logger.log("M7 Extended Trends section built for Waratah.");
 }

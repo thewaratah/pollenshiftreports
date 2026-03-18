@@ -564,6 +564,14 @@ function logToDataWarehouse_(shiftData, config, skipLock) {
     } catch (e) {
       Logger.log('logToDataWarehouse_: auto-build analytics failed (non-blocking): ' + e.message);
     }
+
+    // M2 — Revenue Anomaly Detection (non-blocking)
+    try {
+      const warehouseId = PropertiesService.getScriptProperties().getProperty('WARATAH_DATA_WAREHOUSE_ID');
+      if (warehouseId) detectRevenueAnomalies_Waratah(shiftData, warehouseId);
+    } catch (e) {
+      Logger.log('M2 anomaly check error: ' + e.message);
+    }
   }
 
   return logResult;

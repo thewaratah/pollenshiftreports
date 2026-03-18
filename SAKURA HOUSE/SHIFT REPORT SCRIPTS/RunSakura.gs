@@ -751,3 +751,191 @@ function removeAllSheetsProtection() {
     Logger.log(message);
   }
 }
+
+
+// ============================================================================
+// NAMED RANGE HEALTH MONITOR
+// ============================================================================
+
+/**
+ * Verifies all 144 expected Named Ranges (24 fields × 6 day sheets) exist
+ * and point to non-empty cells.
+ *
+ * Categorises each range as:
+ *   OK      — exists and the cell it points to is non-empty
+ *   EMPTY   — exists but the cell is blank (may be normal mid-week)
+ *   MISSING — not found in the spreadsheet at all
+ *
+ * Posts a structured Block Kit report to SAKURA_SLACK_WEBHOOK_TEST.
+ * Safe to call from trigger context — no UI calls.
+ *
+ * @returns {{ ok: number, empty: number, missing: number }}
+ */
+function namedRangeHealthCheck_Sakura() {
+  var EXPECTED_TOTAL = VALID_DAY_PREFIXES.length * Object.keys(FIELD_CONFIG).length;
+  Logger.log('namedRangeHealthCheck_Sakura: checking ' + EXPECTED_TOTAL + ' ranges (' +
+    VALID_DAY_PREFIXES.length + ' days x ' + Object.keys(FIELD_CONFIG).length + ' fields)');
+
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var allSheets = spreadsheet.getSheets();
+
+  var totalOk = 0;
+  var totalEmpty = 0;
+  var totalMissing = 0;
+
+  var missingRanges = [];
+  var emptyRanges = [];
+  var dayResults = [];
+
+  for (var di = 0; di < VALID_DAY_PREFIXES.length; di++) {
+    var dayPrefix = VALID_DAY_PREFIXES[di];
+    var daySheet = null;
+    for (var si = 0; si < allSheets.length; si++) {
+      if (allSheets[si].getName().startsWith(dayPrefix)) {
+        daySheet = allSheets[si];
+        break;
+      }
+    }
+
+    var dayOk = 0;
+    var dayEmpty = 0;
+    var dayMissing = 0;
+
+    if (!daySheet) {
+      var fieldCount = Object.keys(FIELD_CONFIG).length;
+      dayMissing = fieldCount;
+      totalMissing += fieldCount;
+      dayResults.push({ day: dayPrefix, ok: 0, empty: 0, missing: fieldCount, sheetMissing: true });
+      Logger.log('namedRangeHealthCheck_Sakura: ' + dayPrefix + ' sheet not found');
+      continue;
+    }
+
+    var fieldKeys = Object.keys(FIELD_CONFIG);
+    for (var fi = 0; fi < fieldKeys.length; fi++) {
+      var config = FIELD_CONFIG[fieldKeys[fi]];
+      var rangeName = buildNamedRangeName(dayPrefix, config.suffix);
+
+      var namedRange = null;
+      try {
+        namedRange = spreadsheet.getRangeByName(rangeName);
+      } catch (e) {
+        // treat as missing
+      }
+
+      if (!namedRange) {
+        dayMissing++;
+        totalMissing++;
+        if (missingRanges.length < 10) missingRanges.push(rangeName);
+        continue;
+      }
+
+      if (namedRange.getSheet().getSheetId() !== daySheet.getSheetId()) {
+        dayMissing++;
+        totalMissing++;
+        if (missingRanges.length < 10) missingRanges.push(rangeName + ' (wrong sheet)');
+        continue;
+      }
+
+      var displayVal = namedRange.getDisplayValue().trim();
+      if (displayVal === '' || displayVal === '0') {
+        if (config.isFormula) {
+          dayOk++;
+          totalOk++;
+        } else {
+          dayEmpty++;
+          totalEmpty++;
+          if (emptyRanges.length < 10) emptyRanges.push(rangeName);
+        }
+      } else {
+        dayOk++;
+        totalOk++;
+      }
+    }
+
+    dayResults.push({ day: dayPrefix, ok: dayOk, empty: dayEmpty, missing: dayMissing, sheetMissing: false });
+    Logger.log('namedRangeHealthCheck_Sakura: ' + dayPrefix +
+      ' — OK:' + dayOk + ' EMPTY:' + dayEmpty + ' MISSING:' + dayMissing);
+  }
+
+  Logger.log('namedRangeHealthCheck_Sakura: TOTAL — OK:' + totalOk +
+    ' EMPTY:' + totalEmpty + ' MISSING:' + totalMissing);
+
+  try {
+    var webhook = getSakuraSlackWebhookTest_();
+    if (webhook) {
+      var blocks = buildHealthCheckBlocks_Sakura_(dayResults, totalOk, totalEmpty, totalMissing,
+        EXPECTED_TOTAL, missingRanges, emptyRanges);
+      bk_post(webhook, blocks, 'Sakura Named Range Health: OK=' + totalOk +
+        ' EMPTY=' + totalEmpty + ' MISSING=' + totalMissing);
+    }
+  } catch (slackErr) {
+    Logger.log('namedRangeHealthCheck_Sakura: Slack post failed — ' + slackErr.message);
+  }
+
+  return { ok: totalOk, empty: totalEmpty, missing: totalMissing };
+}
+
+/**
+ * Builds Block Kit blocks for the Named Range Health report — Sakura House.
+ * Called only by namedRangeHealthCheck_Sakura().
+ *
+ * @param {Array<Object>} dayResults
+ * @param {number} totalOk
+ * @param {number} totalEmpty
+ * @param {number} totalMissing
+ * @param {number} expectedTotal
+ * @param {string[]} missingRanges  — up to 10 missing range names
+ * @param {string[]} emptyRanges    — up to 10 empty range names
+ * @returns {Array<Object>} Block Kit blocks
+ */
+function buildHealthCheckBlocks_Sakura_(dayResults, totalOk, totalEmpty, totalMissing,
+    expectedTotal, missingRanges, emptyRanges) {
+
+  var timestamp = Utilities.formatDate(new Date(), 'Australia/Sydney', 'dd/MM/yyyy HH:mm');
+  var blocks = [];
+
+  blocks.push(bk_header('Named Range Health — Sakura House'));
+
+  if (totalMissing === 0 && totalEmpty === 0) {
+    blocks.push(bk_section('All ' + expectedTotal + ' named ranges are healthy.'));
+    blocks.push(bk_context([timestamp + ' | ' + expectedTotal + '/' + expectedTotal + ' OK']));
+    return blocks;
+  }
+
+  var statusIcon = totalMissing > 0 ? 'ISSUES FOUND' : 'REVIEW';
+  blocks.push(bk_section('*' + statusIcon + '* — ' +
+    totalOk + ' OK | ' + totalEmpty + ' empty | ' + totalMissing + ' missing ' +
+    '(of ' + expectedTotal + ' expected)'));
+
+  blocks.push(bk_divider());
+
+  var pairs = dayResults.map(function(r) {
+    if (r.sheetMissing) {
+      return [r.day, 'Sheet not found'];
+    }
+    var icon = (r.missing > 0) ? 'MISSING ' + r.missing :
+               (r.empty > 0)   ? 'EMPTY ' + r.empty : 'All OK';
+    return [r.day, icon + ' | OK: ' + r.ok];
+  });
+  blocks.push(bk_fields(pairs));
+
+  blocks.push(bk_divider());
+
+  if (missingRanges.length > 0) {
+    var missingText = '*Missing ranges* (' + missingRanges.length +
+      (missingRanges.length === 10 ? '+' : '') + '):\n' +
+      missingRanges.map(function(r) { return '• ' + r; }).join('\n');
+    blocks.push(bk_section(missingText));
+  }
+
+  if (emptyRanges.length > 0) {
+    var emptyText = '*Empty ranges* (' + emptyRanges.length +
+      (emptyRanges.length === 10 ? '+' : '') + '):\n' +
+      emptyRanges.map(function(r) { return '• ' + r; }).join('\n');
+    blocks.push(bk_section(emptyText));
+  }
+
+  blocks.push(bk_context([timestamp + ' | Run from Sakura House Shift Reports']));
+
+  return blocks;
+}

@@ -349,6 +349,29 @@ function exportAndEmailPDF() {
     return;
   }
 
+  // --- M5: Shift input validation ---
+  var validation = validateShiftBeforeExport_(sheet);
+
+  if (validation.errors.length > 0) {
+    var errorMsg = 'Shift Report \u2014 Pre-Export Check\n\nERRORS (must fix before exporting):\n';
+    validation.errors.forEach(function(e) { errorMsg += '\u2022 ' + e + '\n'; });
+    errorMsg += '\nExport has been blocked. Please fix the above and try again.';
+    ui.alert('Export Blocked', errorMsg, ui.ButtonSet.OK);
+    return;
+  }
+
+  if (validation.warnings.length > 0) {
+    var warnMsg = 'Shift Report \u2014 Pre-Export Check\n\nWARNINGS (you can proceed):\n';
+    validation.warnings.forEach(function(w) { warnMsg += '\u2022 ' + w + '\n'; });
+    warnMsg += '\nPress OK to export anyway, or Cancel to fix these first.';
+    var warnResponse = ui.alert('Pre-Export Warnings', warnMsg, ui.ButtonSet.OK_CANCEL);
+    if (warnResponse !== ui.Button.OK) {
+      ui.alert('Export cancelled.');
+      return;
+    }
+    Logger.log('[M5] Pre-export warnings overridden by user for sheet: ' + sheetName + ' | Warnings: ' + validation.warnings.join(' | '));
+  }
+
   // Show pre-send checklist (timesheets + fruit); export continues from there
   showPreExportChecklist_(sheetName, false);
 }
@@ -515,6 +538,25 @@ function pushTodosDirectToMasterActionables_(todos, sheetName) {
   ]);
   const startRow = masterSheet.getLastRow() + 1;
   masterSheet.getRange(startRow, 1, rows.length, rows[0].length).setValues(rows);
+
+  // M3 — AI Task Classification (non-blocking, per-row).
+  // For each newly written row, call classifyTask_Waratah() and update
+  // Priority (col A=1), Area (col D=4), and Source (col K=11) if a result is returned.
+  // Failures are silently logged; the row retains its defaults.
+  for (var ci = 0; ci < rows.length; ci++) {
+    try {
+      var classDescription = rows[ci][4]; // index 4 = Description (col E)
+      var classification = classifyTask_Waratah(classDescription);
+      if (classification) {
+        var targetRow = startRow + ci;
+        masterSheet.getRange(targetRow, 1).setValue(classification.priority);  // A: Priority
+        masterSheet.getRange(targetRow, 4).setValue(classification.area);       // D: Area
+        masterSheet.getRange(targetRow, 11).setValue('Shift Report (AI)');     // K: Source
+      }
+    } catch (classifyErr) {
+      Logger.log('M3 Classify (Waratah) row ' + (startRow + ci) + ' error (non-blocking): ' + classifyErr.message);
+    }
+  }
 
   Logger.log('Pushed ' + todos.length + ' TO-DOs directly to Master Actionables Sheet.');
 }

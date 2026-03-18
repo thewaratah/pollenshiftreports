@@ -154,6 +154,14 @@ function performWeeklyRollover() {
     Logger.log('Step 8: Running post-rollover validation...');
     validateRolloverResult_();
 
+    // 9. Named range health check (non-blocking)
+    Logger.log('Step 9: Running named range health check...');
+    try {
+      namedRangeHealthCheck_Waratah();
+    } catch (e) {
+      Logger.log('Step 9: Named range health check failed (non-blocking): ' + e.message);
+    }
+
     Logger.log('========================================');
     Logger.log('WEEKLY ROLLOVER - Completed Successfully');
     Logger.log('========================================');
