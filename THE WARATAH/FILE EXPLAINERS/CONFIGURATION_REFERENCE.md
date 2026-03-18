@@ -284,7 +284,7 @@ The task assignment column (Column F in the task rows) may also have a staff dro
 | Trigger Name | What It Does | When It Runs | Menu Path to Set Up |
 |--------------|-------------|--------------|-------------------|
 | **Auto-sort** | Automatically sorts and formats tasks when spreadsheet is edited | On every edit | Task Management > Admin Tools > Setup Triggers > Create Edit Trigger (Auto-sort) |
-| **Weekly Summary** | Sends weekly task summary to Slack on Monday morning | Monday 9:00 AM | Task Management > Admin Tools > Setup Triggers > Create Weekly Summary Trigger (Mon 9am) |
+| **Weekly Summary** | Sends weekly task summary to Slack on Monday morning | Monday 10:00 AM | Task Management > Admin Tools > Setup Triggers > Create Weekly Summary Trigger (Mon 10am) |
 | **Bi-hourly Cleanup** | Cleans up completed tasks and maintains data integrity | Every 2 hours | Task Management > Admin Tools > Setup Triggers > Create Bi-Hourly Cleanup Trigger (Every 2hrs) |
 | **Daily Staff Workload** | Sends daily workload summary to each staff member | Daily 6:00 AM | Task Management > Admin Tools > Setup Triggers > Create Daily Staff Workload Trigger (6am) |
 | **Weekly Archive** | Archives completed tasks to maintain clean tracking | Monday 6:00 AM | Task Management > Admin Tools > Setup Triggers > Create Weekly Archive Trigger (Mon 6am) |

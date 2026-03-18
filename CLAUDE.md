@@ -278,6 +278,13 @@ main                          ← stable, merged code only
 - Sakura: Fixed FILE EXPLAINERS — "Backfill Entire Week to Warehouse" menu path corrected to "Backfill This Sheet to Warehouse" in `WEEKLY_AUTOMATED_EVENTS.md` and `CONFIGURATION_REFERENCE.md`
 - Sakura: 14 files changed (13 from caeb810 + MenuSakura.gs patch); clasp pushed to Google Apps Script
 
+**Deployment (Mar 18, 2026) — Waratah Shift Reports:**
+- Waratah: Full codebase analysis and clean-up pass — S1-S9 and M1 all verified PASS (no issues found)
+- Waratah: S1 (trigger setup), S2 (post-rollover validation), S3 (Script Property password), S5 (onOpen trigger warning), S6 (skipLock param), S7 (todo dedup checks all open tasks), S8 (ANALYTICS auto-build), S9 (logPipelineLearning_) — all confirmed complete and correct
+- Waratah: M1 AI Shift Summarisation — `AIInsightsWaratah.js` + `NightlyExport.js` integration; non-blocking; guarded `if (aiSummary)` in both email and Slack paths
+- Waratah: FILE EXPLAINERS updated — task summary trigger time corrected from 9am to 10am in `WEEKLY_AUTOMATED_EVENTS.md` and `CONFIGURATION_REFERENCE.md`
+- Waratah: 10 SR files + 2 TM files changed since caeb810; clasp pushed to Google Apps Script
+
 **Recent Updates (Mar 18, 2026):**
 - Both venues: `/saks` + `/tah` pipeline commands upgraded — Phase 0 classification output block, file-scope declaration for parallel agents, max-2-retry ceiling in Phase 2 re-review loop
 - Both venues: All 12 agents enhanced — `model:` + `color:` fields added, `<example>` routing blocks added to all agents

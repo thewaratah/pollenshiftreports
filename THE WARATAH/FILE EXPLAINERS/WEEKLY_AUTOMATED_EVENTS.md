@@ -15,7 +15,7 @@
 |---|---|---|
 | **Monday 2:00 AM** | Weekly backfill to Data Warehouse | Runs silently — no notification |
 | **Monday 6:00 AM** | Weekly task archive | Task Management spreadsheet auto-updated |
-| **Monday 9:00 AM** | Weekly task summary | Slack: #managers channel + team DMs |
+| **Monday 10:00 AM** | Weekly task summary | Slack: #managers channel + team DMs |
 | **Monday 10:00 AM** | Weekly rollover (archive + reset) | Email to management + Slack notification |
 | **Wednesday 8:00 AM** | Revenue digest (this week vs last) | Slack: #managers channel |
 | **Every 2 hours** | Task cleanup & auto-sort | Task Management spreadsheet auto-updated |
@@ -191,7 +191,7 @@ Check that:
 
 Completed tasks marked as DONE more than 3 days ago are automatically archived and moved out of the active list.
 
-### Monday 9am: Weekly Task Summary
+### Monday 10am: Weekly Task Summary
 
 A digest of all active tasks for the coming week posts to Slack and individual DMs, grouped by status and assignee.
 
@@ -277,8 +277,8 @@ You'll need the admin password. Open each menu item and select "Create [X] Trigg
 5. **Auto-Sort Trigger (on edit)**
    - Menu: **Waratah Tools > Admin Tools > Setup Triggers > Create Edit Trigger (Auto-sort)**
 
-6. **Weekly Task Summary Trigger (Mon 9am)**
-   - Menu: **Waratah Tools > Admin Tools > Setup Triggers > Create Weekly Summary Trigger (Mon 9am)**
+6. **Weekly Task Summary Trigger (Mon 10am)**
+   - Menu: **Waratah Tools > Admin Tools > Setup Triggers > Create Weekly Summary Trigger (Mon 10am)**
 
 7. **Weekly Archive Trigger (Mon 6am)**
    - Menu: **Waratah Tools > Admin Tools > Setup Triggers > Create Weekly Archive Trigger (Mon 6am)**
@@ -361,7 +361,7 @@ Data fields like revenue, cash, and notes should be empty. Formula fields will s
 
 **Fix:**
 1. Open the **Waratah - Master Actionables** spreadsheet
-2. Go to **Waratah Tools > Admin Tools > Setup Triggers > Create Weekly Summary Trigger (Mon 9am)**
+2. Go to **Waratah Tools > Admin Tools > Setup Triggers > Create Weekly Summary Trigger (Mon 10am)**
 3. Enter admin password
 4. Trigger is recreated; next Monday it will post
 
