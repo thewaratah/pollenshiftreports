@@ -201,16 +201,11 @@ function continueExport(sheetName, isTest) {
         // Phase 2: Generate structured insight
         const insight_ = generateShiftInsight_Sakura(aiShiftData_, analytics_);
 
-        // Phase 3: Route based on AI_INSIGHTS_MODE
-        const routed_ = deliverAIInsights_Sakura(insight_, aiShiftData_.date || '');
-        if (routed_) {
-          aiSummaryEmail = routed_;
-        } else {
-          aiSummaryEmail = generateShiftSummary_Sakura(aiShiftData_);
-        }
+        // Route based on AI_INSIGHTS_MODE — returns insight for 'live', null for 'evan_only'
+        // In evan_only mode: Evan gets insight via separate email/Slack; team gets NO AI block
+        aiSummaryEmail = deliverAIInsights_Sakura(insight_, aiShiftData_.date || '');
       } catch (e) {
         Logger.log('AI Insights (Sakura) email pipeline failed (non-blocking): ' + e.message);
-        try { aiSummaryEmail = generateShiftSummary_Sakura(aiShiftData_); } catch (e2) { /* silent fallback */ }
       }
 
       try {
@@ -453,14 +448,10 @@ function postToSlackFromSheet_(spreadsheet, sheet, sheetName, webhookUrl) {
     // Log insight to warehouse (always, regardless of mode)
     try { logInsightToWarehouse_Sakura(analytics_, insight_); } catch (e_) { /* non-blocking */ }
 
-    // Route based on AI_INSIGHTS_MODE
-    const routed_ = deliverAIInsights_Sakura(insight_, dateStr);
-    if (routed_) {
-      aiSummary = routed_;
-      aiIsUpgraded_ = true;
-    } else {
-      aiSummary = generateShiftSummary_Sakura(shiftDataForAI);
-    }
+    // Route based on AI_INSIGHTS_MODE — returns insight for 'live', null for 'evan_only'
+    // In evan_only mode: Evan gets insight via separate email/Slack; team gets NO AI block
+    aiSummary = deliverAIInsights_Sakura(insight_, dateStr);
+    if (aiSummary) aiIsUpgraded_ = true;
   } catch (e) {
     Logger.log('AI Insights (Sakura) Slack pipeline failed (non-blocking): ' + e.message);
   }
