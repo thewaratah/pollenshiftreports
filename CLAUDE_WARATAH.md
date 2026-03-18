@@ -35,19 +35,82 @@
 
 ---
 
-## 🆕 M1 — AI Shift Summarisation (March 18, 2026)
+## 🆕 M1-M4 — AI Insights Upgrade (March 18, 2026)
 
-**New file:** `AIInsightsWaratah.js`
+**File:** `AIInsightsWaratah.js` (expanded from M1 single function to M1-M7 analytics engine)
+
+### M1 — Core AI Summary
 
 - `generateShiftSummary_Waratah(shiftData)` — calls Claude Haiku (`claude-haiku-4-5-20251001`) via `UrlFetchApp`; returns a 2-3 sentence shift narrative
 - Non-blocking: returns `null` on any failure (missing API key, HTTP error, unexpected response shape)
 - Credential: `ANTHROPIC_API_KEY` Script Property — never hardcoded
 - Input token budget: narrative fields truncated to 300 chars each; max 2000 input tokens
 - Output token budget: `max_tokens: 300`
-- **Integration points:**
-  - `NightlyExport.js` `continueExport()` — AI summary shown as italicised block quote at top of HTML email (guarded: `if (aiSummary)`)
-  - `NightlyExport.js` `postToSlackFromSheet()` — AI summary appended as "AI Summary" Block Kit section (guarded: `if (aiSummary)`)
-- **No impact if absent:** If `ANTHROPIC_API_KEY` is not set, the feature is silently disabled — emails and Slack messages are sent as normal without the AI section
+
+### M4 — Analytics Engine (NEW March 18, 2026)
+
+**Function:** `computeShiftAnalytics_Waratah(shiftData, warehouseId)`
+
+- Pure GAS math engine — no AI calls
+- Reads NIGHTLY_FINANCIAL warehouse (22 cols A-V)
+- Computes metrics:
+  - 4-week and 8-week trailing averages (net revenue, production amount, cash takings, total tips)
+  - Week-over-week delta (pct change vs last week)
+  - Revenue trend: linear regression → rising / falling / flat
+  - Performance attribution: production share of revenue
+  - Best/worst comparable shift days (same day of week, past 8 weeks)
+  - Anomaly detection: z-score analysis (flags if revenue > 2 std devs from mean)
+  - **Waratah-specific metric:** Discount impact ratio = TotalDiscount / GrossSalesIncCash (vs trailing avg) — highlights discount-driven revenue impact
+- Returns structured analytics object with all metrics
+- Graceful fallback: if insufficient warehouse data (< 8 rows), returns partial analytics
+
+### M5 — Structured Prompt Generator (NEW March 18, 2026)
+
+**Function:** `generateShiftInsight_Waratah(shiftData, analytics)`
+
+- Builds Claude Haiku prompt with pre-computed metrics (no math inside the prompt)
+- Structured output format: **PERFORMANCE** / **TREND** / **ACTION**
+- Benchmarks section includes Waratah discount rates
+- Fallback: if insufficient analytics data, calls old `generateShiftSummary_Waratah()` (backward compatible)
+- Non-blocking: returns `null` if Claude API unavailable
+
+### M6 — Soft Launch Routing (NEW March 18, 2026)
+
+**Function:** `deliverAIInsights_Waratah(insight, shiftDate)`
+
+- Reads Script Property `AI_INSIGHTS_MODE`:
+  - **`'evan_only'`** (default): emails insight to Evan + posts to TEST Slack webhook
+  - **`'live'`**: returns insight for team email/Slack
+- Enables gradual rollout without affecting team visibility
+- Non-blocking: returns `null` on any failure
+
+### M7 — Insight Logging (NEW March 18, 2026)
+
+**Function:** `logInsightToWarehouse_Waratah(analytics, insightText)`
+
+- Appends to AI_INSIGHTS_LOG sheet in data warehouse
+- Auto-creates AI_INSIGHTS_LOG with headers on first use
+- Logs: date, day, venue, insight text, revenue vs benchmark %, trend direction, anomaly detected flag
+- Enables trend analysis of AI-generated insights over time
+
+### Integration Points (Updated NightlyExport.js)
+
+**Email path (~lines 224-262):**
+1. `computeShiftAnalytics_Waratah()` — read warehouse metrics
+2. `generateShiftInsight_Waratah()` — generate structured insight
+3. `logInsightToWarehouse_Waratah()` — persist to warehouse
+4. `deliverAIInsights_Waratah()` — route based on mode
+5. **Result:** Team gets generic `*AI Summary*`, Evan gets upgraded `*AI Insights*` separately (evan_only mode)
+
+**Slack path (~lines 829-862):**
+1. Same pipeline as email path
+2. Block label changes dynamically based on `AI_INSIGHTS_MODE` (`*AI Insights*` in live mode, `*AI Summary (Beta)*` in evan_only mode)
+
+### No Impact If Absent
+
+- If `ANTHROPIC_API_KEY` not set: feature silently disabled
+- If warehouse insufficient data: falls back to M1 basic summary
+- If Claude API unavailable: emails/Slack send without AI section (graceful degradation)
 
 ---
 
@@ -292,11 +355,26 @@ createNamedRangesOnAllSheets()        // menu: Create on ALL Sheets (5 × 32 = 1
 verifyAndFixNamedRanges_(spreadsheet) // called by rollover — silently recreates missing ranges
 ```
 
-### AIInsightsWaratah.js (M1 — new March 18, 2026)
+### AIInsightsWaratah.js (M1-M7 — new March 18, 2026)
 ```javascript
-generateShiftSummary_Waratah(shiftData) // Returns 2-3 sentence AI summary string, or null on any failure
-                                        // shiftData: {date, day, mod, netRevenue, cardTips, cashTips, totalTips, staff,
-                                        //             shiftSummary, guestsOfNote, theGood, theBad, kitchenNotes, todoCount}
+generateShiftSummary_Waratah(shiftData)     // M1: Returns 2-3 sentence AI summary string, or null on any failure
+                                            // shiftData: {date, day, mod, netRevenue, cardTips, cashTips, totalTips, staff,
+                                            //             shiftSummary, guestsOfNote, theGood, theBad, kitchenNotes, todoCount}
+
+computeShiftAnalytics_Waratah(shiftData, warehouseId)  // M4: Pure math engine — reads NIGHTLY_FINANCIAL, computes 4w/8w trailing avgs,
+                                                        //     ww delta, linear regression trend, discount impact, anomalies
+                                                        //     Returns: {avgRevenue4w, avgRevenue8w, wowDelta, trend, discountImpact,
+                                                        //               anomalyScore, bestComparable, worstComparable}
+
+generateShiftInsight_Waratah(shiftData, analytics)     // M5: Claude Haiku prompt with pre-computed metrics
+                                                        //     Output format: PERFORMANCE / TREND / ACTION
+                                                        //     Returns: {performance, trend, action} or null on API failure
+
+deliverAIInsights_Waratah(insight, shiftDate)          // M6: Routes based on AI_INSIGHTS_MODE script property
+                                                        //     'evan_only': emails Evan + posts TEST webhook
+                                                        //     'live': returns for team email/Slack
+
+logInsightToWarehouse_Waratah(analytics, insightText)  // M7: Appends to AI_INSIGHTS_LOG sheet (auto-creates on first use)
 ```
 
 ### NightlyExport.js
@@ -346,7 +424,7 @@ archiveCompletedTasks()          // Auto-archive after 30 days
 
 ---
 
-## 🔧 Script Properties (19 Total)
+## 🔧 Script Properties (21 Total — March 18, 2026)
 
 **File:** `_SETUP_ScriptProperties.js`
 
@@ -366,6 +444,8 @@ ARCHIVE_ROOT_FOLDER_ID: "[archive_folder_id]"
 WARATAH_SLACK_WEBHOOK_LIVE: "https://hooks.slack.com/..."
 WARATAH_EMAIL_RECIPIENTS: '["email1@...", "email2@..."]'
 ANTHROPIC_API_KEY: "sk-ant-..."                        // M1: AI shift summaries via AIInsightsWaratah.js (optional — feature gracefully disabled if absent)
+AI_INSIGHTS_MODE: "evan_only"                          // M6: Soft launch routing — 'evan_only' (default) or 'live'
+AI_INSIGHTS_EVAN_EMAIL: "evan@pollenhospitality.com"   // M6: Evan's email for evan_only mode delivery
 ```
 
 See [DEEP_DIVE_ARCHITECTURE.md](docs/waratah/DEEP_DIVE_ARCHITECTURE.md#script-properties-configuration) for complete list.
@@ -631,8 +711,8 @@ if (config.name === 'THE WARATAH') {
 
 ---
 
-**Last Updated:** March 18, 2026 (S1-S9 pass + M1 AI shift summarisation + P0 rollover fix)
-**Version:** 3.3
+**Last Updated:** March 18, 2026 (S1-S9 pass + M1-M7 AI Insights upgrade + P0 rollover fix)
+**Version:** 3.4
 **Status:** ✅ Fully operational and production-ready
 **Total LOC:** ~9,371 lines across 22 code files + 5 HTML files (+ RunWaratah.js ~800 LOC)
 

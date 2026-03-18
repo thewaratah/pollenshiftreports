@@ -1,6 +1,6 @@
 # Daily Shift Report — The Waratah
 
-**Last Updated:** March 18, 2026 (M1: AI shift summary added to email + Slack)
+**Last Updated:** March 18, 2026 (M4-M7: AI Insights Agent upgrade — analytics-driven insights, soft launch routing)
 **Type:** Handover guide for managers
 **Audience:** Restaurant managers, non-developers
 
@@ -90,7 +90,7 @@ No password is required. Managers can send reports directly from the menu.
 **1. PDF is emailed to managers**
 - A formatted, professional PDF of your shift report is created
 - It's emailed to all managers on the recipient list (Evan, Cynthia, Dipti, Chef, Howie, Adam, Lily as of March 2026)
-- The email includes a short AI-written summary at the top — 2-3 sentences capturing the shift highlights (net revenue, key events, action items). This is generated automatically from your shift notes and does not require any extra input from you. If the AI system is unavailable, the email sends normally without the summary.
+- The email includes an AI-written summary at the top — either a basic 2-3 sentence summary OR an upgraded analytics-driven insight (depending on system configuration). Insights include performance metrics (revenue vs benchmarks, trends), discount impact analysis, and recommended actions. This is generated automatically and requires no extra input from you. If the AI system is unavailable, the email sends normally without the summary.
 
 **2. Slack message is posted**
 - A summary message appears in the Waratah Slack channel
@@ -177,9 +177,9 @@ No password is required. Managers can send reports directly from the menu.
 - Wastage, maintenance, RSA items
 - Only appears if you filled in any incidents
 
-**AI Summary (optional):**
-- A 2-3 sentence AI-written summary of the shift appears at the bottom of the Slack message
-- It's generated automatically from your shift notes and is only shown when the AI system is available
+**AI Insights (optional):**
+- An AI-written summary of the shift appears at the bottom of the Slack message — either a basic 2-3 sentence summary OR an upgraded analytics-driven insight with performance metrics, trend analysis, discount impact, and action items
+- It's generated automatically from your shift notes and warehouse metrics; only shown when the AI system is available
 - If the AI system is unavailable or not configured, this section is simply omitted — everything else still sends
 
 **Action Buttons:**

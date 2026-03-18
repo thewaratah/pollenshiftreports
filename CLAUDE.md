@@ -271,6 +271,7 @@ main                          ← stable, merged code only
 **Status:** Both venues fully operational and production-ready ✅
 
 **Deployment (Mar 18, 2026) — Sakura Shift Reports:**
+- Sakura: M4–M7 AI Insights Agent upgrade — `computeShiftAnalytics_Sakura()` (4-week/8-week averages, z-score anomalies), `generateShiftInsight_Sakura()` (PERFORMANCE/TREND/ACTION format), `deliverAIInsights_Sakura()` (evan_only soft launch routing), `logInsightToWarehouse_Sakura()` (AI_INSIGHTS_LOG sheet); NightlyExportSakura rewired with try/catch fallback to M1 generic summary; new Script Properties AI_INSIGHTS_MODE, AI_INSIGHTS_EVAN_EMAIL
 - Sakura: M1 AI Shift Summarisation — new `AIInsightsSakura.gs` (`generateShiftSummary_Sakura()`), Claude Haiku, non-blocking; integrated into Slack BK and email body in `NightlyExportSakura.gs`
 - Sakura: M2 Revenue Anomaly Detection — `detectRevenueAnomalies_Sakura()` flags >2σ deviations, posts to test Slack channel, wired into IntegrationHub after financialLogged check
 - Sakura: M3 AI Task Classification — `classifyTask_Sakura()` auto-classifies tasks with priority (High/Medium/Low) and area (FOH/BOH/Kitchen/Admin) when pushed to Master Actionables; wired into TaskIntegrationSakura.gs
@@ -285,6 +286,7 @@ main                          ← stable, merged code only
 - Sakura: 21 files changed (M1-M9 + S1-S9 integration); clasp pushed to Google Apps Script
 
 **Deployment (Mar 18, 2026) — Waratah Shift Reports & Task Management:**
+- Waratah SR: M4–M7 AI Insights Agent upgrade — `computeShiftAnalytics_Waratah()` (4w/8w trailing averages, ww delta, linear regression trend, discount impact, anomaly z-scores, best/worst comparables), `generateShiftInsight_Waratah()` (PERFORMANCE/TREND/ACTION output format with pre-computed metrics), `deliverAIInsights_Waratah()` (evan_only soft launch routing), `logInsightToWarehouse_Waratah()` (AI_INSIGHTS_LOG auto-creates); NightlyExport rewired email + Slack paths (lines 224–262, 829–862); new Script Properties AI_INSIGHTS_MODE ('evan_only' | 'live'), AI_INSIGHTS_EVAN_EMAIL; Waratah-specific discount impact metric (TotalDiscount/GrossSalesIncCash vs trailing avg) in analytics; total 21 Script Properties
 - Waratah SR: Full M2/M3/M5/M7/M8/M9 implementation — revenue anomaly detection, AI task classification, shift input validation, extended analytics trends, task SLA tracking, named range health monitor
 - Waratah SR M2: `detectRevenueAnomalies_Waratah()` — flags >2σ revenue deviations, posts to test Slack channel on anomaly, wired into IntegrationHub after financialLogged check
 - Waratah SR M3: `classifyTask_Waratah()` — auto-classifies tasks with priority (High/Medium/Low) and area (FOH/BOH/Kitchen/Admin) when pushed to Master Actionables, wired into NightlyExport pushTodosDirectToMasterActionables_
@@ -292,9 +294,10 @@ main                          ← stable, merged code only
 - Waratah SR M7: `buildExtendedTrends_Waratah()` — new analytics dashboard features: 13-week rolling average, 26-week rolling average, day-of-week heatmap, year-to-date aggregation; auto-builds in AnalyticsDashboard
 - Waratah TM M8: `buildSLASection_()` + `sendWeeklySLASummary_Waratah()` — task SLA tracking (due dates, days open, escalation time); weekly summary posts to TEST webhook (switch to LIVE after review); TaskDashboardWaratah.gs
 - Waratah SR M9: `namedRangeHealthCheck_Waratah()` in RunWaratah.js + `pw_namedRangeHealthCheck_Waratah()` wrapper in Menu.js — Step 9 of rollover validates named range integrity; fixes stale ranges silently
-- Waratah: S1-S9 all verified complete; M1 AI shift summaries operational; 11 SR files + 2 TM files changed; clasp pushed to Google Apps Script
+- Waratah: S1-S9 all verified complete; M1 AI shift summaries + M4-M7 analytics upgrade operational; 11 SR files + 2 TM files changed; clasp pushed to Google Apps Script
 
 **Recent Updates (Mar 18, 2026):**
+- Sakura: M4–M7 AI Insights Agent upgrade — analytics engine (`computeShiftAnalytics_Sakura`), structured insight generation (`generateShiftInsight_Sakura`), soft launch routing (`deliverAIInsights_Sakura`, 'evan_only' mode), insight warehouse logging (`logInsightToWarehouse_Sakura`); new Script Properties AI_INSIGHTS_MODE and AI_INSIGHTS_EVAN_EMAIL; rewired NightlyExportSakura email + Slack paths with try/catch fallback to M1 generic summary
 - Sakura: M2–M9 full implementation — revenue anomaly detection, AI task classification, shift input validation, extended analytics trends (13-week + 26-week + day heatmap + YTD), task SLA tracking, named range health monitor (all 9 files integrated, auto-wiring in rollover Step 10, graceful degradation if ANTHROPIC_API_KEY missing)
 - Both venues: `/saks` + `/tah` pipeline commands upgraded — Phase 0 classification output block, file-scope declaration for parallel agents, max-2-retry ceiling in Phase 2 re-review loop
 - Both venues: All 12 agents enhanced — `model:` + `color:` fields added, `<example>` routing blocks added to all agents

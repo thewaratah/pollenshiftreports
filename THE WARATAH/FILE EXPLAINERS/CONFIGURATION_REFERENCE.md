@@ -51,7 +51,7 @@
 
 ---
 
-## Shift Report Settings (19 Properties)
+## Shift Report Settings (21 Properties — March 18, 2026)
 
 > These settings control the Shift Report system — daily exports, Slack notifications, email recipients, and data warehousing. Found in the **The Waratah - Current Week** spreadsheet.
 
@@ -62,6 +62,8 @@
 | `VENUE_NAME` | Venue Identifier | Identifies this spreadsheet as The Waratah (value: `WARATAH`) | Never — don't change this |
 | `MENU_PASSWORD` | Admin Password | Admin password for protected menu items | When you want to change the password (default: `chocolateteapot`) |
 | `ANTHROPIC_API_KEY` | AI Summary Key | API key for Claude AI shift summaries (optional) | If you want to enable or disable AI-generated shift summaries |
+| `AI_INSIGHTS_MODE` | AI Insights Router | Soft launch mode for analytics-driven insights (value: `'evan_only'` or `'live'`) | After testing, change from `'evan_only'` (Evan only) to `'live'` (all managers) |
+| `AI_INSIGHTS_EVAN_EMAIL` | Evan's Email Address | Email address where Evan receives insights in evan_only mode | If Evan's email address changes |
 
 ### Slack Webhooks
 
@@ -551,6 +553,6 @@ These menu items do NOT require the password:
 
 ---
 
-**Last Updated:** March 18, 2026 (added ANTHROPIC_API_KEY)
-**Version:** 1.0 — Manager Handover Edition
+**Last Updated:** March 18, 2026 (AI Insights Agent upgrade: AI_INSIGHTS_MODE, AI_INSIGHTS_EVAN_EMAIL properties added; total 21)
+**Version:** 1.1 — Manager Handover Edition
 **Status:** Ready for production use
