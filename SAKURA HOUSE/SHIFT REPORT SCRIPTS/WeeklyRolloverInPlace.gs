@@ -139,6 +139,14 @@ function performInPlaceRollover() {
     sendRolloverNotifications_(summary, pdfResult, snapshotResult);
     Logger.log('Notifications sent');
 
+    // Step 9: Post-rollover validation (non-blocking)
+    const validation = validateRolloverResult_(spreadsheet);
+    if (validation.valid) {
+      Logger.log('Post-rollover validation: PASSED');
+    } else {
+      Logger.log('Post-rollover validation: FAILED — ' + validation.issues.join('; '));
+    }
+
     const duration = ((new Date()) - startTime) / 1000;
     Logger.log(`========== ROLLOVER COMPLETE: ${duration.toFixed(1)}s ==========`);
 
@@ -864,6 +872,76 @@ function sendRolloverNotifications_(summary, pdfResult, snapshotResult) {
     Logger.log(`Slack notification failed: ${e.message}`);
   }
 }
+
+/**
+ * Post-rollover validation — step 9 of performInPlaceRollover().
+ *
+ * Checks that each day sheet received a date stamp and that the netRevenue
+ * named range still resolves on the MONDAY sheet. Non-blocking: any failure
+ * is Slack-notified (TEST webhook) but does NOT throw or abort the rollover
+ * (which has already completed by the time this runs).
+ *
+ * @param {Spreadsheet} spreadsheet
+ * @returns {{ valid: boolean, issues: string[] }}
+ */
+function validateRolloverResult_(spreadsheet) {
+  const config = getRolloverConfig_();
+  const issues = [];
+
+  config.DAY_SHEETS.forEach(function(dayPrefix) {
+    const sheet = findSheetByPrefix_(spreadsheet, dayPrefix);
+    if (!sheet) {
+      issues.push(dayPrefix + ': sheet not found after rollover');
+      return;
+    }
+
+    // Check: date field is non-empty
+    try {
+      const dateVal = getFieldRange(sheet, 'date').getValue();
+      if (!dateVal || dateVal === '') {
+        issues.push(dayPrefix + ': date field is empty after rollover');
+      }
+    } catch (e) {
+      issues.push(dayPrefix + ': could not read date field — ' + e.message);
+    }
+  });
+
+  // Check: netRevenue named range still resolves on MONDAY sheet
+  try {
+    const mondaySheet = findSheetByPrefix_(spreadsheet, 'MONDAY');
+    if (mondaySheet) {
+      const revRange = getFieldRange(mondaySheet, 'netRevenue');
+      if (!revRange) {
+        issues.push('MONDAY: netRevenue named range did not resolve');
+      }
+    } else {
+      issues.push('MONDAY: sheet not found during named range check');
+    }
+  } catch (e) {
+    issues.push('MONDAY: netRevenue named range error — ' + e.message);
+  }
+
+  const valid = issues.length === 0;
+
+  if (!valid) {
+    try {
+      const webhook = PropertiesService.getScriptProperties().getProperty('SAKURA_SLACK_WEBHOOK_TEST');
+      if (webhook) {
+        const blocks = [
+          bk_header('Post-Rollover Validation FAILED'),
+          bk_section('*Sakura House* — rollover completed but validation found issues:'),
+          bk_section(issues.map(function(i) { return '• ' + i; }).join('\n'))
+        ];
+        bk_post(webhook, blocks, 'Post-Rollover Validation FAILED — Sakura House');
+      }
+    } catch (e) {
+      Logger.log('validateRolloverResult_: could not send Slack alert — ' + e.message);
+    }
+  }
+
+  return { valid: valid, issues: issues };
+}
+
 
 /**
  * Builds Block Kit blocks for rollover notification.

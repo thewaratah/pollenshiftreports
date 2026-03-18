@@ -151,6 +151,33 @@ function notifyError_(functionName, error) {
 
 
 /**
+ * Appends a learning entry to the LEARNINGS tab in the data warehouse.
+ * Non-blocking — failures are logged only.
+ *
+ * @param {string} context - Function or pipeline stage where the issue occurred
+ * @param {string} issue   - Description of what went wrong
+ * @param {string} fix     - What was done (or should be done) to resolve it
+ */
+function logPipelineLearning_(context, issue, fix) {
+  try {
+    const warehouseId = PropertiesService.getScriptProperties().getProperty('SAKURA_DATA_WAREHOUSE_ID');
+    if (!warehouseId) return;
+    const wss = SpreadsheetApp.openById(warehouseId);
+    let sheet = wss.getSheetByName('LEARNINGS');
+    if (!sheet) {
+      sheet = wss.insertSheet('LEARNINGS');
+      sheet.getRange(1, 1, 1, 5).setValues([['Timestamp', 'Venue', 'Context', 'Issue', 'Fix Applied']]);
+      sheet.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#f3f3f3');
+      sheet.setFrozenRows(1);
+    }
+    sheet.appendRow([new Date(), 'SAKURA', context, issue, fix || '']);
+  } catch (e) {
+    Logger.log('logPipelineLearning_ error: ' + e.message);
+  }
+}
+
+
+/**
  * Post Block Kit message to a Slack webhook.
  * @param {string} webhookUrl — Slack incoming webhook URL
  * @param {Array<Object>} blocks — array of Block Kit blocks

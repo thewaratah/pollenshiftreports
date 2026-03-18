@@ -86,24 +86,26 @@ function pushTodosToActionables(sheet, sheetName) {
       return;
     }
 
-    // Build a set of existing descriptions created today (duplicate detection)
-    const today = new Date();
-    const todayStr = Utilities.formatDate(today, TASK_TIMEZONE, "yyyy-MM-dd");
+    // Build a set of open-task descriptions (duplicate detection).
+    // A task is considered a duplicate if it already exists with a status that
+    // is not DONE or CANCELLED — regardless of when it was created.
+    // This prevents re-pushing tasks that were created on a previous day but
+    // have not yet been completed or cancelled.
     const existingDescriptions = new Set();
 
     const lastRow = masterSheet.getLastRow();
     if (lastRow > 1) {
-      const existingData = masterSheet.getRange(2, TASK_COLS.DESCRIPTION, lastRow - 1, 1).getValues();
-      const existingDates = masterSheet.getRange(2, TASK_COLS.DATE_CREATED, lastRow - 1, 1).getValues();
+      // Batch-read STATUS (col B) and DESCRIPTION (col E) together.
+      // We read from column 2 (STATUS) through column 5 (DESCRIPTION): 4 columns wide.
+      const existingData = masterSheet.getRange(2, TASK_COLS.STATUS, lastRow - 1, 4).getValues();
+      // Columns within each row: [0]=Status, [1]=Staff, [2]=Area, [3]=Description
 
       for (let i = 0; i < existingData.length; i++) {
-        const desc = (existingData[i][0] || "").toString().trim();
-        const created = existingDates[i][0];
-        if (desc && created instanceof Date) {
-          const createdStr = Utilities.formatDate(created, TASK_TIMEZONE, "yyyy-MM-dd");
-          if (createdStr === todayStr) {
-            existingDescriptions.add(desc);
-          }
+        const status = (existingData[i][0] || "").toString().trim().toUpperCase();
+        const desc = (existingData[i][3] || "").toString().trim();
+        const isOpen = status && !['DONE', 'CANCELLED'].includes(status);
+        if (isOpen && desc) {
+          existingDescriptions.add(desc);
         }
       }
     }
@@ -163,7 +165,7 @@ function pushTodosToActionables(sheet, sheetName) {
     }
 
     if (skipped > 0) {
-      Logger.log(`Skipped ${skipped} duplicate TO-DO(s) (already pushed today).`);
+      Logger.log(`Skipped ${skipped} duplicate TO-DO(s) (already exists as an open task).`);
     }
     Logger.log(`Pushed ${pushed} TO-DO(s) from "${sheetName}" to Sakura Actionables.`);
 

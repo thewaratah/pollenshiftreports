@@ -42,13 +42,9 @@ const INTEGRATION_CONFIG = {
   },
 
   // Settings
-  timezone: "Australia/Sydney",
-
-  // Alert recipients
-  alerts: {
-    integrationErrors: "evan@sakurahousesydney.com",
-    validationWarnings: "evan@sakurahousesydney.com"
-  }
+  timezone: "Australia/Sydney"
+  // Alert email recipients are read from Script Properties at call time:
+  // PropertiesService.getScriptProperties().getProperty('INTEGRATION_ALERT_EMAIL_PRIMARY')
 };
 
 
@@ -132,6 +128,7 @@ function runIntegrations(sheetName) {
     results.success = false;
     results.errors.push(`Integration system error: ${error.message}`);
     Logger.log(`=== INTEGRATION ERROR: ${error.message} ===`);
+    logPipelineLearning_('runIntegrations', error.message, 'Check integration log for details');
   }
 
   return results;
@@ -318,10 +315,27 @@ function normaliseDateKey_(v) {
 /**
  * Log shift data to centralized analytics warehouse.
  * Populates: NIGHTLY_FINANCIAL, OPERATIONAL_EVENTS
+ *
+ * LockService guard: serialises concurrent calls (e.g. a live export overlapping
+ * with the Monday 8am backfill trigger) to prevent duplicate warehouse rows.
+ *
+ * @param {Object}  shiftData - Extracted shift data from extractShiftData_()
+ * @param {boolean} [skipLock=false] - Pass true when the caller already holds
+ *   the script lock (e.g. runWeeklyBackfill_). GAS locks are not re-entrant,
+ *   so calling tryLock() again from within a held lock always times out.
  */
-function logToDataWarehouse_(shiftData) {
+function logToDataWarehouse_(shiftData, skipLock) {
   if (!getDataWarehouseId_()) {
     throw new Error("Data warehouse ID not configured. Set SAKURA_DATA_WAREHOUSE_ID in Script Properties.");
+  }
+
+  let lock = null;
+  if (!skipLock) {
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(30000)) {
+      Logger.log('logToDataWarehouse_: Could not acquire lock — skipping to avoid concurrent write');
+      return { success: false, financialLogged: false, financialSkipped: false, eventsLogged: 0, wastageLogged: false, qualLogged: false, errors: ['Lock timeout — concurrent write in progress'], warnings: [] };
+    }
   }
 
   const logResult = {
@@ -331,6 +345,8 @@ function logToDataWarehouse_(shiftData) {
     wastageLogged: false,
     qualLogged: false
   };
+
+  try {
 
   const warehouse = SpreadsheetApp.openById(getDataWarehouseId_());
 
@@ -473,6 +489,28 @@ function logToDataWarehouse_(shiftData) {
       ]);
       logResult.qualLogged = true;
       Logger.log(`  Logged qualitative data to warehouse`);
+    }
+  }
+
+  } finally {
+    if (lock) lock.releaseLock();
+  }
+
+  // Auto-build analytics dashboard if ANALYTICS tab is missing or empty.
+  // Runs after the lock is released so it does not block warehouse writes.
+  // Non-blocking — failures are logged only.
+  if (logResult.financialLogged) {
+    try {
+      const warehouseId = getDataWarehouseId_();
+      if (warehouseId) {
+        const wss = SpreadsheetApp.openById(warehouseId);
+        const analyticsSheet = wss.getSheetByName('ANALYTICS');
+        if (!analyticsSheet || analyticsSheet.getLastRow() <= 1) {
+          buildFinancialDashboard();
+        }
+      }
+    } catch (e) {
+      Logger.log('Auto-build analytics: ' + e.message);
     }
   }
 
@@ -877,7 +915,7 @@ function runWeeklyBackfill_() {
           return;
         }
 
-        logToDataWarehouse_(shiftData);
+        logToDataWarehouse_(shiftData, true); // caller (runWeeklyBackfill_) holds the lock
         loggedKeys.add(key); // Prevent double-write if same date appears twice
         Logger.log(`  runWeeklyBackfill_: logged "${name}" to warehouse`);
         logged++;

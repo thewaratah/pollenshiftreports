@@ -1,10 +1,30 @@
 # SAKURA HOUSE - Claude Code Project Guide
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 18, 2026
 **Project Type:** Google Apps Script (Hospitality Management System)
 **Venue:** Sakura House (Single-Venue Documentation)
 
 > **Note:** This is the Sakura-specific guide. For The Waratah, see `CLAUDE_WARATAH.md`. For shared architecture patterns, see `CLAUDE_SHARED.md`.
+
+---
+
+## DEPLOYMENT (March 18, 2026) -- Small Items S1-S9
+
+**S1 — Trigger Setup Menu:**
+- New function `setupAllTriggers_Sakura()` in `MenuSakura.gs` — installs all 3 SR triggers (rollover Mon 1am, backfill Mon 8am, digest Mon 8am) in one call; deduplicates before creating
+- New menu item: Admin Tools → Setup & Diagnostics → "Setup All SR Triggers"
+- `onOpen()` now shows "⚠ Admin Tools" warning banner if rollover or digest trigger is missing
+
+**S2 — Post-Rollover Validation:**
+- New Step 9 in `WeeklyRolloverInPlace.gs`: `validateRolloverResult_()` — checks date fields and named ranges post-rollover; posts Slack alert to TEST webhook on failure; non-blocking (rollover completes even if validation fails)
+
+**S8 — Data Warehouse Auto-Build & LockService Re-entrancy:**
+- `IntegrationHubSakura.gs`: `logToDataWarehouse_(shiftData, skipLock)` — new `skipLock` parameter prevents LockService deadlock when called from within `runWeeklyBackfill_` (which already holds lock)
+- Auto-builds ANALYTICS tab on first warehouse write if tab is missing
+- `logPipelineLearning_()` called in catch block of `runIntegrations()` to log errors to LEARNINGS tab
+
+**S9 — Pipeline Learning Utility:**
+- New utility function `logPipelineLearning_(context, issue, fix)` in `SlackBlockKitSakuraSR.gs` — appends to LEARNINGS tab in data warehouse for operational diagnostics
 
 ---
 
@@ -486,7 +506,8 @@ performInPlaceRollover()
     ├─→ clearAllSheetData_()              // FOR EACH field: range.clearContent()
     ├─→ updateDatesToNextWeek_()          // Calculate + stamp next week dates
     ├─→ verifyAndFixNamedRanges_()        // Recreate any missing named ranges
-    └─→ sendRolloverNotifications_()      // Email + Slack
+    ├─→ sendRolloverNotifications_()      // Email + Slack
+    └─→ validateRolloverResult_()         // NEW (S2): Check dates + named ranges post-rollover; posts Slack alert on failure (non-blocking)
 ```
 
 ### Archive Structure
@@ -609,9 +630,15 @@ Shift Report
 runIntegrations(sheetName)
     ├─→ extractShiftData_()      // Extract via named ranges
     ├─→ validateShiftData_()
-    ├─→ logToDataWarehouse_()    // Write to 4 warehouse sheets
+    ├─→ logToDataWarehouse_(shiftData, skipLock)    // Write to 4 warehouse sheets (S8: skipLock param prevents re-entrancy deadlock)
     └─→ logIntegrationRun_()
+
+Error handling (S9):
+    └─→ logPipelineLearning_(context, issue, fix)   // Appends to LEARNINGS tab on integration failure
 ```
+
+**Auto-Build Behavior (S8, Mar 18, 2026):**
+The ANALYTICS tab is auto-created on first warehouse write if missing. LockService re-entrancy fixed via `skipLock` parameter — when `runWeeklyBackfill_` calls `logToDataWarehouse_()`, it passes `skipLock=true` to prevent deadlock (backfill already holds the lock).
 
 **Data Warehouse Sheets (schemas current as of Mar 6, 2026):**
 
@@ -690,6 +717,7 @@ setupWeeklyDigestTrigger_Sakura()       // Installs Monday 8am trigger (safe to 
 - Column E = Net Revenue
 - Column J = Total Tips (index 9; schema now 17 cols A-Q as of Mar 6)
 - Error handling via `notifyError_()` from SlackBlockKitSakuraSR.gs (added Mar 6)
+- Pipeline learning logged via `logPipelineLearning_()` on errors (S9, Mar 18)
 
 **Trigger:** Monday 8am (Australia/Sydney) -- NOT YET SET UP. Must be installed manually via:
 - Menu: `Admin Tools → Weekly Digest → Setup Monday Digest Trigger`, or
@@ -731,11 +759,12 @@ Shift Report
     │   ├── Send Revenue Digest (TEST)
     │   └── Setup Monday Digest Trigger
     └── Setup & Diagnostics ▸
+        ├── Setup All SR Triggers                ← NEW (S1)
         ├── Check Named Ranges (This Sheet)
         ├── Check Named Ranges (ALL Sheets)
         ├── Create Named Ranges (This Sheet)
         ├── Create Named Ranges (ALL Sheets)
-        ├── Force Update Named Ranges (ALL Sheets)  ← NEW
+        ├── Force Update Named Ranges (ALL Sheets)
         └── Test Task Push to Actionables
 ```
 
@@ -900,5 +929,5 @@ Note: `_SETUP_*` files are gitignored (they contain Slack webhook secrets). `.cl
 
 ---
 
-**Last Updated:** March 6, 2026
-**Total LOC:** ~10,100 lines across 22 .gs + 5 .html files (rollover-wizard.html added Mar 6; NIGHTLY_FINANCIAL 17 cols)
+**Last Updated:** March 18, 2026
+**Total LOC:** ~10,100 lines across 22 .gs + 5 .html files (rollover-wizard.html added Mar 6; NIGHTLY_FINANCIAL 17 cols; S1-S9 items Mar 18)
