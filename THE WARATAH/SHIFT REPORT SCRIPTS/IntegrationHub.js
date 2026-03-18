@@ -142,6 +142,9 @@ function runIntegrations(sheetName) {
 
     // Send alert
     sendIntegrationAlert_("Integration System Failure", error.message, sheetName, INTEGRATION_CONFIG);
+
+    // Log to pipeline learnings
+    logPipelineLearning_('runIntegrations', error.message, 'Check integration log for details');
   }
 
   return results;
@@ -355,14 +358,37 @@ function normaliseDateKey_(v) {
  * Schema updated 2026-03-06: removed Covers/Labor/derived metrics,
  * added full financial breakdown (B8, B15-B29).
  *
- * @param {Object} shiftData - Standardized shift data from extractShiftData_()
- * @param {Object} [config]  - Optional pre-loaded INTEGRATION_CONFIG
+ * @param {Object}  shiftData  - Standardized shift data from extractShiftData_()
+ * @param {Object}  [config]   - Optional pre-loaded INTEGRATION_CONFIG
+ * @param {boolean} [skipLock] - Pass true when the caller already holds the script lock
+ *                               (e.g. runWeeklyBackfill_). GAS locks are not re-entrant;
+ *                               acquiring the same lock twice will always time out.
  * @returns {Object} {financialLogged, financialSkipped, eventsLogged, wastageLogged, qualLogged}
  */
-function logToDataWarehouse_(shiftData, config) {
+function logToDataWarehouse_(shiftData, config, skipLock) {
   const INTEGRATION_CONFIG = config || getIntegrationConfig_();
   if (!INTEGRATION_CONFIG.dataWarehouseId) {
     throw new Error("Data warehouse ID not configured. Update INTEGRATION_CONFIG.dataWarehouseId");
+  }
+
+  // Concurrency guard — prevents duplicate writes if triggered simultaneously.
+  // Skipped when caller (e.g. runWeeklyBackfill_) already holds the lock.
+  let lock = null;
+  if (!skipLock) {
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(30000)) {
+      Logger.log('logToDataWarehouse_: Could not acquire lock — skipping concurrent write');
+      return {
+        success: false,
+        financialLogged: false,
+        financialSkipped: false,
+        eventsLogged: 0,
+        wastageLogged: false,
+        qualLogged: false,
+        errors: ['Lock timeout — concurrent write in progress'],
+        warnings: []
+      };
+    }
   }
 
   const logResult = {
@@ -372,6 +398,8 @@ function logToDataWarehouse_(shiftData, config) {
     wastageLogged: false,
     qualLogged: false
   };
+
+  try {
 
   const warehouse = SpreadsheetApp.openById(INTEGRATION_CONFIG.dataWarehouseId);
 
@@ -521,7 +549,28 @@ function logToDataWarehouse_(shiftData, config) {
     }
   }
 
+  // Auto-build analytics dashboard if ANALYTICS tab is missing or empty
+  if (logResult.financialLogged) {
+    try {
+      const warehouseId = PropertiesService.getScriptProperties().getProperty('WARATAH_DATA_WAREHOUSE_ID');
+      if (warehouseId) {
+        const wss = SpreadsheetApp.openById(warehouseId);
+        const analyticsSheet = wss.getSheetByName('ANALYTICS');
+        if (!analyticsSheet || analyticsSheet.getLastRow() <= 1) {
+          buildFinancialDashboard(); // defined in AnalyticsDashboard.js
+          Logger.log('logToDataWarehouse_: auto-built financial dashboard (ANALYTICS tab was missing/empty)');
+        }
+      }
+    } catch (e) {
+      Logger.log('logToDataWarehouse_: auto-build analytics failed (non-blocking): ' + e.message);
+    }
+  }
+
   return logResult;
+
+  } finally {
+    if (lock) lock.releaseLock();
+  }
 }
 
 
@@ -1032,7 +1081,7 @@ function runWeeklyBackfill_() {
           return;
         }
 
-        logToDataWarehouse_(shiftData, INTEGRATION_CONFIG);
+        logToDataWarehouse_(shiftData, INTEGRATION_CONFIG, true); // skipLock: caller holds the lock
         loggedKeys.add(key);
         Logger.log(`  runWeeklyBackfill_: logged "${name}" to warehouse`);
         logged++;

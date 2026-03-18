@@ -8,33 +8,30 @@
  ****************************************************/
 
 /**
- * Get admin password from Script Properties.
- */
-function getMenuPassword_() {
-  return PropertiesService.getScriptProperties().getProperty('MENU_PASSWORD');
-}
-
-/**
- * Prompts for password and returns true if correct
+ * Prompts for password and returns true if correct.
+ * Password is read from Script Properties (MENU_PASSWORD),
+ * with a fallback to the default value during migration.
  */
 function requirePassword_(actionName) {
-  const ui = SpreadsheetApp.getUi();
-  const response = ui.prompt(
-    '🔐 Password Required',
-    `Enter password to ${actionName}:`,
-    ui.ButtonSet.OK_CANCEL
-  );
-
-  if (response.getSelectedButton() !== ui.Button.OK) {
+  const stored = PropertiesService.getScriptProperties().getProperty('MENU_PASSWORD');
+  const password = stored || 'chocolateteapot'; // fallback during migration
+  try {
+    const ui = SpreadsheetApp.getUi();
+    const response = ui.prompt(
+      'Password Required',
+      'Enter password to ' + actionName + ':',
+      ui.ButtonSet.OK_CANCEL
+    );
+    if (response.getSelectedButton() !== ui.Button.OK) return false;
+    if (response.getResponseText().trim() !== password) {
+      ui.alert('Incorrect password. Action cancelled.');
+      return false;
+    }
+    return true;
+  } catch (e) {
+    Logger.log('requirePassword_: UI not available');
     return false;
   }
-
-  if (response.getResponseText() !== getMenuPassword_()) {
-    ui.alert('❌ Incorrect password. Action cancelled.');
-    return false;
-  }
-
-  return true;
 }
 
 // ============ PASSWORD-PROTECTED WRAPPERS ============

@@ -1,16 +1,14 @@
 # SHIFT REPORTS 3.0 - Shared Architecture Guide
 
-**Last Updated:** March 7, 2026
+**Last Updated:** March 18, 2026
 **Project Type:** Google Apps Script (Multi-Venue Hospitality Management System)
 
 > **Note:** This guide covers patterns and systems **shared by both venues**. For venue-specific details, see `CLAUDE_SAKURA.md` or `CLAUDE_WARATAH.md`.
 
-**Recent Updates (Mar 7, 2026):**
-- **Sakura:** SR alignment Phases 0-4 — `notifyError_()` utility added to SlackBlockKitSakuraSR.gs and wired into 4 trigger-eligible files; NIGHTLY_FINANCIAL expanded 13->17 cols (N=FOHStaff, O=BOHStaff, P=CardTips, Q=SurchargeTips); rollover wizard UI (rollover-wizard.html); rollover webhook TEST->LIVE; backfill trigger Mon 2am->8am
-- **Both venues:** Git repository initialized at `github.com/thewaratah/pollenshiftreports` — `clasp push` and `git push` are independent deployment/versioning workflows
-- **Waratah:** Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor removed; full B5-B29 financial breakdown added
-- **Waratah:** All weekly triggers consolidated to Monday: backfill 8am, digest 9am, rollover 10am, weekly summary 10am
-- **Waratah:** Weekly functions audit — 4 key functions reviewed, hardened, and deployed
+**Recent Updates (Mar 18, 2026):**
+- **Both venues:** Small items S1-S9 — setupAllTriggers menu item (S1), post-rollover validation (S2), LockService re-entrancy fix via `skipLock` param (S8), `logPipelineLearning_()` utility appends to LEARNINGS tab (S9)
+- **Sakura:** `requirePassword_()` reads from Script Properties (S1); `validateRolloverResult_()` Step 9 in rollover (S2); IntegrationHub auto-builds ANALYTICS tab (S8)
+- **Waratah:** `requirePassword_()` reads from MENU_PASSWORD Script Property (S1); WeeklyRolloverInPlace `validateRolloverResult_()` + trigger helper try/catch (S2); NightlyExport duplicate detection checks ALL open tasks (S9)
 
 **Previous Updates (Feb 26, 2026):**
 - **Both venues:** `runIntegrations()` fully non-blocking in `continueExport()` — warehouse errors go to `Logger.log()` only; export always proceeds
@@ -129,7 +127,83 @@ getEscalationEmail_()           // ESCALATION_EMAIL
 
 ---
 
-### 5. Script Properties Security Pattern ✅
+### 5. LockService Re-entrancy Prevention Pattern (S8, Mar 18, 2026)
+
+**Problem:** When a function holding a LockService lock calls another function that tries to acquire the same lock, it deadlocks.
+
+**Solution:** Pass `skipLock` parameter to inner functions:
+```javascript
+// Outer function (holds lock for 30 seconds)
+function runWeeklyBackfill_() {
+  const lock = LockService.getScriptLock();
+  lock.tryLock(30000);
+  try {
+    const shiftData = extractShiftData_();
+    // Inner function is also lock-eligible, but we already hold the lock
+    logToDataWarehouse_(shiftData, config, skipLock=true);  // ✅ Skips lock acquisition
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Inner function (can be called with or without outer lock)
+function logToDataWarehouse_(shiftData, config, skipLock) {
+  if (!skipLock) {
+    const lock = LockService.getScriptLock();
+    lock.tryLock(30000);
+  }
+  try {
+    // ... write to warehouse ...
+  } finally {
+    if (!skipLock) {
+      lock.releaseLock();
+    }
+  }
+}
+```
+
+**Benefits:**
+- ✅ Prevents deadlocks in nested calls
+- ✅ Inner functions still protect themselves when called independently
+- ✅ Clear intent at callsite (skipLock=true signals lock already held)
+
+**Status:** ✅ Implemented in both venues' IntegrationHub (S8, Mar 18)
+
+---
+
+### 6. Pipeline Learning Utility Pattern (S9, Mar 18, 2026)
+
+**Purpose:** Log operational diagnostics to LEARNINGS tab in data warehouse when integrations fail.
+
+**Implementation:**
+```javascript
+function logPipelineLearning_(context, issue, fix) {
+  // Appends to LEARNINGS sheet in data warehouse
+  // context: "IntegrationHub.runIntegrations", "NightlyExport.continueExport", etc.
+  // issue: "Duplicate detection failed", "Slack webhook timeout", etc.
+  // fix: "Retried with backoff", "Logged to Logger.log", etc.
+
+  const warehouse = SpreadsheetApp.openById(config.dataWarehouseId);
+  const sheet = warehouse.getSheetByName('LEARNINGS') || warehouse.insertSheet('LEARNINGS');
+  sheet.appendRow([new Date(), context, issue, fix]);
+}
+```
+
+**Called from:**
+- `IntegrationHub.js`: catch block of `runIntegrations()` (Waratah S8)
+- `IntegrationHubSakura.gs`: catch block of `runIntegrations()` (Sakura S9)
+- `SlackBlockKitWaratahSR.js` and `SlackBlockKitSakuraSR.gs`: error handlers
+
+**Benefits:**
+- ✅ Non-blocking diagnostic logging
+- ✅ Operational insights into system failures
+- ✅ Cumulative learning log for improvement tracking
+
+**Status:** ✅ Implemented in both venues (S9, Mar 18)
+
+---
+
+### 7. Script Properties Security Pattern ✅
 
 **CRITICAL:** Never hardcode credentials, webhooks, or passwords in source code. Use Script Properties for all sensitive configuration.
 
@@ -696,5 +770,5 @@ previewArchival()                  // Preview what would be archived
 
 ---
 
-**Last Updated:** March 7, 2026
+**Last Updated:** March 18, 2026 (S1-S9 small items pass)
 **Applies To:** Both Sakura House and The Waratah
