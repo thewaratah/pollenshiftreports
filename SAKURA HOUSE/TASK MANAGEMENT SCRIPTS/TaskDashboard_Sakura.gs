@@ -308,6 +308,12 @@ function buildTaskDashboard() {
   // Freeze header
   sheet.setFrozenRows(2);
 
+  // ── M8: SLA METRICS ─────────────────────────────────────────────────
+  const actionablesSheet = ss.getSheetByName(TASK_CONFIG.sheets.master);
+  if (actionablesSheet) {
+    buildSLASection_(sheet, actionablesSheet);
+  }
+
   Logger.log("Task analytics dashboard built successfully.");
   SpreadsheetApp.getUi().alert("Task Dashboard has been built on the TASK DASHBOARD tab.");
 }
@@ -422,4 +428,199 @@ function _taskSectionHeader_(sheet, row, title) {
   sheet.getRange(row, 1).setValue(title);
   sheet.getRange(row, 1).setFontSize(11).setFontWeight("bold").setFontColor("#1a73e8");
   sheet.getRange(row, 1, 1, 6).merge();
+}
+
+
+// ============================================================================
+// M8 — TASK SLA TRACKING (Sakura)
+// ============================================================================
+
+/**
+ * Builds the "SLA Metrics" section in the TASK DASHBOARD sheet.
+ *
+ * Reads the Actionables sheet directly (server-side calculation):
+ *   - Average days to complete by priority (URGENT/HIGH/MEDIUM/LOW)
+ *     Only DONE tasks with both DATE_CREATED (G) and DATE_COMPLETED (H).
+ *   - Oldest open task age in days (max DATE_CREATED age, non-DONE/CANCELLED).
+ *   - This week throughput: tasks created this Mon–today vs completed this Mon–today.
+ *
+ * Column schema (0-indexed, from COLS in EnhancedTaskManagement_Sakura.gs):
+ *   A=Priority(0), B=Status(1), G=DateCreated(6), H=DateCompleted(7), I=DaysOpen(8)
+ *
+ * Writes to columns A-F starting at row 38 (below Area Breakdown at rows 24-35).
+ *
+ * @param {Sheet} dashboardSheet   - The "TASK DASHBOARD" sheet.
+ * @param {Sheet} actionablesSheet - The master Actionables sheet.
+ */
+function buildSLASection_(dashboardSheet, actionablesSheet) {
+  const today = new Date();
+  // Monday of this week (ISO: Monday = day 1)
+  const dayOfWeek = today.getDay(); // 0=Sun
+  const daysToMonday = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
+  const weekStart = new Date(today.getTime() - daysToMonday * 24 * 60 * 60 * 1000);
+  weekStart.setHours(0, 0, 0, 0);
+
+  const lastRow = actionablesSheet.getLastRow();
+  if (lastRow < 2) {
+    Logger.log("SLA section skipped — no data rows in Actionables sheet.");
+    return;
+  }
+
+  // Read all data columns A-I (indices 0-8)
+  const data = actionablesSheet.getRange(2, 1, lastRow - 1, 9).getValues();
+
+  // Accumulators for avg days by priority
+  const priorityTotals = { URGENT: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+  const priorityCounts = { URGENT: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+  let oldestOpenAgeDays = 0;
+  let createdThisWeek = 0;
+  let completedThisWeek = 0;
+
+  data.forEach(row => {
+    const priority = (row[0] || "").toString().trim().toUpperCase();
+    const status   = (row[1] || "").toString().trim().toUpperCase();
+    const dateCreated   = row[6];
+    const dateCompleted = row[7];
+
+    const isDone      = status === "DONE";
+    const isCancelled = status === "CANCELLED";
+    const isActive    = !isDone && !isCancelled;
+
+    // Avg days to complete by priority (DONE tasks with both dates)
+    if (isDone &&
+        dateCreated instanceof Date && !isNaN(dateCreated) &&
+        dateCompleted instanceof Date && !isNaN(dateCompleted) &&
+        priorityTotals.hasOwnProperty(priority)) {
+      const daysToComplete = (dateCompleted - dateCreated) / (1000 * 60 * 60 * 24);
+      if (daysToComplete >= 0) {
+        priorityTotals[priority] += daysToComplete;
+        priorityCounts[priority]++;
+      }
+    }
+
+    // Oldest open task
+    if (isActive && dateCreated instanceof Date && !isNaN(dateCreated)) {
+      const ageDays = Math.floor((today - dateCreated) / (1000 * 60 * 60 * 24));
+      if (ageDays > oldestOpenAgeDays) oldestOpenAgeDays = ageDays;
+    }
+
+    // This week throughput
+    if (dateCreated instanceof Date && !isNaN(dateCreated) && dateCreated >= weekStart) {
+      createdThisWeek++;
+    }
+    if (dateCompleted instanceof Date && !isNaN(dateCompleted) && dateCompleted >= weekStart) {
+      completedThisWeek++;
+    }
+  });
+
+  // ── Write SLA section to dashboard ───────────────────────────────────
+  // Placed at row 38 (below Area Breakdown rows 24-35, with gap at 36-37)
+  let row = 38;
+  _taskSectionHeader_(dashboardSheet, row, "SLA METRICS");
+
+  row = 39;
+  dashboardSheet.getRange(row, 1).setValue("Priority").setFontWeight("bold");
+  dashboardSheet.getRange(row, 2).setValue("Avg Days to Complete").setFontWeight("bold");
+  dashboardSheet.getRange(row, 4).setValue("Sample Size").setFontWeight("bold");
+  dashboardSheet.getRange(row, 1, 1, 5).setBackground("#f3f3f3");
+
+  const slaRows = [
+    { label: "URGENT", key: "URGENT" },
+    { label: "HIGH",   key: "HIGH"   },
+    { label: "MEDIUM", key: "MEDIUM" },
+    { label: "LOW",    key: "LOW"    }
+  ];
+
+  slaRows.forEach(({ label, key }, i) => {
+    const r = 40 + i;
+    const count = priorityCounts[key];
+    const avg   = count > 0 ? Math.round((priorityTotals[key] / count) * 10) / 10 : null;
+    dashboardSheet.getRange(r, 1).setValue(label);
+    dashboardSheet.getRange(r, 2).setValue(avg !== null ? avg : "—");
+    dashboardSheet.getRange(r, 4).setValue(count);
+  });
+
+  // Oldest open task
+  row = 45;
+  dashboardSheet.getRange(row, 1).setValue("Oldest Open Task (days)").setFontWeight("bold");
+  dashboardSheet.getRange(row, 2).setValue(oldestOpenAgeDays).setFontSize(14).setFontWeight("bold");
+  if (oldestOpenAgeDays > 30) {
+    dashboardSheet.getRange(row, 2).setFontColor("#ea4335");
+  } else if (oldestOpenAgeDays > 14) {
+    dashboardSheet.getRange(row, 2).setFontColor("#f9ab00");
+  } else {
+    dashboardSheet.getRange(row, 2).setFontColor("#34a853");
+  }
+
+  // This week throughput
+  row = 47;
+  dashboardSheet.getRange(row, 1).setValue("This Week — Created").setFontWeight("bold");
+  dashboardSheet.getRange(row, 2).setValue(createdThisWeek);
+  dashboardSheet.getRange(row, 4).setValue("This Week — Completed").setFontWeight("bold");
+  dashboardSheet.getRange(row, 5).setValue(completedThisWeek);
+
+  Logger.log(`M8 SLA section built — URGENT: ${priorityCounts.URGENT > 0 ? (priorityTotals.URGENT / priorityCounts.URGENT).toFixed(1) : "—"}d avg, oldest open: ${oldestOpenAgeDays}d, week: ${createdThisWeek} created / ${completedThisWeek} completed.`);
+}
+
+
+/**
+ * Posts a concise Task SLA weekly summary to the Sakura test Slack webhook.
+ *
+ * Reads the SLA metrics from the TASK DASHBOARD sheet (built by buildSLASection_).
+ * Switch from SAKURA_SLACK_WEBHOOK_TEST to SAKURA_SLACK_WEBHOOK_LIVE when ready.
+ *
+ * Expected cell positions (written by buildSLASection_):
+ *   B40 = URGENT avg days   B41 = HIGH avg days
+ *   B42 = MEDIUM avg days   B43 = LOW avg days
+ *   B45 = Oldest open (days)
+ *   B47 = Created this week  E47 = Completed this week
+ */
+function sendWeeklySLASummary_Sakura() {
+  const webhookUrl = PropertiesService.getScriptProperties().getProperty('SAKURA_SLACK_WEBHOOK_TEST');
+  if (!webhookUrl) {
+    Logger.log("sendWeeklySLASummary_Sakura: SAKURA_SLACK_WEBHOOK_TEST not configured — skipped.");
+    return;
+  }
+
+  const ss = SpreadsheetApp.openById(getTaskSpreadsheetId_());
+  const dashboard = ss.getSheetByName("TASK DASHBOARD");
+  if (!dashboard) {
+    Logger.log("sendWeeklySLASummary_Sakura: TASK DASHBOARD sheet not found — run buildTaskDashboard() first.");
+    return;
+  }
+
+  // Read SLA values written by buildSLASection_
+  const urgentAvg   = dashboard.getRange("B40").getValue();
+  const highAvg     = dashboard.getRange("B41").getValue();
+  const mediumAvg   = dashboard.getRange("B42").getValue();
+  const lowAvg      = dashboard.getRange("B43").getValue();
+  const oldestOpen  = dashboard.getRange("B45").getValue();
+  const created     = dashboard.getRange("B47").getValue();
+  const completed   = dashboard.getRange("E47").getValue();
+
+  const fmt = v => (typeof v === "number" && v > 0) ? `${v}d` : "—";
+
+  const text =
+    `Task SLA — Sakura | ` +
+    `Avg resolution: URGENT ${fmt(urgentAvg)} / HIGH ${fmt(highAvg)} / MEDIUM ${fmt(mediumAvg)} / LOW ${fmt(lowAvg)} | ` +
+    `Oldest open: ${fmt(oldestOpen)} | ` +
+    `This week: ${created} created, ${completed} completed`;
+
+  const blocks = [
+    bk_header("Task SLA — Sakura House"),
+    bk_section(
+      `*Avg Resolution Time*\n` +
+      `URGENT: ${fmt(urgentAvg)}  |  HIGH: ${fmt(highAvg)}  |  MEDIUM: ${fmt(mediumAvg)}  |  LOW: ${fmt(lowAvg)}`
+    ),
+    bk_section(
+      `*Oldest Open Task:* ${fmt(oldestOpen)}    *This Week:* ${created} created, ${completed} completed`
+    )
+  ];
+
+  try {
+    bk_post(webhookUrl, blocks, text);
+    Logger.log("SLA summary posted to Sakura Slack (TEST).");
+  } catch (e) {
+    Logger.log(`sendWeeklySLASummary_Sakura: Slack post failed — ${e.message}`);
+  }
 }
