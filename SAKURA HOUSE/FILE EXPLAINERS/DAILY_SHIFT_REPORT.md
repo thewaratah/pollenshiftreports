@@ -1,6 +1,6 @@
 # Daily Shift Report — Sakura House
 
-**Last Updated:** March 18, 2026
+**Last Updated:** March 18, 2026 (M5 validation, M2 anomaly detection)
 **Type:** Handover guide for managers
 **Audience:** Restaurant managers, non-developers
 
@@ -11,6 +11,24 @@
 ## What This System Does
 
 > At the end of your shift, you fill in the day's financial data, staff names, and shift notes on your sheet tab (Monday through Saturday). When you're ready, you click a menu button called "Send Nightly Report." The system then creates a professional PDF, emails it to the management team, posts a summary to Slack, saves all the financial numbers to a central database for analytics, and automatically creates tasks for the team if you've written any TO-DOs. All this happens in about 10 seconds after you click Send. You don't do anything extra — the spreadsheet handles it all.
+
+---
+
+## Validation Rules — What's Required vs Optional
+
+> When you click "Confirm & Send", the system checks your data. Some fields must be filled (the system blocks export if they're empty), and some are just warnings if left blank. Here's what falls into each category.
+
+**Must Be Filled (Export Blocked If Empty):**
+- MOD (Manager on Duty) — your name
+- Net Revenue — must be greater than zero (the spreadsheet calculates this from your entries)
+
+**Will Warn If Empty (But Export Still Proceeds):**
+- Shift summary (what happened during the shift)
+- Issues/notes section (problems encountered)
+- Kitchen notes (chef feedback)
+- TO-DO tasks without assigned staff (tasks must have someone assigned)
+
+If any required field is missing, the pre-send checklist dialog will show red error messages. You must fix these before the "Confirm & Send" button works. Warnings appear in yellow but don't block export — use your judgment whether to fill them in.
 
 ---
 
@@ -99,6 +117,33 @@ No password is required. Managers can send reports directly from the menu.
 - Assigned staff are notified via Slack DM that they have a new task
 
 **Resilience:** If any of these steps fails (e.g., Slack is down), the others still run. You'll still get your PDF and email even if one system has a problem.
+
+---
+
+## Anomaly Detection — When Revenue Looks Unusual
+
+> The system watches for unusual revenue patterns and alerts management if something looks out of the ordinary. This helps catch data entry errors, system issues, or genuinely unusual shifts.
+
+**How It Works:**
+- The system compares your shift's net revenue to the average from the past 4 weeks
+- If revenue is very different from that average (statistically >2 standard deviations), it's flagged as an anomaly
+- An AI assessment rates the severity on a scale of 1 to 5 and explains why it looks unusual
+- If an anomaly is detected, an alert posts to the management Slack channel
+
+**Examples of What Triggers an Anomaly Alert:**
+- A Sunday that usually brings $3,500 but this week shows $500 (unusually low)
+- A Saturday that normally averages $4,200 but shows $8,900 (unusually high)
+- Data entry error: revenue shows $42,000 instead of $4,200
+
+**What Happens When an Anomaly Is Detected:**
+1. A Slack message posts to the management channel
+2. The message includes the anomaly severity, the unusual value, and an AI-generated explanation
+3. Management is prompted to review and either confirm the unusual shift happened, or alert you to check your entries
+
+**This Does NOT:**
+- Block your report from being sent (export still proceeds normally)
+- Prevent data from going to analytics (the data is recorded as-is)
+- Require any action from you (just be aware alerts may come)
 
 ---
 

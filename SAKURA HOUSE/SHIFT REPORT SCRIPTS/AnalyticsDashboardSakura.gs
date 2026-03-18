@@ -40,11 +40,15 @@ function buildFinancialDashboard() {
   const warehouseId = getDataWarehouseId_();
 
   if (!warehouseId) {
-    SpreadsheetApp.getUi().alert(
-      "Data Warehouse Not Configured",
-      "Set SAKURA_DATA_WAREHOUSE_ID in Script Properties before building the dashboard.",
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
+    try {
+      SpreadsheetApp.getUi().alert(
+        "Data Warehouse Not Configured",
+        "Set SAKURA_DATA_WAREHOUSE_ID in Script Properties before building the dashboard.",
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+    } catch (e) {
+      Logger.log('buildFinancialDashboard: warehouse not configured (UI skipped — trigger context)');
+    }
     return;
   }
 
@@ -226,7 +230,11 @@ function buildFinancialDashboard() {
   buildExtendedTrends_Sakura(sheet, src);
 
   Logger.log("Financial analytics dashboard built successfully.");
-  SpreadsheetApp.getUi().alert("Financial Analytics dashboard has been built on the ANALYTICS tab.");
+  try {
+    SpreadsheetApp.getUi().alert("Financial Analytics dashboard has been built on the ANALYTICS tab.");
+  } catch (e) {
+    Logger.log('buildFinancialDashboard: complete (UI skipped — trigger context)');
+  }
 }
 
 
@@ -247,11 +255,15 @@ function buildExecutiveDashboard() {
   const warehouseId = getDataWarehouseId_();
 
   if (!warehouseId) {
-    SpreadsheetApp.getUi().alert(
-      "Data Warehouse Not Configured",
-      "Set SAKURA_DATA_WAREHOUSE_ID in Script Properties before building the dashboard.",
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
+    try {
+      SpreadsheetApp.getUi().alert(
+        "Data Warehouse Not Configured",
+        "Set SAKURA_DATA_WAREHOUSE_ID in Script Properties before building the dashboard.",
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+    } catch (e) {
+      Logger.log('buildExecutiveDashboard: warehouse not configured (UI skipped — trigger context)');
+    }
     return;
   }
 
@@ -478,7 +490,11 @@ function buildExecutiveDashboard() {
   sheet.setFrozenRows(2);
 
   Logger.log("Executive dashboard built successfully.");
-  SpreadsheetApp.getUi().alert("Executive Dashboard has been built on the EXECUTIVE_DASHBOARD tab.");
+  try {
+    SpreadsheetApp.getUi().alert("Executive Dashboard has been built on the EXECUTIVE_DASHBOARD tab.");
+  } catch (e) {
+    Logger.log('buildExecutiveDashboard: complete (UI skipped — trigger context)');
+  }
 }
 
 

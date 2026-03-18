@@ -1,6 +1,6 @@
 # Weekly Automated Events — Sakura House
 
-**Last Updated:** March 18, 2026
+**Last Updated:** March 18, 2026 (M7 extended analytics, M8 SLA tracking)
 **Type:** Handover guide for managers
 
 > This document explains everything that happens automatically in the Sakura House system each week. You don't need to be technical to understand it — just know that these are all handled by scheduled triggers and rarely need your attention.
@@ -158,6 +158,26 @@ This is rare, but if either dashboard looks wrong:
 
 You'll see a completion message when it's done.
 
+### New: Extended Trend Analysis — Automatic Weekly Build
+
+> These are advanced analytics that build automatically as nightly reports arrive. They're designed for managers and owners who want to see deeper patterns in how the restaurant is performing.
+
+**What's Tracked:**
+- **13-week rolling average** — Medium-term trends. How's revenue trending over the past 3 months?
+- **26-week rolling average** — Long-term trends. Year-over-year comparison (same time last year).
+- **Day-of-week performance heatmap** — Which days consistently perform best? Cells are color-coded (green = best, red = lowest) so you can spot patterns at a glance.
+- **Year-to-date aggregation** — Running total of revenue, tips, and production from January 1 onwards.
+
+**How to View Them:**
+1. Open the **Data Warehouse** spreadsheet
+2. Go to the **ANALYTICS** tab
+3. Scroll down — the extended trends appear as new sections below the basic dashboard
+4. Heatmap shows each day of the week with color-coding for performance
+
+**When These Update:**
+- Automatically rebuild each week when the first nightly report is sent (usually Monday after first shift)
+- Safe to rebuild anytime — go to **Shift Report > Admin Tools > Integrations & Analytics > Build Analytics Dashboard**
+
 ---
 
 ## Daily Task Maintenance — 7am Every Day
@@ -219,6 +239,35 @@ Use the Monday 6am summary to:
 ### Purpose
 
 This is an early warning. If you see a task on Sunday that's due Monday, you can chase it down Sunday night so it doesn't escalate Monday morning.
+
+---
+
+## Weekly Task SLA Summary — Monday 6am
+
+> Every Monday morning, the system compares actual task completion against due dates and generates a report on team performance and bottlenecks.
+
+**What Gets Tracked:**
+- **Average time to complete tasks** — How many days from creation to completion? (goal: complete by due date)
+- **% Tasks completed on time** — Percentage of tasks finished on or before their due date
+- **Most overdue tasks** — Ranked list of tasks that are past due (and who they're assigned to)
+- **Escalation timing** — How quickly tasks move from Active → Escalated status (indicates how responsive the team is to overdue items)
+- **Team performance ranking** — Who completes tasks fastest? Who has the most open items?
+
+**Where You'll See It:**
+- Slack message posted to the #managers channel
+- Message includes the ranked list and team metrics
+- Designed to be reviewed Monday morning during team huddle
+
+**What This Is For:**
+- Identify chronic bottlenecks (are certain tasks always late?)
+- Recognize high-performing staff (who consistently gets things done on time?)
+- Plan resource allocation (who's overloaded with open tasks?)
+- Follow up on escalations from the week
+
+**If Numbers Look Wrong:**
+- Verify that tasks have due dates (SLA only tracks tasks with due dates)
+- Verify task statuses are being updated as work progresses (ACTIVE → IN PROGRESS → DONE)
+- If you need to manually recalculate, go to **Task Management > Admin Tools** and look for an SLA refresh option
 
 ---
 

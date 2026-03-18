@@ -1,10 +1,79 @@
 # SAKURA HOUSE - Claude Code Project Guide
 
-**Last Updated:** March 18, 2026
+**Last Updated:** March 18, 2026 (M2-M9 implementation)
 **Project Type:** Google Apps Script (Hospitality Management System)
 **Venue:** Sakura House (Single-Venue Documentation)
 
 > **Note:** This is the Sakura-specific guide. For The Waratah, see `CLAUDE_WARATAH.md`. For shared architecture patterns, see `CLAUDE_SHARED.md`.
+
+---
+
+## DEPLOYMENT (March 18, 2026) -- M2/M3/M5/M7/M8/M9 Full Implementation
+
+**M2 — Revenue Anomaly Detection:**
+- New function `detectRevenueAnomalies_Sakura()` in `AIInsightsSakura.gs` — flags revenue deviations >2σ from 4-week rolling average
+- Calls Claude Haiku to assess anomaly severity (1-5 scale) and generate brief explanation
+- Posts to TEST Slack webhook when anomaly detected (non-blocking; if API fails, no Slack post but shift report still sends)
+- Wired into `IntegrationHubSakura.gs`: `logToDataWarehouse_()` called after `financialLogged` check but before warehouse write
+- Graceful degradation: if `ANTHROPIC_API_KEY` missing or API fails, `detectRevenueAnomalies_Sakura()` returns `null` and Slack post is skipped
+
+**M3 — AI Task Classification:**
+- New function `classifyTask_Sakura()` in `AIInsightsSakura.gs` — auto-classifies tasks with priority (High/Medium/Low) and area (FOH/BOH/Kitchen/Admin)
+- Calls Claude Haiku to analyze task description and assign classification
+- Wired into `TaskIntegrationSakura.gs`: called when `pushTodosDirectToMasterActionables_()` appends to Master Actionables sheet; priority and area columns populated automatically
+- Non-blocking: missing API key or API errors result in unclassified tasks (task still synced, classification left blank)
+- Used by task management dashboard for grouping and filtering
+
+**M5 — Shift Input Validation:**
+- New function `validateShiftBeforeExport_Sakura()` in `UIServerSakura.gs` — runs before nightly export
+- **Blocks export (required):** MOD field empty, or Net Revenue is zero
+- **Warns (non-blocking):** Shift Summary empty, Issues/Kitchen notes empty, TO-DO section has unassigned tasks
+- Returns `{ canExport: boolean, errors: string[], warnings: string[] }`
+- Pre-send checklist dialog shows validation results; user can dismiss warnings but must fix errors
+- Integrates into `NightlyExportSakura.gs` before `showPreExportChecklist_()` dialog
+
+**M7 — Extended Analytics Trends:**
+- New function `buildExtendedTrends_Sakura()` in `AnalyticsDashboardSakura.gs` — adds 4 new trend visualizations
+- Features:
+  - 13-week rolling average (tracks medium-term trends)
+  - 26-week rolling average (tracks long-term trends)
+  - Day-of-week heatmap (which days perform best? colors by performance quartile)
+  - Year-to-date aggregation (running total revenue, tips, production since Jan 1)
+- Auto-builds in `AnalyticsDashboardSakura.gs` as new section in ANALYTICS tab
+- Called on first `logToDataWarehouse_()` write of each week; rebuilds if tab missing
+- Safe to re-run anytime via menu: **Shift Report > Admin Tools > Integrations & Analytics > Build Analytics Dashboard**
+
+**M8 — Task SLA Tracking:**
+- New functions `buildSLASection_()` and `sendWeeklySLASummary_Sakura()` in `TaskDashboard_Sakura.gs`
+- Tracks per-task metrics:
+  - Days open (created → now)
+  - Days overdue (due date → now if overdue)
+  - Escalation time (time from creation to ESCALATED status)
+  - % tasks completed on time vs overdue
+- Weekly summary (Monday) posts to TEST Slack webhook: ranked list of most overdue tasks, team performance metrics
+- Can be switched to LIVE webhook after review in `getTaskEscalationSlackWebhook_()` property change
+- Non-blocking: if Slack fails, summary still built and logged internally
+
+**M9 — Named Range Health Monitor:**
+- New function `namedRangeHealthCheck_Sakura()` in `RunSakura.gs` — validates and repairs named ranges
+- Checks: range exists, points to correct sheet, cell references are valid, no circular references
+- Auto-repairs: updates stale ranges to current FIELD_CONFIG fallback cells, recreates missing ranges
+- Integrated into `WeeklyRolloverInPlace.gs` Step 10: runs silently post-rollover; logs repairs to LEARNINGS tab if any found
+- Menu wrapper `pw_namedRangeHealthCheck_Sakura()` in `MenuSakura.gs` — allows on-demand health check via **Shift Report > Admin Tools > Setup & Diagnostics > Check Named Range Health**
+- Non-blocking: rollover completes even if repairs fail; validation errors logged but don't stop export
+
+**Files Changed (M2-M9):**
+- `AIInsightsSakura.gs` — M2, M3 detection + classification functions
+- `IntegrationHubSakura.gs` — M2 wiring into warehouse flow
+- `TaskIntegrationSakura.gs` — M3 wiring into task sync
+- `UIServerSakura.gs` — M5 validation function
+- `NightlyExportSakura.gs` — M5 validation wiring + M1 AI summary (already deployed)
+- `AnalyticsDashboardSakura.gs` — M7 trends building
+- `TaskDashboard_Sakura.gs` — M8 SLA tracking + weekly summary
+- `RunSakura.gs` — M9 health check function
+- `MenuSakura.gs` — M9 menu wrapper
+- `WeeklyRolloverInPlace.gs` — M9 integration (Step 10 health check)
+- `SlackBlockKitSakuraSR.gs` — M2 Slack post helper
 
 ---
 
