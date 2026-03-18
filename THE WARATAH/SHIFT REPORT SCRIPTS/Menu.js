@@ -63,6 +63,7 @@ function pw_diagnoseAllSheets()                 { if (requirePassword_()) diagno
 function pw_createNamedRangesOnActiveSheet()    { if (requirePassword_()) createNamedRangesOnActiveSheet(); }
 function pw_createNamedRangesOnAllSheets()      { if (requirePassword_()) createNamedRangesOnAllSheets(); }
 function pw_forceUpdateNamedRangesOnAllSheets() { if (requirePassword_()) forceUpdateNamedRangesOnAllSheets(); }
+function pw_namedRangeHealthCheck_Waratah()     { if (requirePassword_()) namedRangeHealthCheck_Waratah(); }
 // === PASSWORD-GATED WRAPPERS: Sheet Protection ===
 function pw_setupAllSheetsProtection()  { if (requirePassword_()) setupAllSheetsProtection(); }
 function pw_removeAllSheetsProtection() { if (requirePassword_()) removeAllSheetsProtection(); }
@@ -153,6 +154,8 @@ function onOpen() {
           .addItem('Backfill TO-DOs (All Days)', 'pw_backfillAllDaysTodos')
           .addSeparator()
           .addSubMenu(ui.createMenu('Named Ranges')
+            .addItem('Named Range Health Check', 'pw_namedRangeHealthCheck_Waratah')
+            .addSeparator()
             .addItem('Diagnose Active Sheet', 'pw_diagnoseNamedRanges')
             .addItem('Diagnose All Sheets', 'pw_diagnoseAllSheets')
             .addSeparator()

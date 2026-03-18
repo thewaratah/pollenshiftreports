@@ -13,7 +13,7 @@
 
 | System | Spreadsheet | Purpose | Settings Count |
 |--------|-------------|---------|-----------------|
-| **Shift Reports** | The Waratah - Current Week | Daily financial reporting and shift documentation | 18 Script Properties |
+| **Shift Reports** | The Waratah - Current Week | Daily financial reporting and shift documentation | 19 Script Properties |
 | **Task Management** | Master Actionables Sheet | Team task tracking, escalation, and scheduling | 6 Script Properties |
 
 **Critical Rule:** If you change a setting in the wrong spreadsheet, nothing will happen. Always make sure you're in the right one before making changes.
@@ -51,7 +51,7 @@
 
 ---
 
-## Shift Report Settings (18 Properties)
+## Shift Report Settings (19 Properties)
 
 > These settings control the Shift Report system — daily exports, Slack notifications, email recipients, and data warehousing. Found in the **The Waratah - Current Week** spreadsheet.
 
@@ -61,6 +61,7 @@
 |----------|---------------|-----------------|---------------------|
 | `VENUE_NAME` | Venue Identifier | Identifies this spreadsheet as The Waratah (value: `WARATAH`) | Never — don't change this |
 | `MENU_PASSWORD` | Admin Password | Admin password for protected menu items | When you want to change the password (default: `chocolateteapot`) |
+| `ANTHROPIC_API_KEY` | AI Summary Key | API key for Claude AI shift summaries (optional) | If you want to enable or disable AI-generated shift summaries |
 
 ### Slack Webhooks
 
@@ -550,6 +551,6 @@ These menu items do NOT require the password:
 
 ---
 
-**Last Updated:** March 18, 2026
+**Last Updated:** March 18, 2026 (added ANTHROPIC_API_KEY)
 **Version:** 1.0 — Manager Handover Edition
 **Status:** Ready for production use
