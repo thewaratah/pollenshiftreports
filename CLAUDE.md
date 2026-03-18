@@ -272,28 +272,34 @@ main                          ← stable, merged code only
 
 **Deployment (Mar 18, 2026) — Sakura Shift Reports:**
 - Sakura: M1 AI Shift Summarisation — new `AIInsightsSakura.gs` (`generateShiftSummary_Sakura()`), Claude Haiku, non-blocking; integrated into Slack BK and email body in `NightlyExportSakura.gs`
-- Sakura: New Script Property `ANTHROPIC_API_KEY` required for AI summarisation
+- Sakura: M2 Revenue Anomaly Detection — `detectRevenueAnomalies_Sakura()` flags >2σ deviations, posts to test Slack channel, wired into IntegrationHub after financialLogged check
+- Sakura: M3 AI Task Classification — `classifyTask_Sakura()` auto-classifies tasks with priority (High/Medium/Low) and area (FOH/BOH/Kitchen/Admin) when pushed to Master Actionables; wired into TaskIntegrationSakura.gs
+- Sakura: M5 Shift Input Validation — `validateShiftBeforeExport_Sakura()` blocks export if MOD empty or revenue zero; warns if notes/task assignments missing; non-blocking; wired into UIServerSakura.gs
+- Sakura: M7 Extended Analytics Trends — `buildExtendedTrends_Sakura()` adds 13-week rolling average, 26-week rolling average, day-of-week heatmap, YTD aggregation to AnalyticsDashboardSakura.gs; auto-builds on first warehouse write
+- Sakura: M8 Task SLA Tracking — `buildSLASection_()` + `sendWeeklySLASummary_Sakura()` in TaskDashboard_Sakura.gs tracks due dates, days open, escalation time; weekly summary posts to TEST webhook
+- Sakura: M9 Named Range Health Monitor — `namedRangeHealthCheck_Sakura()` in RunSakura.gs + `pw_namedRangeHealthCheck_Sakura()` wrapper in MenuSakura.gs; Step 10 of rollover validates + repairs named ranges; fixes stale ranges silently
+- Sakura: New Script Property `ANTHROPIC_API_KEY` required for M1/M2/M3 AI features (optional — AI skipped gracefully if not set)
 - Sakura: S1-S9 small items verified complete — trigger setup, post-rollover validation, onOpen trigger check, LockService skipLock, todo dedup, analytics auto-build, pipeline learning
 - Sakura: Fixed P1 bug — `createRolloverTrigger_Sakura()` and `removeRolloverTrigger_Sakura()` added to `MenuSakura.gs` (were referenced by menu items but not implemented)
 - Sakura: Fixed FILE EXPLAINERS — "Backfill Entire Week to Warehouse" menu path corrected to "Backfill This Sheet to Warehouse" in `WEEKLY_AUTOMATED_EVENTS.md` and `CONFIGURATION_REFERENCE.md`
-- Sakura: 14 files changed (13 from caeb810 + MenuSakura.gs patch); clasp pushed to Google Apps Script
+- Sakura: 21 files changed (M1-M9 + S1-S9 integration); clasp pushed to Google Apps Script
 
-**Deployment (Mar 18, 2026) — Waratah Shift Reports:**
-- Waratah: Full codebase analysis and clean-up pass — S1-S9 and M1 all verified PASS (no issues found)
-- Waratah: S1 (trigger setup), S2 (post-rollover validation), S3 (Script Property password), S5 (onOpen trigger warning), S6 (skipLock param), S7 (todo dedup checks all open tasks), S8 (ANALYTICS auto-build), S9 (logPipelineLearning_) — all confirmed complete and correct
-- Waratah: M1 AI Shift Summarisation — `AIInsightsWaratah.js` + `NightlyExport.js` integration; non-blocking; guarded `if (aiSummary)` in both email and Slack paths
-- Waratah: FILE EXPLAINERS updated — task summary trigger time corrected from 9am to 10am in `WEEKLY_AUTOMATED_EVENTS.md` and `CONFIGURATION_REFERENCE.md`
-- Waratah: 10 SR files + 2 TM files changed since caeb810; clasp pushed to Google Apps Script
+**Deployment (Mar 18, 2026) — Waratah Shift Reports & Task Management:**
+- Waratah SR: Full M2/M3/M5/M7/M8/M9 implementation — revenue anomaly detection, AI task classification, shift input validation, extended analytics trends, task SLA tracking, named range health monitor
+- Waratah SR M2: `detectRevenueAnomalies_Waratah()` — flags >2σ revenue deviations, posts to test Slack channel on anomaly, wired into IntegrationHub after financialLogged check
+- Waratah SR M3: `classifyTask_Waratah()` — auto-classifies tasks with priority (High/Medium/Low) and area (FOH/BOH/Kitchen/Admin) when pushed to Master Actionables, wired into NightlyExport pushTodosDirectToMasterActionables_
+- Waratah SR M5: `validateShiftBeforeExport_Waratah()` — blocks export if MOD empty or revenue is zero; warns if notes or task assignments missing; non-blocking; wired into UIServer.js
+- Waratah SR M7: `buildExtendedTrends_Waratah()` — new analytics dashboard features: 13-week rolling average, 26-week rolling average, day-of-week heatmap, year-to-date aggregation; auto-builds in AnalyticsDashboard
+- Waratah TM M8: `buildSLASection_()` + `sendWeeklySLASummary_Waratah()` — task SLA tracking (due dates, days open, escalation time); weekly summary posts to TEST webhook (switch to LIVE after review); TaskDashboardWaratah.gs
+- Waratah SR M9: `namedRangeHealthCheck_Waratah()` in RunWaratah.js + `pw_namedRangeHealthCheck_Waratah()` wrapper in Menu.js — Step 9 of rollover validates named range integrity; fixes stale ranges silently
+- Waratah: S1-S9 all verified complete; M1 AI shift summaries operational; 11 SR files + 2 TM files changed; clasp pushed to Google Apps Script
 
 **Recent Updates (Mar 18, 2026):**
+- Sakura: M2–M9 full implementation — revenue anomaly detection, AI task classification, shift input validation, extended analytics trends (13-week + 26-week + day heatmap + YTD), task SLA tracking, named range health monitor (all 9 files integrated, auto-wiring in rollover Step 10, graceful degradation if ANTHROPIC_API_KEY missing)
 - Both venues: `/saks` + `/tah` pipeline commands upgraded — Phase 0 classification output block, file-scope declaration for parallel agents, max-2-retry ceiling in Phase 2 re-review loop
 - Both venues: All 12 agents enhanced — `model:` + `color:` fields added, `<example>` routing blocks added to all agents
 - Both venues: `gas-code-review-agent` major upgrade — 3-phase review (Context→Comparison→Assessment), confidence threshold, caller-impact check, re-review protocol with 2-retry ceiling
 - Both venues: Venue agents (`sakura-gas-agent`, `waratah-gas-agent`) upgraded — parallel read-only exploration phase, 5 modular constraint fragments, no-clasp-push-from-pipeline rule clarified
-- Both venues: `shift-report-orchestrator` upgraded — intent-extraction template (Verb/System/Venue/Urgency) + complexity→model hint table
-- Both venues: `deployment-agent` upgraded — reversibility-first language (authorization-doesn't-persist, blast-radius principle)
-- New: `docs/pipeline-learnings.md` created — institutional memory log seeded with 4 known incidents
-- New: `.claude/skills/gas-debugging/SKILL.md` — 4-phase GAS debugging skill with known-gotchas table
 - Waratah: Named range system now active — `usesNamedRanges: true` confirmed in `VenueConfig.js`; named ranges operational via `RunWaratah.js` (32-field `FIELD_CONFIG`, self-healing rollover, graceful fallback)
 - Waratah: M1 AI shift summarisation — new `AIInsightsWaratah.js` (135 LOC); generates 2-3 sentence Claude Haiku summary; non-blocking; integrates into email + Slack Shift Reports
 - Waratah: P0 bug fix — `WeeklyRolloverInPlace.js` Step 6b `verifyAndFixNamedRanges_(ss)` ReferenceError resolved (ss was undefined in performWeeklyRollover scope)

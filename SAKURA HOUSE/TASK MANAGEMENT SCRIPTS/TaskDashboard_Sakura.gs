@@ -315,7 +315,11 @@ function buildTaskDashboard() {
   }
 
   Logger.log("Task analytics dashboard built successfully.");
-  SpreadsheetApp.getUi().alert("Task Dashboard has been built on the TASK DASHBOARD tab.");
+  try {
+    SpreadsheetApp.getUi().alert("Task Dashboard has been built on the TASK DASHBOARD tab.");
+  } catch (e) {
+    Logger.log('buildTaskDashboard: complete (UI skipped — trigger context)');
+  }
 }
 
 
@@ -576,51 +580,61 @@ function buildSLASection_(dashboardSheet, actionablesSheet) {
  *   B47 = Created this week  E47 = Completed this week
  */
 function sendWeeklySLASummary_Sakura() {
-  const webhookUrl = PropertiesService.getScriptProperties().getProperty('SAKURA_SLACK_WEBHOOK_TEST');
-  if (!webhookUrl) {
-    Logger.log("sendWeeklySLASummary_Sakura: SAKURA_SLACK_WEBHOOK_TEST not configured — skipped.");
-    return;
-  }
-
-  const ss = SpreadsheetApp.openById(getTaskSpreadsheetId_());
-  const dashboard = ss.getSheetByName("TASK DASHBOARD");
-  if (!dashboard) {
-    Logger.log("sendWeeklySLASummary_Sakura: TASK DASHBOARD sheet not found — run buildTaskDashboard() first.");
-    return;
-  }
-
-  // Read SLA values written by buildSLASection_
-  const urgentAvg   = dashboard.getRange("B40").getValue();
-  const highAvg     = dashboard.getRange("B41").getValue();
-  const mediumAvg   = dashboard.getRange("B42").getValue();
-  const lowAvg      = dashboard.getRange("B43").getValue();
-  const oldestOpen  = dashboard.getRange("B45").getValue();
-  const created     = dashboard.getRange("B47").getValue();
-  const completed   = dashboard.getRange("E47").getValue();
-
-  const fmt = v => (typeof v === "number" && v > 0) ? `${v}d` : "—";
-
-  const text =
-    `Task SLA — Sakura | ` +
-    `Avg resolution: URGENT ${fmt(urgentAvg)} / HIGH ${fmt(highAvg)} / MEDIUM ${fmt(mediumAvg)} / LOW ${fmt(lowAvg)} | ` +
-    `Oldest open: ${fmt(oldestOpen)} | ` +
-    `This week: ${created} created, ${completed} completed`;
-
-  const blocks = [
-    bk_header("Task SLA — Sakura House"),
-    bk_section(
-      `*Avg Resolution Time*\n` +
-      `URGENT: ${fmt(urgentAvg)}  |  HIGH: ${fmt(highAvg)}  |  MEDIUM: ${fmt(mediumAvg)}  |  LOW: ${fmt(lowAvg)}`
-    ),
-    bk_section(
-      `*Oldest Open Task:* ${fmt(oldestOpen)}    *This Week:* ${created} created, ${completed} completed`
-    )
-  ];
-
   try {
-    bk_post(webhookUrl, blocks, text);
-    Logger.log("SLA summary posted to Sakura Slack (TEST).");
+    const webhookUrl = PropertiesService.getScriptProperties().getProperty('SAKURA_SLACK_WEBHOOK_TEST');
+    if (!webhookUrl) {
+      Logger.log("sendWeeklySLASummary_Sakura: SAKURA_SLACK_WEBHOOK_TEST not configured — skipped.");
+      return;
+    }
+
+    const taskId = getTaskSpreadsheetId_();
+    if (!taskId) {
+      Logger.log("sendWeeklySLASummary_Sakura: TASK_MANAGEMENT_SPREADSHEET_ID not configured — skipped.");
+      return;
+    }
+
+    const ss = SpreadsheetApp.openById(taskId);
+    const dashboard = ss.getSheetByName("TASK DASHBOARD");
+    if (!dashboard) {
+      Logger.log("sendWeeklySLASummary_Sakura: TASK DASHBOARD sheet not found — run buildTaskDashboard() first.");
+      return;
+    }
+
+    // Read SLA values written by buildSLASection_
+    const urgentAvg   = dashboard.getRange("B40").getValue();
+    const highAvg     = dashboard.getRange("B41").getValue();
+    const mediumAvg   = dashboard.getRange("B42").getValue();
+    const lowAvg      = dashboard.getRange("B43").getValue();
+    const oldestOpen  = dashboard.getRange("B45").getValue();
+    const created     = dashboard.getRange("B47").getValue();
+    const completed   = dashboard.getRange("E47").getValue();
+
+    const fmt = v => (typeof v === "number" && v > 0) ? `${v}d` : "—";
+
+    const text =
+      `Task SLA — Sakura | ` +
+      `Avg resolution: URGENT ${fmt(urgentAvg)} / HIGH ${fmt(highAvg)} / MEDIUM ${fmt(mediumAvg)} / LOW ${fmt(lowAvg)} | ` +
+      `Oldest open: ${fmt(oldestOpen)} | ` +
+      `This week: ${created} created, ${completed} completed`;
+
+    const blocks = [
+      bk_header("Task SLA — Sakura House"),
+      bk_section(
+        `*Avg Resolution Time*\n` +
+        `URGENT: ${fmt(urgentAvg)}  |  HIGH: ${fmt(highAvg)}  |  MEDIUM: ${fmt(mediumAvg)}  |  LOW: ${fmt(lowAvg)}`
+      ),
+      bk_section(
+        `*Oldest Open Task:* ${fmt(oldestOpen)}    *This Week:* ${created} created, ${completed} completed`
+      )
+    ];
+
+    try {
+      bk_post(webhookUrl, blocks, text);
+      Logger.log("SLA summary posted to Sakura Slack (TEST).");
+    } catch (e) {
+      Logger.log(`sendWeeklySLASummary_Sakura: Slack post failed — ${e.message}`);
+    }
   } catch (e) {
-    Logger.log(`sendWeeklySLASummary_Sakura: Slack post failed — ${e.message}`);
+    Logger.log('sendWeeklySLASummary_Sakura: error (non-blocking) — ' + e.message);
   }
 }

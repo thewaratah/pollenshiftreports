@@ -1,6 +1,6 @@
 # Configuration Reference — Sakura House
 
-**Last Updated:** March 18, 2026
+**Last Updated:** March 18, 2026 (ANTHROPIC_API_KEY, M2-M9 features)
 **Type:** Handover guide for managers
 **Audience:** Restaurant managers taking over operations, comfortable with spreadsheets, no coding required
 **Tone:** Clear, practical, friendly
@@ -61,6 +61,9 @@
 |----------|---------------|-----------------|---------------------|
 | `VENUE_NAME` | Venue Identifier | Identifies this spreadsheet as Sakura House (value: `SAKURA`) | Never — don't change this |
 | `MENU_PASSWORD` | Admin Password | Admin password for protected menu items | When you want to change the password (default: `chocolateteapot`) |
+| `ANTHROPIC_API_KEY` | Claude API Key | Enables AI features: shift summarisation, anomaly detection, task classification | When you renew the API key, or to disable AI features by leaving blank |
+
+**Note on ANTHROPIC_API_KEY:** This is optional. If you don't set it, or if it's invalid, the system will skip AI features gracefully — reports still send, anomaly detection won't post alerts, and tasks won't be auto-classified. The system was designed to keep working even without an API key, so you can enable AI features later if you want.
 
 ### Slack Webhooks
 
