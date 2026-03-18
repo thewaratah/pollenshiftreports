@@ -251,7 +251,7 @@ Once testing is complete, everyone will receive the `*AI Insights*` section, whi
 - Cynthia
 
 **To change who gets the email:**
-See [CONFIGURATION_REFERENCE.md](CONFIGURATION_REFERENCE.md) — search for "Changing Email Recipients" for step-by-step instructions.
+See [5_CONFIGURATION_REFERENCE.md](5_CONFIGURATION_REFERENCE.md) — search for "Changing Email Recipients" for step-by-step instructions.
 
 ---
 
@@ -270,7 +270,7 @@ See [CONFIGURATION_REFERENCE.md](CONFIGURATION_REFERENCE.md) — search for "Cha
 | "Cannot call SpreadsheetApp.getUi()" error | The report was triggered by an automated timer, not by you | This is normal for scheduled automatic runs. The report still sends — the error only affects the on-screen dialog. |
 
 **For detailed troubleshooting and other issues:**
-See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for a full list of known issues and advanced fixes.
+See [4_TROUBLESHOOTING.md](4_TROUBLESHOOTING.md) for a full list of known issues and advanced fixes.
 
 ---
 
@@ -307,7 +307,7 @@ See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for a full list of known issues and
 
 - **[SETUP_AND_CONFIG.md](SETUP_AND_CONFIG.md)** — How to configure email recipients, Slack, and other settings
 - **[SLACK_INTEGRATION.md](SLACK_INTEGRATION.md)** — How Slack messages are formatted and posted
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — Detailed troubleshooting guide for all known issues
+- **[4_TROUBLESHOOTING.md](4_TROUBLESHOOTING.md)** — Detailed troubleshooting guide for all known issues
 
 ---
 

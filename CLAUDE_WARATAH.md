@@ -424,7 +424,7 @@ archiveCompletedTasks()          // Auto-archive after 30 days
 
 ---
 
-## 🔧 Script Properties (21 Total — March 18, 2026)
+## 🔧 Script Properties (22 Total — March 18, 2026)
 
 **File:** `_SETUP_ScriptProperties.js`
 
@@ -438,6 +438,7 @@ resetScriptProperties()     // CAUTION: Deletes all properties
 ```
 VENUE_NAME: "WARATAH"
 MENU_PASSWORD: "chocolateteapot"                       // S1: Read by requirePassword_() in Menu.js
+SHEET_PROTECTION_OWNER_EMAIL: "evan@pollenhospitality.com"  // Only user allowed to edit protected sheet areas; falls back to script owner if not set
 WARATAH_WORKING_FILE_ID: "[current_week_spreadsheet_id]"
 WARATAH_DATA_WAREHOUSE_ID: "[warehouse_spreadsheet_id]"
 ARCHIVE_ROOT_FOLDER_ID: "[archive_folder_id]"

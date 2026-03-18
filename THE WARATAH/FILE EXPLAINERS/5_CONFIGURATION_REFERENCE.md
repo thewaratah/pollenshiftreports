@@ -13,7 +13,7 @@
 
 | System | Spreadsheet | Purpose | Settings Count |
 |--------|-------------|---------|-----------------|
-| **Shift Reports** | The Waratah - Current Week | Daily financial reporting and shift documentation | 19 Script Properties |
+| **Shift Reports** | The Waratah - Current Week | Daily financial reporting and shift documentation | 22 Script Properties |
 | **Task Management** | Master Actionables Sheet | Team task tracking, escalation, and scheduling | 6 Script Properties |
 
 **Critical Rule:** If you change a setting in the wrong spreadsheet, nothing will happen. Always make sure you're in the right one before making changes.
@@ -51,7 +51,7 @@
 
 ---
 
-## Shift Report Settings (21 Properties — March 18, 2026)
+## Shift Report Settings (22 Properties — March 18, 2026)
 
 > These settings control the Shift Report system — daily exports, Slack notifications, email recipients, and data warehousing. Found in the **The Waratah - Current Week** spreadsheet.
 
@@ -61,6 +61,7 @@
 |----------|---------------|-----------------|---------------------|
 | `VENUE_NAME` | Venue Identifier | Identifies this spreadsheet as The Waratah (value: `WARATAH`) | Never — don't change this |
 | `MENU_PASSWORD` | Admin Password | Admin password for protected menu items | When you want to change the password (default: `chocolateteapot`) |
+| `SHEET_PROTECTION_OWNER_EMAIL` | Sheet Protection Owner | Email address of the only user allowed to edit protected sheet areas | When changing who has edit permissions (falls back to script owner if not set) |
 | `ANTHROPIC_API_KEY` | AI Summary Key | API key for Claude AI shift summaries (optional) | If you want to enable or disable AI-generated shift summaries |
 | `AI_INSIGHTS_MODE` | AI Insights Router | Soft launch mode for analytics-driven insights (value: `'evan_only'` or `'live'`) | After testing, change from `'evan_only'` (Evan only) to `'live'` (all managers) |
 | `AI_INSIGHTS_EVAN_EMAIL` | Evan's Email Address | Email address where Evan receives insights in evan_only mode | If Evan's email address changes |

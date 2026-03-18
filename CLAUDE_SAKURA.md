@@ -704,6 +704,7 @@ previewInPlaceRollover()  // Dry run - shows what will happen, no changes
 ```javascript
 // Venue
 VENUE_NAME: "SAKURA"
+SHEET_PROTECTION_OWNER_EMAIL: "evan@sakurahousesydney.com"  // Only user allowed to edit protected sheet areas; falls back to script owner if not set
 
 // Slack Webhooks
 SAKURA_SLACK_WEBHOOK_LIVE: "https://hooks.slack.com/services/..."

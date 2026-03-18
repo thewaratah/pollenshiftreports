@@ -202,7 +202,7 @@ No password is required. Managers can send reports directly from the menu.
 - Lily
 
 **To change who gets the email:**
-See [CONFIGURATION_REFERENCE.md](CONFIGURATION_REFERENCE.md) — search for "Changing Email Recipients" for step-by-step instructions.
+See [5_CONFIGURATION_REFERENCE.md](5_CONFIGURATION_REFERENCE.md) — search for "Changing Email Recipients" for step-by-step instructions.
 
 ---
 
@@ -221,7 +221,7 @@ See [CONFIGURATION_REFERENCE.md](CONFIGURATION_REFERENCE.md) — search for "Cha
 | Spreadsheet layout was changed (rows/columns deleted) | Someone inserted or deleted rows/columns in the sheet | If the cell references changed, the hardcoded cell locations may now point to wrong data. Contact technical support — this requires a code update. |
 
 **For detailed troubleshooting and other issues:**
-See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for a full list of known issues and advanced fixes.
+See [4_TROUBLESHOOTING.md](4_TROUBLESHOOTING.md) for a full list of known issues and advanced fixes.
 
 ---
 
@@ -258,7 +258,7 @@ See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for a full list of known issues and
 
 - **[SETUP_AND_CONFIG.md](SETUP_AND_CONFIG.md)** — How to configure email recipients, Slack, and other settings
 - **[SLACK_INTEGRATION.md](SLACK_INTEGRATION.md)** — How Slack messages are formatted and posted
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — Detailed troubleshooting guide for all known issues
+- **[4_TROUBLESHOOTING.md](4_TROUBLESHOOTING.md)** — Detailed troubleshooting guide for all known issues
 
 ---
 

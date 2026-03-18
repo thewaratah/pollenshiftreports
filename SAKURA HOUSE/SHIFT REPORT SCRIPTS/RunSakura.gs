@@ -663,10 +663,9 @@ function getAllFieldKeys_() {
  * Protects structural cells (headers, labels, formulas) while leaving
  * all FIELD_CONFIG input fields fully editable.
  *
- * Uses setWarningOnly(true) so GAS scripts (rollover, clearContent calls)
- * can still write to any cell without restriction. Staff/managers see a
- * warning dialog if they accidentally edit protected structure cells,
- * but are not hard-blocked.
+ * Restricts editing of protected areas to the configured owner email only
+ * (SHEET_PROTECTION_OWNER_EMAIL Script Property). GAS scripts bypass sheet
+ * protection regardless — rollover, clearContent, triggers are unaffected.
  *
  * @param {Sheet} sheet
  */
@@ -675,9 +674,21 @@ function setupSheetProtection_(sheet) {
   const existing = sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET);
   existing.forEach(p => p.remove());
 
-  // Protect the whole sheet (warning-only — scripts always have full access)
+  // Protect the whole sheet — only configured editor can modify protected areas
   const protection = sheet.protect().setDescription('Shift Report Structure');
-  protection.setWarningOnly(true);
+
+  // Restrict editing to owner only (read from Script Properties for configurability)
+  const ownerEmail = PropertiesService.getScriptProperties().getProperty('SHEET_PROTECTION_OWNER_EMAIL')
+    || Session.getEffectiveUser().getEmail();
+  protection.addEditor(ownerEmail);
+  const editors = protection.getEditors();
+  const othersToRemove = editors.filter(u => u.getEmail() !== ownerEmail);
+  if (othersToRemove.length > 0) {
+    protection.removeEditors(othersToRemove);
+  }
+  if (protection.canDomainEdit()) {
+    protection.setDomainEdit(false);
+  }
 
   // Build editable ranges from non-formula FIELD_CONFIG entries only
   // getAllFieldKeys_() filters out isFormula:true fields (e.g. netRevenue B54)
@@ -685,7 +696,7 @@ function setupSheetProtection_(sheet) {
   const editableRanges = inputKeys.map(key => getFieldRange(sheet, key));
 
   protection.setUnprotectedRanges(editableRanges);
-  Logger.log(`Protection set on "${sheet.getName()}": ${editableRanges.length} editable ranges carved out (formula cells protected)`);
+  Logger.log(`Protection set on "${sheet.getName()}": ${editableRanges.length} editable ranges carved out, editing restricted to ${ownerEmail}`);
 }
 
 /**

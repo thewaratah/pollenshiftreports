@@ -1,6 +1,6 @@
 # Configuration Reference — Sakura House
 
-**Last Updated:** March 18, 2026 (M4-M7 AI Insights Agent upgrade, AI_INSIGHTS_MODE, AI_INSIGHTS_EVAN_EMAIL)
+**Last Updated:** March 18, 2026 (Sheet protection owner email, M4-M7 AI Insights Agent upgrade)
 **Type:** Handover guide for managers
 **Audience:** Restaurant managers taking over operations, comfortable with spreadsheets, no coding required
 **Tone:** Clear, practical, friendly
@@ -13,7 +13,7 @@
 
 | System | Spreadsheet | Purpose | Settings Count |
 |--------|-------------|---------|-----------------|
-| **Shift Reports** | Sakura House - Current Week | Daily financial reporting and shift documentation | 13 Script Properties |
+| **Shift Reports** | Sakura House - Current Week | Daily financial reporting and shift documentation | 16 Script Properties |
 | **Task Management** | Sakura Actionables Sheet | Team task tracking, escalation, and scheduling | 7 Script Properties |
 
 **Critical Rule:** If you change a setting in the wrong spreadsheet, nothing will happen. Always make sure you're in the right one before making changes.
@@ -51,7 +51,7 @@
 
 ---
 
-## Shift Report Settings (15 Properties)
+## Shift Report Settings (16 Properties)
 
 > These settings control the Shift Report system — daily exports, Slack notifications, email recipients, data warehousing, and AI insights delivery. Found in the **Sakura House - Current Week** spreadsheet.
 
@@ -61,6 +61,7 @@
 |----------|---------------|-----------------|---------------------|
 | `VENUE_NAME` | Venue Identifier | Identifies this spreadsheet as Sakura House (value: `SAKURA`) | Never — don't change this |
 | `MENU_PASSWORD` | Admin Password | Admin password for protected menu items | When you want to change the password (default: `chocolateteapot`) |
+| `SHEET_PROTECTION_OWNER_EMAIL` | Sheet Protection Owner | Email address of the only user allowed to edit protected sheet areas | When changing who has edit permissions (falls back to script owner if not set) |
 | `ANTHROPIC_API_KEY` | Claude API Key | Enables AI features: shift summarisation, anomaly detection, task classification, analytics-driven insights | When you renew the API key, or to disable AI features by leaving blank |
 | `AI_INSIGHTS_MODE` | AI Insights Launch Mode | Controls how AI insights are delivered: 'evan_only' (Evan sees upgraded analysis, team sees standard summary) or 'live' (everyone sees upgraded analysis) | When you're ready to roll out upgraded AI insights to the full team after testing |
 | `AI_INSIGHTS_EVAN_EMAIL` | Evan's Email (Soft Launch) | Email address where Evan receives the upgraded `*AI Insights*` during 'evan_only' mode | If Evan's email changes or during soft launch testing |
@@ -515,7 +516,7 @@ These menu items do NOT require the password:
 |-------|----------|----------------|
 | Named ranges and field system | SETUP_AND_CONFIG.md | SAKURA HOUSE/FILE EXPLAINERS/ |
 | Weekly rollover details | WEEKLY_ROLLOVER_AND_DIGEST.md | SAKURA HOUSE/FILE EXPLAINERS/ |
-| All file code explanations | DAILY_SHIFT_REPORT.md, NIGHTLY_EXPORT_PIPELINE.md, SLACK_INTEGRATION.md, etc. | SAKURA HOUSE/FILE EXPLAINERS/ |
+| All file code explanations | 1_DAILY_SHIFT_REPORT.md, NIGHTLY_EXPORT_PIPELINE.md, SLACK_INTEGRATION.md, etc. | SAKURA HOUSE/FILE EXPLAINERS/ |
 | Deep architecture | DEEP_DIVE_ARCHITECTURE_SAKURA.md | docs/sakura/ |
 | Integration flows | INTEGRATION_FLOWS_SAKURA.md | docs/sakura/ |
 | Cell reference map | CELL_REFERENCE_MAP_SAKURA.md | docs/sakura/ |

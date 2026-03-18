@@ -349,6 +349,6 @@ The more details you provide, the faster the fix.
 
 **Need more help?**
 
-- For shift reporting questions: See [DAILY_SHIFT_REPORT.md](DAILY_SHIFT_REPORT.md)
+- For shift reporting questions: See [1_DAILY_SHIFT_REPORT.md](1_DAILY_SHIFT_REPORT.md)
 - For task management questions: See [WEEKLY_ROLLOVER_AND_DIGEST.md](WEEKLY_ROLLOVER_AND_DIGEST.md)
 - For configuration questions: See [SETUP_AND_CONFIG.md](SETUP_AND_CONFIG.md)

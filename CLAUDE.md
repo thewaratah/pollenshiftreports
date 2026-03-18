@@ -307,6 +307,7 @@ main                          ← stable, merged code only
 - Waratah: M1 AI shift summarisation — new `AIInsightsWaratah.js` (135 LOC); generates 2-3 sentence Claude Haiku summary; non-blocking; integrates into email + Slack Shift Reports
 - Waratah: P0 bug fix — `WeeklyRolloverInPlace.js` Step 6b `verifyAndFixNamedRanges_(ss)` ReferenceError resolved (ss was undefined in performWeeklyRollover scope)
 - Waratah: `ANTHROPIC_API_KEY` added to Script Properties table (19 total); S1-S9 items all verified clean
+- Both venues: Sheet protection upgraded from warning-only to editor-restricted — only SHEET_PROTECTION_OWNER_EMAIL (new Script Property, falls back to script owner if not set) can edit protected areas; GAS scripts (rollover, triggers) unaffected
 
 **Recent Updates (Mar 6, 2026):**
 - Waratah SR Phase 0+1: 3 critical bug fixes + performance/code quality improvements (6 files, net -42 lines)

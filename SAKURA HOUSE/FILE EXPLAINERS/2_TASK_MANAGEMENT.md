@@ -272,7 +272,7 @@ NEW → TO DO → IN PROGRESS → DONE
 | **"Days Open" column shows 0 for all tasks** | The formula was accidentally overwritten | Task Management > Admin Tools > Cleanup > Reapply Dropdowns & Formatting — this fixes all formulas and dropdowns |
 | **Getting "Cannot read property dmWebhooks" error** | Slack webhook configuration is incomplete | Run Task Management > Admin Tools > Setup Triggers > Reapply Script Properties — this reloads all Slack webhook settings |
 
-**For more detailed troubleshooting:** See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) in this folder.
+**For more detailed troubleshooting:** See [4_TROUBLESHOOTING.md](4_TROUBLESHOOTING.md) in this folder.
 
 ---
 
@@ -447,4 +447,4 @@ A: The system escalates it — Evan gets an email and Slack DM. He'll reach out 
 
 **Last Updated:** March 18, 2026
 **System Status:** Fully operational, production-ready
-**Questions?** Contact Evan or check the [TROUBLESHOOTING.md](TROUBLESHOOTING.md) guide.
+**Questions?** Contact Evan or check the [4_TROUBLESHOOTING.md](4_TROUBLESHOOTING.md) guide.
