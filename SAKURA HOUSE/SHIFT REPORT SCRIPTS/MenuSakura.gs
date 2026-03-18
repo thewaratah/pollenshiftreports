@@ -81,6 +81,7 @@ function pw_createNamedRangesOnActiveSheet()   { if (requirePassword_()) createN
 function pw_createNamedRangesOnAllSheets()     { if (requirePassword_()) createNamedRangesOnAllSheets(); }
 function pw_testPushTodosToActionables()       { if (requirePassword_()) testPushTodosToActionables(); }
 function pw_forceUpdateNamedRangesOnAllSheets() { if (requirePassword_()) forceUpdateNamedRangesOnAllSheets(); }
+function pw_namedRangeHealthCheck_Sakura()    { if (requirePassword_()) namedRangeHealthCheck_Sakura(); }
 // === PASSWORD-GATED WRAPPERS: Sheet Protection ===
 function pw_setupAllSheetsProtection()  { if (requirePassword_()) setupAllSheetsProtection(); }
 function pw_removeAllSheetsProtection() { if (requirePassword_()) removeAllSheetsProtection(); }
@@ -166,6 +167,8 @@ function onOpen() {
 
         .addSubMenu(ui.createMenu('Set Up & Diagnostics')
           .addItem('Setup All SR Triggers', 'pw_setupAllTriggers_Sakura')
+          .addSeparator()
+          .addItem('Named Range Health Check', 'pw_namedRangeHealthCheck_Sakura')
           .addSeparator()
           .addItem('Check Named Ranges (This Sheet)', 'pw_diagnoseNamedRanges')
           .addItem('Check Named Ranges (ALL Sheets)', 'pw_diagnoseAllSheets')

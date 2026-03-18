@@ -147,6 +147,14 @@ function performInPlaceRollover() {
       Logger.log('Post-rollover validation: FAILED — ' + validation.issues.join('; '));
     }
 
+    // Step 10: Named range health check (non-blocking)
+    Logger.log('Step 10: Running named range health check...');
+    try {
+      namedRangeHealthCheck_Sakura();
+    } catch (e) {
+      Logger.log('Step 10: Named range health check failed (non-blocking): ' + e.message);
+    }
+
     const duration = ((new Date()) - startTime) / 1000;
     Logger.log(`========== ROLLOVER COMPLETE: ${duration.toFixed(1)}s ==========`);
 
