@@ -1,6 +1,6 @@
 # SHIFT REPORTS 3.0 - Navigation Guide
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 18, 2026
 **Project Type:** Google Apps Script (Multi-Venue Hospitality Management System)
 **Venues:** Sakura House, The Waratah
 
@@ -270,6 +270,14 @@ main                          ← stable, merged code only
 **Last Updated:** March 18, 2026
 **Status:** Both venues fully operational and production-ready ✅
 
+**Deployment (Mar 18, 2026) — Sakura Shift Reports:**
+- Sakura: M1 AI Shift Summarisation — new `AIInsightsSakura.gs` (`generateShiftSummary_Sakura()`), Claude Haiku, non-blocking; integrated into Slack BK and email body in `NightlyExportSakura.gs`
+- Sakura: New Script Property `ANTHROPIC_API_KEY` required for AI summarisation
+- Sakura: S1-S9 small items verified complete — trigger setup, post-rollover validation, onOpen trigger check, LockService skipLock, todo dedup, analytics auto-build, pipeline learning
+- Sakura: Fixed P1 bug — `createRolloverTrigger_Sakura()` and `removeRolloverTrigger_Sakura()` added to `MenuSakura.gs` (were referenced by menu items but not implemented)
+- Sakura: Fixed FILE EXPLAINERS — "Backfill Entire Week to Warehouse" menu path corrected to "Backfill This Sheet to Warehouse" in `WEEKLY_AUTOMATED_EVENTS.md` and `CONFIGURATION_REFERENCE.md`
+- Sakura: 14 files changed (13 from caeb810 + MenuSakura.gs patch); clasp pushed to Google Apps Script
+
 **Recent Updates (Mar 18, 2026):**
 - Both venues: `/saks` + `/tah` pipeline commands upgraded — Phase 0 classification output block, file-scope declaration for parallel agents, max-2-retry ceiling in Phase 2 re-review loop
 - Both venues: All 12 agents enhanced — `model:` + `color:` fields added, `<example>` routing blocks added to all agents
@@ -280,6 +288,9 @@ main                          ← stable, merged code only
 - New: `docs/pipeline-learnings.md` created — institutional memory log seeded with 4 known incidents
 - New: `.claude/skills/gas-debugging/SKILL.md` — 4-phase GAS debugging skill with known-gotchas table
 - Waratah: Named range system now active — `usesNamedRanges: true` confirmed in `VenueConfig.js`; named ranges operational via `RunWaratah.js` (32-field `FIELD_CONFIG`, self-healing rollover, graceful fallback)
+- Waratah: M1 AI shift summarisation — new `AIInsightsWaratah.js` (135 LOC); generates 2-3 sentence Claude Haiku summary; non-blocking; integrates into email + Slack Shift Reports
+- Waratah: P0 bug fix — `WeeklyRolloverInPlace.js` Step 6b `verifyAndFixNamedRanges_(ss)` ReferenceError resolved (ss was undefined in performWeeklyRollover scope)
+- Waratah: `ANTHROPIC_API_KEY` added to Script Properties table (19 total); S1-S9 items all verified clean
 
 **Recent Updates (Mar 6, 2026):**
 - Waratah SR Phase 0+1: 3 critical bug fixes + performance/code quality improvements (6 files, net -42 lines)

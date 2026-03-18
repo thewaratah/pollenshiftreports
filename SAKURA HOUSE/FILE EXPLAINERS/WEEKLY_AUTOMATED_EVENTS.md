@@ -240,16 +240,19 @@ This is an early warning. If you see a task on Sunday that's due Monday, you can
 - Revenue digest on Monday 8am has numbers
 - If data is missing, nightly reports may not have been sent
 
-### On-Demand: Backfill the Entire Week Manually
+### On-Demand: Backfill a Single Sheet Manually
 
-> If the scheduled Monday backfill didn't run, or you need to resync an entire week's data, you can trigger a full-week backfill yourself without waiting for Monday night.
+> If the scheduled Monday backfill didn't run for a specific day, or you need to force-push one sheet's data to the warehouse, you can do it per sheet without waiting for Monday morning.
 
 **How to use it:**
 1. Open the **"Sakura House - Current Week"** spreadsheet
-2. Go to **Shift Report > Admin Tools > Data Warehouse > Backfill Entire Week to Warehouse**
-3. Enter the admin password
-4. The system will process all 6 day sheets (Monday through Saturday) in sequence and write any missing records to the warehouse
-5. Duplicate records are automatically skipped — it's safe to run multiple times
+2. Navigate to the specific day sheet you want to backfill (e.g. click the MONDAY tab)
+3. Go to **Shift Report > Admin Tools > Data Warehouse > Backfill This Sheet to Warehouse**
+4. Enter the admin password
+5. Confirm the dialog — the sheet's data is pushed to the warehouse
+6. Duplicate records are automatically skipped — it's safe to run multiple times
+
+> **Note:** There is no single-click full-week backfill menu item. To backfill all six days, navigate to each day sheet in turn and run "Backfill This Sheet to Warehouse" for each one. The automatic Monday 8am trigger handles full-week backfill on schedule.
 
 ---
 

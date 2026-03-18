@@ -260,3 +260,69 @@ function setupAllTriggers_Sakura() {
     Logger.log('setupAllTriggers_Sakura summary:\n' + lines.join('\n'));
   }
 }
+
+/**
+ * Install the weekly rollover trigger for performInPlaceRollover.
+ * Safe to re-run — deletes any existing rollover trigger first.
+ * Schedule: every Monday at 1:00 AM (Australia/Sydney).
+ *
+ * Called via pw_createRolloverTrigger_Sakura() (password-gated).
+ */
+function createRolloverTrigger_Sakura() {
+  // Remove any existing rollover trigger to avoid duplicates
+  var removed = 0;
+  ScriptApp.getProjectTriggers()
+    .filter(function(t) { return t.getHandlerFunction() === 'performInPlaceRollover'; })
+    .forEach(function(t) { ScriptApp.deleteTrigger(t); removed++; });
+
+  ScriptApp.newTrigger('performInPlaceRollover')
+    .timeBased()
+    .onWeekDay(ScriptApp.WeekDay.MONDAY)
+    .atHour(1)
+    .create();
+
+  Logger.log('createRolloverTrigger_Sakura: installed performInPlaceRollover Monday 1am' +
+    (removed > 0 ? ' (replaced ' + removed + ' existing trigger(s))' : ''));
+
+  try {
+    SpreadsheetApp.getUi().alert(
+      'Rollover Trigger Installed',
+      'performInPlaceRollover will run every Monday at 1:00 AM.\n\n' +
+        (removed > 0 ? removed + ' existing trigger(s) replaced.\n\n' : '') +
+        'To remove: Apps Script editor \u2192 Triggers (clock icon) \u2192 delete the trigger.\n' +
+        'Or use: Admin Tools \u2192 Weekly Rollover \u2192 Remove Rollover Trigger.',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  } catch (e) {
+    Logger.log('createRolloverTrigger_Sakura: UI skipped (trigger context)');
+  }
+}
+
+
+/**
+ * Remove all rollover triggers for performInPlaceRollover.
+ * Safe to run even if no trigger exists.
+ *
+ * Called via pw_removeRolloverTrigger_Sakura() (password-gated).
+ */
+function removeRolloverTrigger_Sakura() {
+  var removed = 0;
+  ScriptApp.getProjectTriggers()
+    .filter(function(t) { return t.getHandlerFunction() === 'performInPlaceRollover'; })
+    .forEach(function(t) { ScriptApp.deleteTrigger(t); removed++; });
+
+  Logger.log('removeRolloverTrigger_Sakura: removed ' + removed + ' trigger(s)');
+
+  try {
+    SpreadsheetApp.getUi().alert(
+      'Rollover Trigger Removed',
+      removed > 0
+        ? removed + ' rollover trigger(s) removed.\n\nThe weekly rollover will no longer run automatically.\n' +
+          'To reinstall: Admin Tools \u2192 Weekly Rollover \u2192 Create Rollover Trigger (Mon 10am).'
+        : 'No rollover trigger found — nothing to remove.',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  } catch (e) {
+    Logger.log('removeRolloverTrigger_Sakura: UI skipped (trigger context)');
+  }
+}

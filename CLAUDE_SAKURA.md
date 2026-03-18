@@ -26,6 +26,23 @@
 **S9 — Pipeline Learning Utility:**
 - New utility function `logPipelineLearning_(context, issue, fix)` in `SlackBlockKitSakuraSR.gs` — appends to LEARNINGS tab in data warehouse for operational diagnostics
 
+**M1 — AI Shift Summarisation:**
+- New file: `AIInsightsSakura.gs` — `generateShiftSummary_Sakura(shiftData)` calls Claude Haiku to generate a 2-3 sentence shift narrative
+- Non-blocking: returns `null` on any failure (missing API key, HTTP error, parse error, exception) — main export always proceeds
+- Model: `claude-haiku-4-5-20251001` via UrlFetchApp to `https://api.anthropic.com/v1/messages`
+- Credential: `ANTHROPIC_API_KEY` read from Script Properties at call time; never hardcoded
+- Input token budget: narrative fields truncated to 300 chars each; max_tokens capped at 300
+- Integration in `NightlyExportSakura.gs`:
+  - Slack path (`postToSlackFromSheet_`): AI summary called after TO-DOs built; appended as "AI Summary" section in Block Kit only when non-null
+  - Email path (`continueExport` LIVE): AI summary called before email body built; inserted as styled block quote above salutation only when non-null
+- New required Script Property: `ANTHROPIC_API_KEY` (Anthropic API secret key)
+
+**Rollover Trigger Helpers (patch):**
+- New functions `createRolloverTrigger_Sakura()` and `removeRolloverTrigger_Sakura()` added to `MenuSakura.gs`
+- These were referenced by menu items and pw-wrappers (lines 67-68, 151-152) but not implemented — clicking them previously threw `ReferenceError`
+- `createRolloverTrigger_Sakura()`: deduplicates → installs `performInPlaceRollover` trigger Monday 1am → UI alert (trigger-context safe)
+- `removeRolloverTrigura_Sakura()`: removes all `performInPlaceRollover` triggers → UI alert (trigger-context safe)
+
 ---
 
 ## DEPLOYMENT (March 6, 2026) -- Phases 0-4 Alignment
@@ -264,6 +281,7 @@ SAKURA HOUSE/
 │   │   ├── WeeklyRolloverInPlace.gs # In-place rollover (multi-sheet PDF, LIVE webhook Mar 6)
 │   │   ├── MenuSakura.gs            # Custom menu (rollover wizard added Mar 6)
 │   │   ├── AnalyticsDashboardSakura.gs  # QUERY ranges A2:Q (updated Mar 6)
+│   │   ├── AIInsightsSakura.gs      # AI shift summarisation via Claude Haiku (NEW Mar 18)
 │   │   ├── SlackBlockKitSakuraSR.gs # Block Kit helpers + notifyError_() utility (Mar 6)
 │   │   ├── TaskIntegrationSakura.gs # batch setValues()
 │   │   ├── UIServerSakura.gs        # Export/analytics UI + rollover wizard server fns (Mar 6)
@@ -596,6 +614,9 @@ SLACK_DM_WEBHOOKS: '{"Evan":"...", "Nick":"...", "Gooch":"..."}'
 // Rollover (for in-place system)
 SAKURA_WORKING_FILE_ID: "[current_working_file_id]"
 ARCHIVE_ROOT_FOLDER_ID: "1a1AbJN4qU7Lt2oyYPxiTn3kG5EEKOf1K"
+
+// AI Insights (M1 — added Mar 18, 2026)
+ANTHROPIC_API_KEY: "[your_anthropic_api_key]"
 ```
 
 **Setup Function (Shift Reports project):**
@@ -930,4 +951,4 @@ Note: `_SETUP_*` files are gitignored (they contain Slack webhook secrets). `.cl
 ---
 
 **Last Updated:** March 18, 2026
-**Total LOC:** ~10,100 lines across 22 .gs + 5 .html files (rollover-wizard.html added Mar 6; NIGHTLY_FINANCIAL 17 cols; S1-S9 items Mar 18)
+**Total LOC:** ~10,250 lines across 23 .gs + 5 .html files (AIInsightsSakura.gs added Mar 18; M1 AI summarisation; createRolloverTrigger_Sakura / removeRolloverTrigger_Sakura added; FILE EXPLAINER corrections)
