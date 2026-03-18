@@ -35,6 +35,22 @@
 
 ---
 
+## 🆕 M1 — AI Shift Summarisation (March 18, 2026)
+
+**New file:** `AIInsightsWaratah.js`
+
+- `generateShiftSummary_Waratah(shiftData)` — calls Claude Haiku (`claude-haiku-4-5-20251001`) via `UrlFetchApp`; returns a 2-3 sentence shift narrative
+- Non-blocking: returns `null` on any failure (missing API key, HTTP error, unexpected response shape)
+- Credential: `ANTHROPIC_API_KEY` Script Property — never hardcoded
+- Input token budget: narrative fields truncated to 300 chars each; max 2000 input tokens
+- Output token budget: `max_tokens: 300`
+- **Integration points:**
+  - `NightlyExport.js` `continueExport()` — AI summary shown as italicised block quote at top of HTML email (guarded: `if (aiSummary)`)
+  - `NightlyExport.js` `postToSlackFromSheet()` — AI summary appended as "AI Summary" Block Kit section (guarded: `if (aiSummary)`)
+- **No impact if absent:** If `ANTHROPIC_API_KEY` is not set, the feature is silently disabled — emails and Slack messages are sent as normal without the AI section
+
+---
+
 ## 🆕 Named Range System (March 18, 2026)
 
 `RunWaratah.js` added — mirrors Sakura's `RunSakura.gs` architecture. All field-to-cell mappings now live in `FIELD_CONFIG` (32 fields). Consumer files (`WeeklyRolloverInPlace.js`, `IntegrationHub.js`, `TEST_DataExtractionVerification.js`, `Menu.js`) updated.
@@ -145,6 +161,7 @@ THE WARATAH/
 │   ├── TEST_VenueConfig.js           # VenueConfig tests (212 LOC)
 │   ├── WeeklyDigestWaratah.js        # Weekly revenue Slack digest (202 LOC)
 │   ├── DiagnoseSlack.js              # Webhook diagnostics (170 LOC)
+│   ├── AIInsightsWaratah.js          # AI shift summaries via Claude Haiku API (135 LOC) — M1
 │   ├── SlackBlockKitWaratahSR.js     # Block Kit message builders (159 LOC)
 │   ├── Menu.js                       # Menu system (156 LOC)
 │   ├── TEST_SlackBlockKitLibrary.js  # Block Kit tests (103 LOC)
@@ -275,6 +292,13 @@ createNamedRangesOnAllSheets()        // menu: Create on ALL Sheets (5 × 32 = 1
 verifyAndFixNamedRanges_(spreadsheet) // called by rollover — silently recreates missing ranges
 ```
 
+### AIInsightsWaratah.js (M1 — new March 18, 2026)
+```javascript
+generateShiftSummary_Waratah(shiftData) // Returns 2-3 sentence AI summary string, or null on any failure
+                                        // shiftData: {date, day, mod, netRevenue, cardTips, cashTips, totalTips, staff,
+                                        //             shiftSummary, guestsOfNote, theGood, theBad, kitchenNotes, todoCount}
+```
+
 ### NightlyExport.js
 ```javascript
 exportAndEmailPDF()              // Line 299 - Opens checklist dialog
@@ -322,7 +346,7 @@ archiveCompletedTasks()          // Auto-archive after 30 days
 
 ---
 
-## 🔧 Script Properties (18 Total)
+## 🔧 Script Properties (19 Total)
 
 **File:** `_SETUP_ScriptProperties.js`
 
@@ -341,6 +365,7 @@ WARATAH_DATA_WAREHOUSE_ID: "[warehouse_spreadsheet_id]"
 ARCHIVE_ROOT_FOLDER_ID: "[archive_folder_id]"
 WARATAH_SLACK_WEBHOOK_LIVE: "https://hooks.slack.com/..."
 WARATAH_EMAIL_RECIPIENTS: '["email1@...", "email2@..."]'
+ANTHROPIC_API_KEY: "sk-ant-..."                        // M1: AI shift summaries via AIInsightsWaratah.js (optional — feature gracefully disabled if absent)
 ```
 
 See [DEEP_DIVE_ARCHITECTURE.md](docs/waratah/DEEP_DIVE_ARCHITECTURE.md#script-properties-configuration) for complete list.
@@ -606,7 +631,7 @@ if (config.name === 'THE WARATAH') {
 
 ---
 
-**Last Updated:** March 18, 2026 (S1-S9 small items pass)
+**Last Updated:** March 18, 2026 (S1-S9 pass + M1 AI shift summarisation + P0 rollover fix)
 **Version:** 3.3
 **Status:** ✅ Fully operational and production-ready
 **Total LOC:** ~9,371 lines across 22 code files + 5 HTML files (+ RunWaratah.js ~800 LOC)

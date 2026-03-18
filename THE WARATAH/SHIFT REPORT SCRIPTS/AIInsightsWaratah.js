@@ -1,5 +1,5 @@
 /****************************************************
- * AI INSIGHTS — SAKURA HOUSE SHIFT REPORTS
+ * AI INSIGHTS — THE WARATAH SHIFT REPORTS
  *
  * Generates a concise AI-written shift narrative using
  * the Claude API (claude-haiku-4-5-20251001) via UrlFetchApp.
@@ -16,7 +16,7 @@
 
 
 /**
- * Generate a 2-3 sentence AI shift summary for Sakura House.
+ * Generate a 2-3 sentence AI shift summary for The Waratah.
  *
  * Reads the ANTHROPIC_API_KEY from Script Properties and calls
  * the Claude API (Haiku) with a hospitality-specific prompt.
@@ -28,27 +28,26 @@
  *
  * @param {Object} shiftData - Fields extracted from the shift sheet:
  *   {string}  date          - e.g. "18/03/2026"
- *   {string}  day           - e.g. "Tuesday"
+ *   {string}  day           - e.g. "Wednesday"
  *   {string}  mod           - MOD name
  *   {string}  netRevenue    - e.g. "4250.00"
  *   {string}  cardTips      - e.g. "180.00"
  *   {string}  cashTips      - e.g. "40.00"
- *   {string}  surchargeTips - e.g. "25.00"
- *   {string}  fohStaff      - FOH staff count / names
- *   {string}  bohStaff      - BOH staff count / names
- *   {string}  shiftSummary  - Free-text shift summary
- *   {string}  guestsOfNote  - VIP / guests of note
- *   {string}  goodNotes     - What went well
- *   {string}  issues        - What to improve / issues
- *   {string}  kitchenNotes  - Kitchen notes
+ *   {string}  totalTips     - e.g. "220.00"
+ *   {string}  staff         - Staff count / list
+ *   {string}  shiftSummary  - Free-text shift summary (A43)
+ *   {string}  guestsOfNote  - VIP / guests of note (A45)
+ *   {string}  theGood       - What went well (A47)
+ *   {string}  theBad        - Issues / what to improve (A49)
+ *   {string}  kitchenNotes  - Kitchen notes (A51)
  *   {number}  todoCount     - Number of TO-DOs recorded
  * @returns {string|null} AI-generated summary, or null on failure
  */
-function generateShiftSummary_Sakura(shiftData) {
+function generateShiftSummary_Waratah(shiftData) {
   // --- Load API key from Script Properties (never hardcode) ---
   const apiKey = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
   if (!apiKey) {
-    Logger.log('AI Insights (Sakura): ANTHROPIC_API_KEY not set in Script Properties — skipping.');
+    Logger.log('AI Insights (Waratah): ANTHROPIC_API_KEY not set in Script Properties — skipping.');
     return null;
   }
 
@@ -62,7 +61,7 @@ function generateShiftSummary_Sakura(shiftData) {
 
   // --- Build prompt ---
   const systemPrompt =
-    'You are a shift report assistant for Sakura House, a Japanese restaurant in Sydney. ' +
+    'You are a shift report assistant for The Waratah, a modern Australian restaurant in Sydney. ' +
     'Write a concise 2-3 sentence summary of this shift for management. ' +
     'Be specific about revenue performance, any operational highlights, and key action items. ' +
     'Tone: professional, direct, factual.';
@@ -74,13 +73,12 @@ function generateShiftSummary_Sakura(shiftData) {
     '- Net Revenue: $' + (shiftData.netRevenue || '0') + '\n' +
     '- Card Tips: $' + (shiftData.cardTips || '0') +
     ', Cash Tips: $' + (shiftData.cashTips || '0') +
-    ', Surcharge Tips: $' + (shiftData.surchargeTips || '0') + '\n' +
-    '- FOH Staff: ' + (shiftData.fohStaff || 'N/A') + '\n' +
-    '- BOH Staff: ' + (shiftData.bohStaff || 'N/A') + '\n' +
+    ', Total Tips: $' + (shiftData.totalTips || '0') + '\n' +
+    '- Staff: ' + (shiftData.staff || 'N/A') + '\n' +
     '- Shift Notes: ' + truncate(shiftData.shiftSummary) + '\n' +
     '- VIP Notes: ' + truncate(shiftData.guestsOfNote) + '\n' +
-    '- What went well: ' + truncate(shiftData.goodNotes) + '\n' +
-    '- What to improve: ' + truncate(shiftData.issues) + '\n' +
+    '- What went well: ' + truncate(shiftData.theGood) + '\n' +
+    '- What to improve: ' + truncate(shiftData.theBad) + '\n' +
     '- Kitchen Notes: ' + truncate(shiftData.kitchenNotes) + '\n' +
     '- TO-DOs created: ' + (shiftData.todoCount || 0) + '\n\n' +
     'Write the 2-3 sentence summary now. Return plain text only — no headers, no bullet points.';
@@ -110,7 +108,7 @@ function generateShiftSummary_Sakura(shiftData) {
 
     if (code !== 200) {
       Logger.log(
-        'AI Insights (Sakura): Claude API returned HTTP ' + code +
+        'AI Insights (Waratah): Claude API returned HTTP ' + code +
         ' — ' + response.getContentText().substring(0, 300)
       );
       return null;
@@ -122,15 +120,15 @@ function generateShiftSummary_Sakura(shiftData) {
       : null;
 
     if (!summary) {
-      Logger.log('AI Insights (Sakura): Unexpected API response shape — content missing.');
+      Logger.log('AI Insights (Waratah): Unexpected API response shape — content missing.');
       return null;
     }
 
-    Logger.log('AI Insights (Sakura): Summary generated successfully (' + summary.length + ' chars).');
+    Logger.log('AI Insights (Waratah): Summary generated successfully (' + summary.length + ' chars).');
     return summary;
 
   } catch (e) {
-    Logger.log('AI Insights (Sakura): API call failed — ' + e.message);
+    Logger.log('AI Insights (Waratah): API call failed — ' + e.message);
     return null;
   }
 }

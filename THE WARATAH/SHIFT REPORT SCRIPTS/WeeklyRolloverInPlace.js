@@ -135,6 +135,7 @@ function performWeeklyRollover() {
 
     // 6b. Verify/fix named ranges on all sheets (silent — logs only, non-blocking)
     try {
+      const ss = SpreadsheetApp.getActiveSpreadsheet(); // ss is not in scope here — get it directly
       verifyAndFixNamedRanges_(ss);
     } catch (e) {
       Logger.log(`Named range verify skipped (non-blocking): ${e.message}`);

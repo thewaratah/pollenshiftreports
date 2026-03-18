@@ -883,3 +883,200 @@ function removeAllSheetsProtection() {
     Logger.log(message);
   }
 }
+
+
+// ============================================================================
+// NAMED RANGE HEALTH MONITOR
+// ============================================================================
+
+/**
+ * Verifies all 160 expected Named Ranges (32 fields × 5 day sheets) exist
+ * and point to non-empty cells.
+ *
+ * Categorises each range as:
+ *   OK      — exists and the cell it points to is non-empty
+ *   EMPTY   — exists but the cell is blank (may be normal mid-week)
+ *   MISSING — not found in the spreadsheet at all
+ *
+ * Posts a structured Block Kit report to WARATAH_SLACK_WEBHOOK_TEST.
+ * Safe to call from trigger context — no UI calls.
+ *
+ * @returns {{ ok: number, empty: number, missing: number }}
+ */
+function namedRangeHealthCheck_Waratah() {
+  const EXPECTED_TOTAL = VALID_DAY_PREFIXES.length * Object.keys(FIELD_CONFIG).length;
+  Logger.log('namedRangeHealthCheck_Waratah: checking ' + EXPECTED_TOTAL + ' ranges (' +
+    VALID_DAY_PREFIXES.length + ' days × ' + Object.keys(FIELD_CONFIG).length + ' fields)');
+
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const allSheets = spreadsheet.getSheets();
+
+  // Totals
+  let totalOk = 0;
+  let totalEmpty = 0;
+  let totalMissing = 0;
+
+  // Accumulators for the Slack report detail lines (capped at 10 each)
+  const missingRanges = [];
+  const emptyRanges = [];
+
+  // Per-day summary for the Slack fields block
+  const dayResults = [];
+
+  for (const dayPrefix of VALID_DAY_PREFIXES) {
+    const daySheet = allSheets.find(function(s) { return s.getName().startsWith(dayPrefix); });
+
+    let dayOk = 0;
+    let dayEmpty = 0;
+    let dayMissing = 0;
+
+    if (!daySheet) {
+      // Sheet not found — count all fields for this day as MISSING
+      const fieldCount = Object.keys(FIELD_CONFIG).length;
+      dayMissing = fieldCount;
+      totalMissing += fieldCount;
+      dayResults.push({ day: dayPrefix, ok: 0, empty: 0, missing: fieldCount, sheetMissing: true });
+      Logger.log('namedRangeHealthCheck_Waratah: ' + dayPrefix + ' sheet not found');
+      continue;
+    }
+
+    for (const [, config] of Object.entries(FIELD_CONFIG)) {
+      const rangeName = buildNamedRangeName(dayPrefix, config.suffix);
+
+      let namedRange = null;
+      try {
+        namedRange = spreadsheet.getRangeByName(rangeName);
+      } catch (e) {
+        // getRangeByName can throw in rare circumstances — treat as missing
+      }
+
+      if (!namedRange) {
+        dayMissing++;
+        totalMissing++;
+        if (missingRanges.length < 10) missingRanges.push(rangeName);
+        continue;
+      }
+
+      // Check it points to the correct sheet
+      if (namedRange.getSheet().getSheetId() !== daySheet.getSheetId()) {
+        dayMissing++;
+        totalMissing++;
+        if (missingRanges.length < 10) missingRanges.push(rangeName + ' (wrong sheet)');
+        continue;
+      }
+
+      // Check the cell is non-empty — use getDisplayValue() on the first cell
+      // to handle merged ranges and formula results consistently
+      const displayVal = namedRange.getDisplayValue().trim();
+      if (displayVal === '' || displayVal === '0') {
+        // Distinguish formula cells (0 may be a valid formula result) from input cells
+        // For health purposes: formula cells that show 0 are OK; input cells showing '' are EMPTY
+        if (config.isFormula) {
+          dayOk++;
+          totalOk++;
+        } else {
+          dayEmpty++;
+          totalEmpty++;
+          if (emptyRanges.length < 10) emptyRanges.push(rangeName);
+        }
+      } else {
+        dayOk++;
+        totalOk++;
+      }
+    }
+
+    dayResults.push({ day: dayPrefix, ok: dayOk, empty: dayEmpty, missing: dayMissing, sheetMissing: false });
+    Logger.log('namedRangeHealthCheck_Waratah: ' + dayPrefix +
+      ' — OK:' + dayOk + ' EMPTY:' + dayEmpty + ' MISSING:' + dayMissing);
+  }
+
+  Logger.log('namedRangeHealthCheck_Waratah: TOTAL — OK:' + totalOk +
+    ' EMPTY:' + totalEmpty + ' MISSING:' + totalMissing);
+
+  // Post Slack report
+  try {
+    var webhook = PropertiesService.getScriptProperties().getProperty('WARATAH_SLACK_WEBHOOK_TEST');
+    if (webhook) {
+      var blocks = buildHealthCheckBlocks_Waratah_(dayResults, totalOk, totalEmpty, totalMissing,
+        EXPECTED_TOTAL, missingRanges, emptyRanges);
+      bk_post(webhook, blocks, 'Waratah Named Range Health: OK=' + totalOk +
+        ' EMPTY=' + totalEmpty + ' MISSING=' + totalMissing);
+    }
+  } catch (slackErr) {
+    Logger.log('namedRangeHealthCheck_Waratah: Slack post failed — ' + slackErr.message);
+  }
+
+  return { ok: totalOk, empty: totalEmpty, missing: totalMissing };
+}
+
+/**
+ * Builds Block Kit blocks for the Named Range Health report.
+ * Called only by namedRangeHealthCheck_Waratah().
+ *
+ * @param {Array<Object>} dayResults
+ * @param {number} totalOk
+ * @param {number} totalEmpty
+ * @param {number} totalMissing
+ * @param {number} expectedTotal
+ * @param {string[]} missingRanges  — up to 10 missing range names
+ * @param {string[]} emptyRanges    — up to 10 empty range names
+ * @returns {Array<Object>} Block Kit blocks
+ */
+function buildHealthCheckBlocks_Waratah_(dayResults, totalOk, totalEmpty, totalMissing,
+    expectedTotal, missingRanges, emptyRanges) {
+
+  var timestamp = Utilities.formatDate(new Date(), 'Australia/Sydney', 'dd/MM/yyyy HH:mm');
+  var blocks = [];
+
+  // Header
+  blocks.push(bk_header('Named Range Health — The Waratah'));
+
+  // All-clear path
+  if (totalMissing === 0 && totalEmpty === 0) {
+    blocks.push(bk_section('All ' + expectedTotal + ' named ranges are healthy.'));
+    blocks.push(bk_context([timestamp + ' | ' + expectedTotal + '/' + expectedTotal + ' OK']));
+    return blocks;
+  }
+
+  // Summary section
+  var statusIcon = totalMissing > 0 ? 'ISSUES FOUND' : 'REVIEW';
+  blocks.push(bk_section('*' + statusIcon + '* — ' +
+    totalOk + ' OK | ' + totalEmpty + ' empty | ' + totalMissing + ' missing ' +
+    '(of ' + expectedTotal + ' expected)'));
+
+  blocks.push(bk_divider());
+
+  // Per-day breakdown as fields pairs (max 10 per fields block, we have 5 days)
+  var pairs = dayResults.map(function(r) {
+    if (r.sheetMissing) {
+      return [r.day, 'Sheet not found'];
+    }
+    var icon = (r.missing > 0) ? 'MISSING ' + r.missing :
+               (r.empty > 0)   ? 'EMPTY ' + r.empty : 'All OK';
+    return [r.day, icon + ' | OK: ' + r.ok];
+  });
+  blocks.push(bk_fields(pairs));
+
+  blocks.push(bk_divider());
+
+  // Missing ranges detail (capped at 10)
+  if (missingRanges.length > 0) {
+    var missingText = '*Missing ranges* (' + missingRanges.length +
+      (missingRanges.length === 10 ? '+' : '') + '):\n' +
+      missingRanges.map(function(r) { return '• ' + r; }).join('\n');
+    blocks.push(bk_section(missingText));
+  }
+
+  // Empty ranges detail (capped at 10)
+  if (emptyRanges.length > 0) {
+    var emptyText = '*Empty ranges* (' + emptyRanges.length +
+      (emptyRanges.length === 10 ? '+' : '') + '):\n' +
+      emptyRanges.map(function(r) { return '• ' + r; }).join('\n');
+    blocks.push(bk_section(emptyText));
+  }
+
+  // Footer
+  blocks.push(bk_context([timestamp + ' | Run from The Waratah Shift Reports']));
+
+  return blocks;
+}

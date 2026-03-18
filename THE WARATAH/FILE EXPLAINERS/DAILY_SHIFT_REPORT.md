@@ -1,6 +1,6 @@
 # Daily Shift Report — The Waratah
 
-**Last Updated:** March 18, 2026
+**Last Updated:** March 18, 2026 (M1: AI shift summary added to email + Slack)
 **Type:** Handover guide for managers
 **Audience:** Restaurant managers, non-developers
 
@@ -90,6 +90,7 @@ No password is required. Managers can send reports directly from the menu.
 **1. PDF is emailed to managers**
 - A formatted, professional PDF of your shift report is created
 - It's emailed to all managers on the recipient list (Evan, Cynthia, Dipti, Chef, Howie, Adam, Lily as of March 2026)
+- The email includes a short AI-written summary at the top — 2-3 sentences capturing the shift highlights (net revenue, key events, action items). This is generated automatically from your shift notes and does not require any extra input from you. If the AI system is unavailable, the email sends normally without the summary.
 
 **2. Slack message is posted**
 - A summary message appears in the Waratah Slack channel
@@ -175,6 +176,11 @@ No password is required. Managers can send reports directly from the menu.
 **Incident Section:**
 - Wastage, maintenance, RSA items
 - Only appears if you filled in any incidents
+
+**AI Summary (optional):**
+- A 2-3 sentence AI-written summary of the shift appears at the bottom of the Slack message
+- It's generated automatically from your shift notes and is only shown when the AI system is available
+- If the AI system is unavailable or not configured, this section is simply omitted — everything else still sends
 
 **Action Buttons:**
 - A button to view the full PDF report

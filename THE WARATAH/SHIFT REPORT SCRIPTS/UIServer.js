@@ -283,3 +283,71 @@ function refreshDashboard() {
 function closeDialog() {
   // Called by client — no-op on server, google.script.host.close() handles it.
 }
+
+
+/* ==========================================================================
+   SHIFT INPUT VALIDATION (M5)
+   ========================================================================== */
+
+/**
+ * Validates shift report completeness before the export runs.
+ *
+ * ERRORS (block export — must fix):
+ *   - MOD field is empty        (B4)
+ *   - Net revenue is 0 or empty (B34, formula cell — read only)
+ *
+ * WARNINGS (can override with note):
+ *   - No narrative text in Shift Notes (A43)
+ *   - No narrative text in What Went Well (A47)
+ *   - TODO items exist with no assignee in the staff column (F53:F61)
+ *
+ * @param {Sheet} sheet - The active shift report sheet
+ * @returns {{ errors: string[], warnings: string[] }}
+ */
+function validateShiftBeforeExport_(sheet) {
+  var errors = [];
+  var warnings = [];
+
+  // --- ERRORS ---
+  var mod = (sheet.getRange('B4').getValue() || '').toString().trim();
+  if (!mod) {
+    errors.push('MOD field is empty');
+  }
+
+  var netRevenue = Number(sheet.getRange('B34').getValue()) || 0;
+  if (netRevenue <= 0) {
+    errors.push('Net revenue is 0 or empty');
+  }
+
+  // --- WARNINGS ---
+  var shiftSummary = sheet.getRange('A43').getDisplayValue().trim();
+  if (!shiftSummary) {
+    warnings.push('Shift Notes is empty');
+  }
+
+  var theGood = sheet.getRange('A47').getDisplayValue().trim();
+  if (!theGood) {
+    warnings.push('What Went Well is empty');
+  }
+
+  // Count TODOs with no assignee: tasks in A53:E61 (value in col A), assignees in F53:F61
+  try {
+    var todoTaskValues = sheet.getRange('A53:E61').getValues();   // 9 x 5; task text in col 0
+    var todoAssignValues = sheet.getRange('F53:F61').getValues(); // 9 x 1
+    var unassignedCount = 0;
+    for (var i = 0; i < todoTaskValues.length; i++) {
+      var taskText = (todoTaskValues[i][0] || '').toString().trim();
+      var assignee = (todoAssignValues[i][0] || '').toString().trim();
+      if (taskText && !assignee) {
+        unassignedCount++;
+      }
+    }
+    if (unassignedCount > 0) {
+      warnings.push(unassignedCount + ' TODO item' + (unassignedCount > 1 ? 's have' : ' has') + ' no assignee');
+    }
+  } catch (e) {
+    Logger.log('validateShiftBeforeExport_: TODO check failed (non-blocking): ' + e.message);
+  }
+
+  return { errors: errors, warnings: warnings };
+}
