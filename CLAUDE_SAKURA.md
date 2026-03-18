@@ -1,6 +1,6 @@
 # SAKURA HOUSE - Claude Code Project Guide
 
-**Last Updated:** March 18, 2026 (M2-M9 implementation)
+**Last Updated:** March 18, 2026 (M4-M7 AI Insights Agent upgrade, M2-M9 implementation)
 **Project Type:** Google Apps Script (Hospitality Management System)
 **Venue:** Sakura House (Single-Venue Documentation)
 
@@ -23,6 +23,48 @@
 - Wired into `TaskIntegrationSakura.gs`: called when `pushTodosDirectToMasterActionables_()` appends to Master Actionables sheet; priority and area columns populated automatically
 - Non-blocking: missing API key or API errors result in unclassified tasks (task still synced, classification left blank)
 - Used by task management dashboard for grouping and filtering
+
+**M4-M7 — AI Insights Agent Upgrade (Phases 1-4):**
+
+**M4 — Shift Analytics Engine:**
+- New function `computeShiftAnalytics_Sakura(shiftData, warehouseId)` in `AIInsightsSakura.gs` — pure GAS math engine
+- Reads NIGHTLY_FINANCIAL warehouse sheet; computes 4-week and 8-week trailing averages, week-over-week delta, revenue trend (linear regression: rising/falling/flat)
+- Performs performance attribution (production share %), best/worst comparable shifts, anomaly detection (z-scores)
+- Returns structured analytics object with all metrics pre-computed
+- Non-blocking: returns `null` if insufficient warehouse data; graceful fallback to M1 generic summary
+
+**M5 — Structured Shift Insight:**
+- New function `generateShiftInsight_Sakura(shiftData, analytics)` in `AIInsightsSakura.gs` — structured Claude Haiku prompt
+- Receives pre-computed analytics from M4; generates insight in PERFORMANCE / TREND / ACTION format
+- Only runs if analytics available (M4 succeeded); falls back to old `generateShiftSummary_Sakura` if insufficient data
+- 2-3 sentences, formatted for email and Slack integration
+- Non-blocking: API errors fall back to generic summary
+
+**M6 — AI Insights Routing:**
+- New function `deliverAIInsights_Sakura(insight, shiftDate)` in `AIInsightsSakura.gs` — soft launch routing
+- Reads Script Property `AI_INSIGHTS_MODE`: either 'evan_only' or 'live'
+- In 'evan_only' (default): Evan receives upgraded `*AI Insights*` via email + TEST Slack webhook; team receives old generic `*AI Summary*`
+- In 'live': entire team receives upgraded `*AI Insights*` directly
+- Non-blocking: if any step fails, returns structured insight object for fallback routing; caller handles delivery
+- Allows safe soft launch without affecting team experience during testing
+
+**M7 — Insight Warehouse Logging:**
+- New function `logInsightToWarehouse_Sakura(analytics, insightText)` in `AIInsightsSakura.gs` — appends to AI_INSIGHTS_LOG sheet in warehouse
+- Creates sheet with headers (Date, Day, Venue, InsightText, RevenueBenchmark%, TrendDirection, AnomalyDetected) on first use
+- One row per shift, stores full insight text, revenue vs benchmark %, trend direction, anomaly flag
+- Used for historical insight tracking and pattern analysis
+- Non-blocking: if warehouse unavailable, logging skipped but shift export proceeds
+
+**Wiring (M4-M7):**
+- Called from `NightlyExportSakura.gs` in both email path (~line 168-205) and Slack path (~line 419-465)
+- Flow: computeShiftAnalytics → generateShiftInsight → logInsightToWarehouse → deliverAIInsights → route to email/Slack
+- All wrapped in try/catch; failures fall back to old M1 generic summary (resilience maintained)
+- Email: shows `*AI Insights*` header when upgraded, `*AI Summary*` when fallback
+- Slack: block text updates to show insight in Block Kit message
+
+**Script Properties Added (M4-M7):**
+- `AI_INSIGHTS_MODE`: 'evan_only' (default) or 'live' — controls soft launch routing
+- `AI_INSIGHTS_EVAN_EMAIL`: Evan's email — used in 'evan_only' mode for dedicated delivery
 
 **M5 — Shift Input Validation:**
 - New function `validateShiftBeforeExport_Sakura()` in `UIServerSakura.gs` — runs before nightly export
@@ -684,8 +726,10 @@ SLACK_DM_WEBHOOKS: '{"Evan":"...", "Nick":"...", "Gooch":"..."}'
 SAKURA_WORKING_FILE_ID: "[current_working_file_id]"
 ARCHIVE_ROOT_FOLDER_ID: "1a1AbJN4qU7Lt2oyYPxiTn3kG5EEKOf1K"
 
-// AI Insights (M1 — added Mar 18, 2026)
+// AI Insights (M1-M7 — updated Mar 18, 2026)
 ANTHROPIC_API_KEY: "[your_anthropic_api_key]"
+AI_INSIGHTS_MODE: "evan_only"  // or "live" for full team rollout
+AI_INSIGHTS_EVAN_EMAIL: "evan@pollenhospitality.com"
 ```
 
 **Setup Function (Shift Reports project):**

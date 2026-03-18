@@ -165,7 +165,7 @@ function continueExport(sheetName, isTest) {
         Logger.log('runIntegrations failed (non-blocking): ' + e.message);
       }
 
-      // AI Shift Summary for email — non-blocking, collected before email body is built
+      // AI Shift Insights for email — upgraded analytics pipeline with soft launch routing
       let aiSummaryEmail = null;
       try {
         const tz_ = Session.getScriptTimeZone() || 'Australia/Sydney';
@@ -188,9 +188,29 @@ function continueExport(sheetName, isTest) {
           kitchenNotes:  readF_('kitchenNotes'),
           todoCount:     0
         };
-        aiSummaryEmail = generateShiftSummary_Sakura(aiShiftData_);
+
+        // Phase 1: Pre-calculate analytics from warehouse
+        let analytics_ = null;
+        try {
+          const whId_ = getDataWarehouseId_();
+          if (whId_) analytics_ = computeShiftAnalytics_Sakura(aiShiftData_, whId_);
+        } catch (e_) {
+          Logger.log('AI analytics (Sakura) email: computation failed (non-blocking): ' + e_.message);
+        }
+
+        // Phase 2: Generate structured insight
+        const insight_ = generateShiftInsight_Sakura(aiShiftData_, analytics_);
+
+        // Phase 3: Route based on AI_INSIGHTS_MODE
+        const routed_ = deliverAIInsights_Sakura(insight_, aiShiftData_.date || '');
+        if (routed_) {
+          aiSummaryEmail = routed_;
+        } else {
+          aiSummaryEmail = generateShiftSummary_Sakura(aiShiftData_);
+        }
       } catch (e) {
-        Logger.log('AI Insights (Sakura) email: generateShiftSummary_Sakura failed (non-blocking): ' + e.message);
+        Logger.log('AI Insights (Sakura) email pipeline failed (non-blocking): ' + e.message);
+        try { aiSummaryEmail = generateShiftSummary_Sakura(aiShiftData_); } catch (e2) { /* silent fallback */ }
       }
 
       try {
@@ -396,8 +416,9 @@ function postToSlackFromSheet_(spreadsheet, sheet, sheetName, webhookUrl) {
     }
   }
 
-  // --- AI Shift Summary (non-blocking) ---
+  // --- AI Shift Insights — upgraded analytics pipeline with soft launch routing ---
   let aiSummary = null;
+  let aiIsUpgraded_ = false;
   try {
     const shiftDataForAI = {
       date: dateStr,
@@ -416,9 +437,32 @@ function postToSlackFromSheet_(spreadsheet, sheet, sheetName, webhookUrl) {
       kitchenNotes: kitchenNotes,
       todoCount: todoLines.length
     };
-    aiSummary = generateShiftSummary_Sakura(shiftDataForAI);
+
+    // Phase 1: Pre-calculate analytics from warehouse
+    let analytics_ = null;
+    try {
+      const whId_ = getDataWarehouseId_();
+      if (whId_) analytics_ = computeShiftAnalytics_Sakura(shiftDataForAI, whId_);
+    } catch (e_) {
+      Logger.log('AI analytics (Sakura) Slack: computation failed (non-blocking): ' + e_.message);
+    }
+
+    // Phase 2: Generate structured insight
+    const insight_ = generateShiftInsight_Sakura(shiftDataForAI, analytics_);
+
+    // Log insight to warehouse (always, regardless of mode)
+    try { logInsightToWarehouse_Sakura(analytics_, insight_); } catch (e_) { /* non-blocking */ }
+
+    // Route based on AI_INSIGHTS_MODE
+    const routed_ = deliverAIInsights_Sakura(insight_, dateStr);
+    if (routed_) {
+      aiSummary = routed_;
+      aiIsUpgraded_ = true;
+    } else {
+      aiSummary = generateShiftSummary_Sakura(shiftDataForAI);
+    }
   } catch (e) {
-    Logger.log('AI Insights (Sakura): generateShiftSummary_Sakura failed (non-blocking): ' + e.message);
+    Logger.log('AI Insights (Sakura) Slack pipeline failed (non-blocking): ' + e.message);
   }
 
   // --- Build links ---
@@ -499,10 +543,11 @@ function postToSlackFromSheet_(spreadsheet, sheet, sheetName, webhookUrl) {
     blocks.push(bk_context(incidentLines));
   }
 
-  // --- AI Summary (conditional — only shown when API call succeeded) ---
+  // --- AI Insights / Summary (conditional — only shown when API call succeeded) ---
   if (aiSummary) {
     blocks.push(bk_divider());
-    blocks.push(bk_section("*AI Summary*\n" + aiSummary));
+    var aiLabel_ = aiIsUpgraded_ ? '*AI Insights*' : '*AI Summary*';
+    blocks.push(bk_section(aiLabel_ + "\n" + aiSummary));
   }
 
   // --- Action buttons ---

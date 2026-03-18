@@ -1,6 +1,6 @@
 # Daily Shift Report — Sakura House
 
-**Last Updated:** March 18, 2026 (M5 validation, M2 anomaly detection)
+**Last Updated:** March 18, 2026 (M4-M7 AI Insights Agent upgrade, soft launch routing)
 **Type:** Handover guide for managers
 **Audience:** Restaurant managers, non-developers
 
@@ -117,6 +117,27 @@ No password is required. Managers can send reports directly from the menu.
 - Assigned staff are notified via Slack DM that they have a new task
 
 **Resilience:** If any of these steps fails (e.g., Slack is down), the others still run. You'll still get your PDF and email even if one system has a problem.
+
+---
+
+## AI Insights — Intelligent Shift Summary (Soft Launch)
+
+> The system is being upgraded with more advanced AI analysis. During the current soft launch phase, Evan receives an upgraded detailed analysis, while the rest of the team gets the standard summary. This allows testing the new features before rolling out to everyone.
+
+**What You'll See:**
+
+Currently, your shift report includes a brief AI-generated summary of what happened. During the soft launch phase:
+- **Evan's copy:** Shows an upgraded `*AI Insights*` section with performance analysis, trend comparison, and recommended actions
+- **Team's copy:** Shows the standard `*AI Summary*` (unchanged from before)
+
+**After Full Rollout:**
+
+Once testing is complete, everyone will receive the `*AI Insights*` section, which provides:
+- **Performance metrics:** How your shift compared to recent averages and trends
+- **Trend analysis:** Whether revenue is rising, falling, or stable over the past 4 weeks
+- **Recommended actions:** Specific suggestions based on the shift data and anomalies detected
+
+**This is automatic — no action required from you.** The system analyzes your data after you click "Confirm & Send" and includes the insights in the email and Slack message.
 
 ---
 

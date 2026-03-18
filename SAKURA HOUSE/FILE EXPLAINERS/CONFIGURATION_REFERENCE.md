@@ -1,6 +1,6 @@
 # Configuration Reference — Sakura House
 
-**Last Updated:** March 18, 2026 (ANTHROPIC_API_KEY, M2-M9 features)
+**Last Updated:** March 18, 2026 (M4-M7 AI Insights Agent upgrade, AI_INSIGHTS_MODE, AI_INSIGHTS_EVAN_EMAIL)
 **Type:** Handover guide for managers
 **Audience:** Restaurant managers taking over operations, comfortable with spreadsheets, no coding required
 **Tone:** Clear, practical, friendly
@@ -51,9 +51,9 @@
 
 ---
 
-## Shift Report Settings (13 Properties)
+## Shift Report Settings (15 Properties)
 
-> These settings control the Shift Report system — daily exports, Slack notifications, email recipients, and data warehousing. Found in the **Sakura House - Current Week** spreadsheet.
+> These settings control the Shift Report system — daily exports, Slack notifications, email recipients, data warehousing, and AI insights delivery. Found in the **Sakura House - Current Week** spreadsheet.
 
 ### Core Settings
 
@@ -61,9 +61,13 @@
 |----------|---------------|-----------------|---------------------|
 | `VENUE_NAME` | Venue Identifier | Identifies this spreadsheet as Sakura House (value: `SAKURA`) | Never — don't change this |
 | `MENU_PASSWORD` | Admin Password | Admin password for protected menu items | When you want to change the password (default: `chocolateteapot`) |
-| `ANTHROPIC_API_KEY` | Claude API Key | Enables AI features: shift summarisation, anomaly detection, task classification | When you renew the API key, or to disable AI features by leaving blank |
+| `ANTHROPIC_API_KEY` | Claude API Key | Enables AI features: shift summarisation, anomaly detection, task classification, analytics-driven insights | When you renew the API key, or to disable AI features by leaving blank |
+| `AI_INSIGHTS_MODE` | AI Insights Launch Mode | Controls how AI insights are delivered: 'evan_only' (Evan sees upgraded analysis, team sees standard summary) or 'live' (everyone sees upgraded analysis) | When you're ready to roll out upgraded AI insights to the full team after testing |
+| `AI_INSIGHTS_EVAN_EMAIL` | Evan's Email (Soft Launch) | Email address where Evan receives the upgraded `*AI Insights*` during 'evan_only' mode | If Evan's email changes or during soft launch testing |
 
-**Note on ANTHROPIC_API_KEY:** This is optional. If you don't set it, or if it's invalid, the system will skip AI features gracefully — reports still send, anomaly detection won't post alerts, and tasks won't be auto-classified. The system was designed to keep working even without an API key, so you can enable AI features later if you want.
+**Note on ANTHROPIC_API_KEY:** This is optional. If you don't set it, or if it's invalid, the system will skip AI features gracefully — reports still send, anomaly detection won't post alerts, tasks won't be auto-classified, and AI insights won't be generated. The system was designed to keep working even without an API key, so you can enable AI features later if you want.
+
+**Note on AI_INSIGHTS_MODE:** The 'evan_only' mode allows testing the new analytics-driven AI Insights feature with Evan before rolling out to the whole team. In 'evan_only' mode, Evan receives an email and Slack message with the upgraded `*AI Insights*` section (performance metrics, trend analysis, recommended actions), while the rest of the team gets the standard `*AI Summary*`. Switch to 'live' mode when ready for full team rollout.
 
 ### Slack Webhooks
 
