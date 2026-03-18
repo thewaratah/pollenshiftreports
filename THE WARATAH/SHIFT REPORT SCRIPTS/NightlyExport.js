@@ -221,6 +221,34 @@ function continueExport(sheetName, isTest) {
         warnings.push('Warehouse sync: ' + e.message);
       }
 
+      // AI Shift Summary for email — non-blocking, collected before email body is built
+      let aiSummaryEmail = null;
+      try {
+        const tz_ = Session.getScriptTimeZone() || 'Australia/Sydney';
+        const readCell_ = (range) => { try { return sheet.getRange(range).getDisplayValue().trim(); } catch (e_) { return ''; } };
+        const cfg_ = getVenueConfig_();
+        const dateVal_ = sheet.getRange(cfg_.ranges.date).getValue();
+        const aiShiftData_ = {
+          date: dateVal_ instanceof Date ? Utilities.formatDate(dateVal_, tz_, 'dd/MM/yyyy') : readCell_(cfg_.ranges.date),
+          day:  dateVal_ instanceof Date ? Utilities.formatDate(dateVal_, tz_, 'EEEE') : '',
+          mod:          readCell_(cfg_.ranges.mod),
+          netRevenue:   readCell_(cfg_.ranges.netRevenue),
+          cardTips:     readCell_(cfg_.ranges.cardTips),
+          cashTips:     readCell_(cfg_.ranges.cashTips),
+          totalTips:    readCell_(cfg_.ranges.totalTips),
+          staff:        readCell_(cfg_.ranges.staff),
+          shiftSummary: readCell_('A43'),
+          guestsOfNote: readCell_('A45'),
+          theGood:      readCell_('A47'),
+          theBad:       readCell_('A49'),
+          kitchenNotes: readCell_('A51'),
+          todoCount:    0
+        };
+        aiSummaryEmail = generateShiftSummary_Waratah(aiShiftData_);
+      } catch (e) {
+        Logger.log('AI Insights (Waratah) email: generateShiftSummary_Waratah failed (non-blocking): ' + e.message);
+      }
+
       // Build the TO-DOs sheet (WED–SUN aggregation) — non-blocking
       try {
         buildTodoAggregationSheet_(spreadsheet, DAYS, TODO_TASK_RANGE, TODO_ASSIGNEE_RANGE);
@@ -258,8 +286,11 @@ function continueExport(sheetName, isTest) {
 
       const sheetUrl = spreadsheet.getUrl();
       const subject = `The Waratah Nightly Shift Report: ${sheetName}`;
+      const aiEmailBlock = aiSummaryEmail
+        ? `<p style="background:#f5f5f5;padding:10px 14px;border-left:4px solid #2d6a4f;font-style:italic;margin-bottom:16px;">${aiSummaryEmail}</p>`
+        : '';
       const htmlBody = `
-        <p>Dear Team,</p>
+        ${aiEmailBlock}<p>Dear Team,</p>
         <p>Please find attached the PDF export of the nightly report: <strong>${sheetName}</strong>.</p>
         <p>Best regards,<br>${senderName}</p>
         <hr>
@@ -721,6 +752,30 @@ function postToSlackFromSheet(spreadsheet, sheet, sheetName, webhookUrl) {
     }
   });
 
+  // --- AI Shift Summary (non-blocking) ---
+  let aiSummary = null;
+  try {
+    const shiftDataForAI = {
+      date: dateStr,
+      day: dayStr,
+      mod: modText,
+      netRevenue: netRevenue,
+      cardTips: cardTips,
+      cashTips: cashTips,
+      totalTips: totalTips,
+      staff: staffText,
+      shiftSummary: shiftSummary,
+      guestsOfNote: guestsOfNote,
+      theGood: theGood,
+      theBad: theBad,
+      kitchenNotes: kitchenNotes,
+      todoCount: todoLines.length
+    };
+    aiSummary = generateShiftSummary_Waratah(shiftDataForAI);
+  } catch (e) {
+    Logger.log('AI Insights (Waratah): generateShiftSummary_Waratah failed (non-blocking): ' + e.message);
+  }
+
   // --- Build links ---
   const spreadsheetId = spreadsheet.getId();
   const sheetId = sheet.getSheetId();
@@ -794,6 +849,12 @@ function postToSlackFromSheet(spreadsheet, sheet, sheetName, webhookUrl) {
     if (wastageComps) incidentLines.push(":warning: *Wastage/Comps:* " + wastageComps);
     if (rsaIncidents) incidentLines.push(":shield: *RSA/Incidents:* " + rsaIncidents);
     blocks.push(bk_context(incidentLines));
+  }
+
+  // --- AI Summary (conditional — only shown when API call succeeded) ---
+  if (aiSummary) {
+    blocks.push(bk_divider());
+    blocks.push(bk_section("*AI Summary*\n" + aiSummary));
   }
 
   // --- Action buttons ---

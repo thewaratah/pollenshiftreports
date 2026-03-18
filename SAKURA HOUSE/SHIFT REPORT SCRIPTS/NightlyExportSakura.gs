@@ -165,6 +165,34 @@ function continueExport(sheetName, isTest) {
         Logger.log('runIntegrations failed (non-blocking): ' + e.message);
       }
 
+      // AI Shift Summary for email — non-blocking, collected before email body is built
+      let aiSummaryEmail = null;
+      try {
+        const tz_ = Session.getScriptTimeZone() || 'Australia/Sydney';
+        const readF_ = (key) => { try { return getFieldDisplayValue(sheet, key).trim(); } catch (e_) { return ''; } };
+        const dateVal_ = getFieldValue(sheet, 'date');
+        const aiShiftData_ = {
+          date: dateVal_ instanceof Date ? Utilities.formatDate(dateVal_, tz_, 'dd/MM/yyyy') : readF_('date'),
+          day:  dateVal_ instanceof Date ? Utilities.formatDate(dateVal_, tz_, 'EEEE') : '',
+          mod:           readF_('mod'),
+          netRevenue:    readF_('netRevenue'),
+          cardTips:      readF_('cardTips'),
+          cashTips:      readF_('cashTips'),
+          surchargeTips: readF_('surchargeTips'),
+          fohStaff:      readF_('fohStaff'),
+          bohStaff:      readF_('bohStaff'),
+          shiftSummary:  readF_('shiftSummary'),
+          guestsOfNote:  readF_('guestsOfNote'),
+          goodNotes:     readF_('goodNotes'),
+          issues:        readF_('issues'),
+          kitchenNotes:  readF_('kitchenNotes'),
+          todoCount:     0
+        };
+        aiSummaryEmail = generateShiftSummary_Sakura(aiShiftData_);
+      } catch (e) {
+        Logger.log('AI Insights (Sakura) email: generateShiftSummary_Sakura failed (non-blocking): ' + e.message);
+      }
+
       try {
         buildTodoAggregationSheet_(spreadsheet);
       } catch (e) {
@@ -199,8 +227,11 @@ function continueExport(sheetName, isTest) {
 
       const sheetUrl = spreadsheet.getUrl();
       const subject = `Sakura House Nightly Shift Report: ${sheetName}`;
+      const aiEmailBlock = aiSummaryEmail
+        ? `<p style="background:#f5f5f5;padding:10px 14px;border-left:4px solid #e60026;font-style:italic;margin-bottom:16px;">${aiSummaryEmail}</p>`
+        : '';
       const htmlBody = `
-        <p>Dear Team,</p>
+        ${aiEmailBlock}<p>Dear Team,</p>
         <p>Please find attached the PDF export of the nightly report: <strong>${sheetName}</strong>.</p>
         <p>Best regards,<br>${senderName}</p>
         <hr>
@@ -342,6 +373,31 @@ function postToSlackFromSheet_(spreadsheet, sheet, sheetName, webhookUrl) {
     }
   }
 
+  // --- AI Shift Summary (non-blocking) ---
+  let aiSummary = null;
+  try {
+    const shiftDataForAI = {
+      date: dateStr,
+      day: dayStr,
+      mod: modText,
+      netRevenue: netRevenue,
+      cardTips: cardTips,
+      cashTips: cashTips,
+      surchargeTips: surchargeTips,
+      fohStaff: fohStaff,
+      bohStaff: bohStaff,
+      shiftSummary: shiftSummary,
+      guestsOfNote: guestsOfNote,
+      goodNotes: goodNotes,
+      issues: issues,
+      kitchenNotes: kitchenNotes,
+      todoCount: todoLines.length
+    };
+    aiSummary = generateShiftSummary_Sakura(shiftDataForAI);
+  } catch (e) {
+    Logger.log('AI Insights (Sakura): generateShiftSummary_Sakura failed (non-blocking): ' + e.message);
+  }
+
   // --- Build links ---
   const spreadsheetId = spreadsheet.getId();
   const sheetId = sheet.getSheetId();
@@ -418,6 +474,12 @@ function postToSlackFromSheet_(spreadsheet, sheet, sheetName, webhookUrl) {
     if (maintenance)   incidentLines.push(":wrench: *Maintenance:* " + maintenance);
     if (rsaIncidents)  incidentLines.push(":shield: *RSA/Incidents:* " + rsaIncidents);
     blocks.push(bk_context(incidentLines));
+  }
+
+  // --- AI Summary (conditional — only shown when API call succeeded) ---
+  if (aiSummary) {
+    blocks.push(bk_divider());
+    blocks.push(bk_section("*AI Summary*\n" + aiSummary));
   }
 
   // --- Action buttons ---
