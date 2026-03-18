@@ -271,7 +271,7 @@ If the staff member should appear as assignees for shift TO-DOs, update the drop
 | **Weekly Rollover** | Resets the spreadsheet and archives last week | Monday 10:00 AM | Shift Report > Admin Tools > Weekly Rollover (In-Place) > Create Rollover Trigger (Mon 10am) |
 | **Revenue Digest** | Posts weekly revenue comparison to Slack | Monday 8:00 AM | Shift Report > Admin Tools > Weekly Digest > Setup Monday Digest Trigger |
 | **Weekly Backfill** | Backfills old data to the data warehouse | Monday 2:00 AM | Shift Report > Admin Tools > Data Warehouse > Setup Weekly Backfill Trigger |
-| **Backfill Entire Week** *(on-demand, not a trigger)* | Manually resyncs all 6 day sheets to the warehouse — safe to re-run | Run manually when needed | Shift Report > Admin Tools > Data Warehouse > Backfill Entire Week to Warehouse |
+| **Backfill This Sheet** *(on-demand, not a trigger)* | Manually pushes the active day sheet to the warehouse — navigate to the target day sheet first | Run manually when needed | Shift Report > Admin Tools > Data Warehouse > Backfill This Sheet to Warehouse |
 
 #### Task Management Spreadsheet (Sakura Actionables Sheet)
 
