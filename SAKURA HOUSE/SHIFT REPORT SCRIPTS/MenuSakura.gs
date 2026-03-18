@@ -98,10 +98,69 @@ function pw_sendWeeklyRevenueDigest_Sakura()      { if (requirePassword_()) send
 function pw_sendWeeklyRevenueDigest_Sakura_Test() { if (requirePassword_()) sendWeeklyRevenueDigest_Sakura_Test(); }
 function pw_setupWeeklyDigestTrigger_Sakura()     { if (requirePassword_()) setupWeeklyDigestTrigger_Sakura(); }
 
+// === PASSWORD-GATED WRAPPERS: Setup All Triggers ===
+function pw_setupAllTriggers_Sakura()             { if (requirePassword_()) setupAllTriggers_Sakura(); }
+
+/**
+ * S1: Install all SR triggers in one call.
+ * Installs: rollover (Mon 1am), backfill (Mon 8am), digest (Mon 8am).
+ * Deduplicates: removes any existing trigger for the same function before creating.
+ */
+function setupAllTriggers_Sakura() {
+  const results = [];
+
+  const triggerDefs = [
+    { funcName: 'performInPlaceRollover',        label: 'Weekly Rollover (Mon 1am)',  day: ScriptApp.WeekDay.MONDAY, hour: 1  },
+    { funcName: 'runWeeklyBackfill_Sakura',       label: 'Weekly Backfill (Mon 8am)', day: ScriptApp.WeekDay.MONDAY, hour: 8  },
+    { funcName: 'sendWeeklyRevenueDigest_Sakura', label: 'Weekly Digest (Mon 8am)',   day: ScriptApp.WeekDay.MONDAY, hour: 8  },
+  ];
+
+  triggerDefs.forEach(function(def) {
+    try {
+      // Remove any existing trigger for this function
+      ScriptApp.getProjectTriggers().forEach(function(t) {
+        if (t.getHandlerFunction() === def.funcName) {
+          ScriptApp.deleteTrigger(t);
+        }
+      });
+      // Create new trigger
+      ScriptApp.newTrigger(def.funcName)
+        .timeBased()
+        .onWeekDay(def.day)
+        .atHour(def.hour)
+        .create();
+      results.push('✅ ' + def.label);
+      Logger.log('[setupAllTriggers_Sakura] Installed: ' + def.label);
+    } catch (e) {
+      results.push('❌ ' + def.label + ': ' + e.message);
+      Logger.log('[setupAllTriggers_Sakura] FAIL ' + def.label + ': ' + e.message);
+    }
+  });
+
+  const msg = 'SR Triggers Setup\n\n' + results.join('\n') +
+    '\n\nNOTE: Task Management triggers (runDailyTaskMaintenance etc.)\nmust be installed from the Sakura Actionables Sheet project.';
+  try {
+    SpreadsheetApp.getUi().alert('SR Triggers Setup', msg, SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (e) {
+    Logger.log('[setupAllTriggers_Sakura] Result:\n' + msg);
+  }
+}
+
 
 function onOpen() {
   try {
     const ui = SpreadsheetApp.getUi();
+
+    // S5: check trigger state for warning label
+    let adminLabel = 'Admin Tools';
+    try {
+      const installedFuncs = ScriptApp.getProjectTriggers().map(function(t) { return t.getHandlerFunction(); });
+      const requiredTriggers = ['performInPlaceRollover', 'sendWeeklyRevenueDigest_Sakura'];
+      const anyMissing = requiredTriggers.some(function(f) { return installedFuncs.indexOf(f) === -1; });
+      if (anyMissing) adminLabel = '⚠ Admin Tools';
+    } catch (trigErr) {
+      Logger.log('[onOpen] trigger check skipped: ' + trigErr.message);
+    }
 
     ui.createMenu('Shift Report')
       // Daily Reports
@@ -112,7 +171,7 @@ function onOpen() {
       .addSeparator()
 
       // Admin Tools (all password-gated)
-      .addSubMenu(ui.createMenu('Admin Tools')
+      .addSubMenu(ui.createMenu(adminLabel)
         .addSubMenu(ui.createMenu('Weekly Reports')
           .addItem('Weekly To-Do Summary (LIVE)', 'pw_sendWeeklyTodoSummary')
           .addItem('Weekly To-Do Summary (TEST)', 'pw_sendWeeklyTodoSummary_TestToSelf'))
@@ -146,6 +205,8 @@ function onOpen() {
           .addItem('Setup Weekly Backfill Trigger', 'pw_setupWeeklyBackfillTrigger'))
 
         .addSubMenu(ui.createMenu('Set Up & Diagnostics')
+          .addItem('Setup All SR Triggers', 'pw_setupAllTriggers_Sakura')
+          .addSeparator()
           .addItem('Check Named Ranges (This Sheet)', 'pw_diagnoseNamedRanges')
           .addItem('Check Named Ranges (ALL Sheets)', 'pw_diagnoseAllSheets')
           .addItem('Create Named Ranges (This Sheet)', 'pw_createNamedRangesOnActiveSheet')
