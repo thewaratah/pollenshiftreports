@@ -385,31 +385,33 @@ function pushTodosToMasterActionables(sheet, sheetName, preloadedConfig) {
     return;
   }
 
-  // Duplicate detection: filter out tasks already pushed today
+  // Duplicate detection: filter out tasks that are already OPEN with the same description.
+  // "Open" means status is not DONE or CANCELLED — regardless of creation date.
+  // This replaces the previous "created today" check with a broader open-task check.
   try {
     const masterSS = SpreadsheetApp.openById(getTaskSpreadsheetId_());
     const masterSheet = masterSS.getSheetByName("MASTER ACTIONABLES SHEET");
     if (masterSheet && masterSheet.getLastRow() > 1) {
-      const todayStr = Utilities.formatDate(new Date(), "Australia/Sydney", "yyyy-MM-dd");
-      const existingDesc = masterSheet.getRange(2, 5, masterSheet.getLastRow() - 1, 1).getValues(); // col E
-      const existingDates = masterSheet.getRange(2, 7, masterSheet.getLastRow() - 1, 1).getValues(); // col G
-      const todayDescs = new Set();
-      for (let i = 0; i < existingDesc.length; i++) {
-        const d = existingDates[i][0];
-        if (d instanceof Date && Utilities.formatDate(d, "Australia/Sydney", "yyyy-MM-dd") === todayStr) {
-          todayDescs.add((existingDesc[i][0] || "").toString().trim());
+      const dataRows = masterSheet.getRange(2, 1, masterSheet.getLastRow() - 1, 5).getValues(); // cols A-E
+      // col index: A=0 (Priority), B=1 (Status), C=2 (Staff), D=3 (Area), E=4 (Description)
+      const openDescriptions = new Set();
+      dataRows.forEach(function(row) {
+        const status = (row[1] || '').toString().trim().toUpperCase();
+        const isOpen = ['DONE', 'CANCELLED'].indexOf(status) === -1;
+        if (isOpen) {
+          openDescriptions.add((row[4] || '').toString().trim());
         }
-      }
+      });
       const beforeCount = todos.length;
-      const filtered = todos.filter(t => !todayDescs.has(t.description));
+      const filtered = todos.filter(function(t) { return !openDescriptions.has(t.description); });
       const skipped = beforeCount - filtered.length;
       if (skipped > 0) {
-        Logger.log(`Skipped ${skipped} duplicate TO-DO(s) (already pushed today).`);
+        Logger.log('Skipped ' + skipped + ' duplicate TO-DO(s) (already open in Master Actionables).');
       }
       todos.length = 0;
-      filtered.forEach(t => todos.push(t));
+      filtered.forEach(function(t) { todos.push(t); });
       if (todos.length === 0) {
-        Logger.log("All TO-DOs already pushed today — nothing new to push.");
+        Logger.log("All TO-DOs already exist as open tasks — nothing new to push.");
         return;
       }
     }

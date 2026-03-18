@@ -149,6 +149,10 @@ function performWeeklyRollover() {
       Logger.log('Step 7: Skipping notifications (fresh template - no archive)');
     }
 
+    // 8. Post-rollover validation (non-blocking — rollover is already complete)
+    Logger.log('Step 8: Running post-rollover validation...');
+    validateRolloverResult_();
+
     Logger.log('========================================');
     Logger.log('WEEKLY ROLLOVER - Completed Successfully');
     Logger.log('========================================');
@@ -688,6 +692,85 @@ function sendRolloverNotifications_(summary, nextWeekStart, pdfFile, snapshotFil
 }
 
 // ============================================================================
+// POST-ROLLOVER VALIDATION
+// ============================================================================
+
+/**
+ * Validates the rollover result after completion.
+ * Checks each day sheet for a non-empty date and a resolvable netRevenue range.
+ * Posts a Slack alert to WARATAH_SLACK_WEBHOOK_TEST if any checks fail.
+ * Non-blocking — never throws; rollover is already complete by this point.
+ *
+ * @returns {{ valid: boolean, issues: string[] }}
+ */
+function validateRolloverResult_() {
+  const issues = [];
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    DAY_SHEETS.forEach(function(dayName) {
+      const sheet = getSheetByDayPrefix_(ss, dayName);
+      if (!sheet) {
+        issues.push(dayName + ': sheet not found');
+        return;
+      }
+
+      // Check date field is non-empty
+      try {
+        const dateVal = getFieldValue(sheet, 'date');
+        if (!dateVal) {
+          issues.push(sheet.getName() + ': date field is empty after rollover');
+        }
+      } catch (e) {
+        issues.push(sheet.getName() + ': date field read error — ' + e.message);
+      }
+
+      // Check netRevenue named range resolves to a Range object
+      try {
+        const rangeObj = getFieldRange(sheet, 'netRevenue');
+        if (!rangeObj) {
+          issues.push(sheet.getName() + ': netRevenue range did not resolve');
+        }
+      } catch (e) {
+        issues.push(sheet.getName() + ': netRevenue range error — ' + e.message);
+      }
+    });
+
+    if (issues.length === 0) {
+      Logger.log('Post-rollover validation: PASSED');
+      return { valid: true, issues: [] };
+    }
+
+    // Post Slack alert with failure list
+    Logger.log('Post-rollover validation: FAILED — ' + issues.join('; '));
+    try {
+      const webhook = PropertiesService.getScriptProperties()
+        .getProperty('WARATAH_SLACK_WEBHOOK_TEST');
+      if (webhook) {
+        const blocks = [
+          bk_header('Rollover Validation Failed'),
+          bk_section(
+            '*The following issues were detected after weekly rollover:*\n' +
+            issues.map(function(i) { return '• ' + i; }).join('\n')
+          ),
+          bk_context(['Check Apps Script logs for full details'])
+        ];
+        bk_post(webhook, blocks, 'Waratah rollover validation failed: ' + issues.length + ' issue(s)');
+      }
+    } catch (slackErr) {
+      Logger.log('validateRolloverResult_: Slack alert failed — ' + slackErr.message);
+    }
+
+    return { valid: false, issues: issues };
+
+  } catch (e) {
+    Logger.log('validateRolloverResult_: unexpected error (non-blocking) — ' + e.message);
+    return { valid: false, issues: ['Validation check itself failed: ' + e.message] };
+  }
+}
+
+// ============================================================================
 // PREVIEW / DRY RUN FUNCTIONS
 // ============================================================================
 
@@ -837,11 +920,15 @@ function createWeeklyRolloverTrigger() {
 
   Logger.log('✅ Weekly rollover trigger created: Monday 10:00am');
 
-  SpreadsheetApp.getUi().alert(
-    'Trigger Created',
-    'Weekly rollover trigger created successfully.\n\nSchedule: Monday 10:00am\n\nVerify in Apps Script Editor → Triggers',
-    SpreadsheetApp.getUi().ButtonSet.OK
-  );
+  try {
+    SpreadsheetApp.getUi().alert(
+      'Trigger Created',
+      'Weekly rollover trigger created successfully.\n\nSchedule: Monday 10:00am\n\nVerify in Apps Script Editor → Triggers',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  } catch (e) {
+    Logger.log('UI alert skipped — not running in a UI context');
+  }
 }
 
 // ============================================================================
@@ -963,9 +1050,13 @@ function removeWeeklyRolloverTrigger() {
 
   Logger.log(`Removed ${removed} rollover trigger(s)`);
 
-  SpreadsheetApp.getUi().alert(
-    'Trigger Removed',
-    `Removed ${removed} weekly rollover trigger(s).\n\nAutomatic rollover is now disabled.`,
-    SpreadsheetApp.getUi().ButtonSet.OK
-  );
+  try {
+    SpreadsheetApp.getUi().alert(
+      'Trigger Removed',
+      `Removed ${removed} weekly rollover trigger(s).\n\nAutomatic rollover is now disabled.`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  } catch (e) {
+    Logger.log('UI alert skipped — not running in a UI context');
+  }
 }

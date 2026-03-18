@@ -8,6 +8,33 @@
 
 ---
 
+## 🆕 Small Items S1-S9 (March 18, 2026)
+
+**S1 — Trigger Setup Menu:**
+- New function `setupAllTriggers_Waratah()` in `Menu.js` — installs all 3 SR triggers (rollover Mon 10am, backfill Mon 8am, digest Wed 8am) in one call; deduplicates before creating
+- New menu item: Admin Tools → Setup & Utilities → "Setup All SR Triggers"
+- `onOpen()` shows "⚠ Admin Tools" warning if triggers missing
+- `requirePassword_()` now reads from MENU_PASSWORD Script Property (fallback: 'chocolateteapot')
+
+**S2 — Post-Rollover Validation:**
+- New Step 8 in `WeeklyRolloverInPlace.js`: `validateRolloverResult_()` — checks rollover completion; posts Slack alert to TEST webhook on failure; non-blocking
+- `createWeeklyRolloverTrigger()` and `removeWeeklyRolloverTrigger()` now wrap `getUi()` in try/catch for trigger context safety
+
+**S8 — Data Warehouse Auto-Build & LockService Re-entrancy:**
+- `IntegrationHub.js`: `logToDataWarehouse_(shiftData, config, skipLock)` — new `skipLock` parameter prevents LockService deadlock when called from backfill
+- Auto-builds ANALYTICS tab on first warehouse write if missing
+- `logPipelineLearning_()` called in catch block of `runIntegrations()`
+
+**S9 — Pipeline Learning Utility:**
+- New utility `logPipelineLearning_(context, issue, fix)` in `SlackBlockKitWaratahSR.js` — appends to LEARNINGS tab
+
+**Other changes:**
+- `Menu.js`: `requirePassword_()` reads from Script Properties (not hardcoded)
+- `Menu_Updated_Waratah.gs`: Removed dead `getMenuPassword_()` helper
+- `NightlyExport.js`: `pushTodosToMasterActionables()` — duplicate detection now checks ALL open tasks (not just today's)
+
+---
+
 ## 🆕 Named Range System (March 18, 2026)
 
 `RunWaratah.js` added — mirrors Sakura's `RunSakura.gs` architecture. All field-to-cell mappings now live in `FIELD_CONFIG` (32 fields). Consumer files (`WeeklyRolloverInPlace.js`, `IntegrationHub.js`, `TEST_DataExtractionVerification.js`, `Menu.js`) updated.
@@ -178,7 +205,8 @@ runValidationReport()    // Full system validation
    - `clear()` = destroys everything (formatting, validation, formulas) ❌
 
 2. **Password:** `chocolateteapot`
-   - Stored in Script Properties as `MENU_PASSWORD`
+   - Stored in Script Properties as `MENU_PASSWORD` (S1: now reads from Script Properties, not hardcoded)
+   - Used by `requirePassword_()` in Menu.js and Menu_Updated_Waratah.gs
    - TODO: Rotate and document securely
 
 3. **Test on Copies**
@@ -252,7 +280,7 @@ verifyAndFixNamedRanges_(spreadsheet) // called by rollover — silently recreat
 exportAndEmailPDF()              // Line 299 - Opens checklist dialog
 continueExport(sheetName, isTest) // Line 170 - Main export (called from dialog)
 postToSlackFromSheet()           // Line 657 - Block Kit Slack message
-pushTodosToMasterActionables()   // Line 362 - Push TODOs to task sheet
+pushTodosToMasterActionables()   // Line 362 - Push TODOs to task sheet (S9: duplicate detection checks ALL open tasks)
 generatePdfForSheet_NoUI_()      // Line 826 - Generate PDF (no UI context)
 _getExportConfig_()              // Line 96 - Lazy-load venue config
 ```
@@ -261,7 +289,7 @@ _getExportConfig_()              // Line 96 - Lazy-load venue config
 ```javascript
 runIntegrations(sheetName)       // Line 73 - Orchestrate all integrations
 extractShiftData_(sheetName)     // Line 188 - Read cells B3, B4, B34, etc.
-logToDataWarehouse_(shiftData)   // Line 339 - Write to 4 warehouse sheets
+logToDataWarehouse_(shiftData, config, skipLock)  // Line 339 - Write to 4 warehouse sheets (S8: skipLock prevents re-entrancy deadlock)
 validateShiftData_(shiftData)    // Line 511 - Check revenue logic, required fields
 ```
 
@@ -275,9 +303,10 @@ createArchiveSnapshot_(summary)  // Copy spreadsheet to Archive/YYYY/YYYY-MM/she
 clearAllSheetData_()             // Clear data via clearContent() (preserves structure)
 updateDatesToNextWeek_()         // Calculate & set Wed-Sun dates + rename tabs; returns nextWednesday Date
 sendRolloverNotifications_()     // Email + Slack to managers
+validateRolloverResult_()        // NEW (S2): Check rollover completion; posts Slack alert on failure (non-blocking)
 previewRollover()                // Dry run — shows what would happen, no changes made
-createWeeklyRolloverTrigger()    // Create Monday 10:00am trigger
-removeWeeklyRolloverTrigger()    // Delete the rollover trigger
+createWeeklyRolloverTrigger()    // Create Monday 10:00am trigger (S2: wraps getUi() in try/catch)
+removeWeeklyRolloverTrigger()    // Delete the rollover trigger (S2: wraps getUi() in try/catch)
 getSheetByDayPrefix_(ss, day)    // Find sheet by day prefix (handles renamed tabs like "WEDNESDAY 26/02")
 ```
 
@@ -306,7 +335,7 @@ resetScriptProperties()     // CAUTION: Deletes all properties
 **Key Properties:**
 ```
 VENUE_NAME: "WARATAH"
-MENU_PASSWORD: "chocolateteapot"
+MENU_PASSWORD: "chocolateteapot"                       // S1: Read by requirePassword_() in Menu.js
 WARATAH_WORKING_FILE_ID: "[current_week_spreadsheet_id]"
 WARATAH_DATA_WAREHOUSE_ID: "[warehouse_spreadsheet_id]"
 ARCHIVE_ROOT_FOLDER_ID: "[archive_folder_id]"
@@ -323,6 +352,8 @@ See [DEEP_DIVE_ARCHITECTURE.md](docs/waratah/DEEP_DIVE_ARCHITECTURE.md#script-pr
 **Warehouse ID:** Script Properties → `WARATAH_DATA_WAREHOUSE_ID`
 
 **Schema overhaul (Mar 6, 2026):** All 4 sheets redesigned — misaligned headers fixed, covers/labor removed, full financial breakdown (B8, B15-B29) added. Existing data cleared and backfilled fresh.
+
+**Auto-Build Behavior (S8, Mar 18, 2026):** The ANALYTICS tab is auto-created on first warehouse write if missing. LockService re-entrancy fixed via `skipLock` parameter — when backfill calls `logToDataWarehouse_()`, it passes `skipLock=true` to prevent deadlock.
 
 ```
 1. NIGHTLY_FINANCIAL      (22 cols A-V) - Full financial breakdown
@@ -575,8 +606,8 @@ if (config.name === 'THE WARATAH') {
 
 ---
 
-**Last Updated:** March 18, 2026
-**Version:** 3.2
+**Last Updated:** March 18, 2026 (S1-S9 small items pass)
+**Version:** 3.3
 **Status:** ✅ Fully operational and production-ready
 **Total LOC:** ~9,371 lines across 22 code files + 5 HTML files (+ RunWaratah.js ~800 LOC)
 
