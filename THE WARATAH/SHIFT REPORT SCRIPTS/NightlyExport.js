@@ -932,7 +932,7 @@ function postToSlackFromSheet(spreadsheet, sheet, sheetName, webhookUrl) {
   // --- AI Insights / Summary (conditional — only shown when API call succeeded) ---
   if (aiSummary) {
     blocks.push(bk_divider());
-    var aiLabel_ = aiIsUpgraded_ ? '*AI Insights*' : '*AI Summary*';
+    var aiLabel_ = aiIsUpgraded_ ? '*The Waratah Analytics Insights*' : '*AI Summary*';
     blocks.push(bk_section(aiLabel_ + "\n" + aiSummary));
   }
 

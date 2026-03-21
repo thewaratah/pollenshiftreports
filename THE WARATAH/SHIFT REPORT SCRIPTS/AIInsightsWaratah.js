@@ -590,7 +590,8 @@ function computeShiftAnalytics_Waratah(shiftData, warehouseId) {
     // trend: linear slope on the 8 revenue values
     // -------------------------------------------------------------------------
     var slope     = linearSlope_(hist8Revenues);
-    var direction = slope > 50 ? 'upward' : slope < -50 ? 'downward' : 'flat';
+    var trendThreshold = revMean8 * 0.005; // 0.5% of mean per week — matches Sakura
+    var direction = slope > trendThreshold ? 'upward' : slope < -trendThreshold ? 'downward' : 'flat';
 
     // -------------------------------------------------------------------------
     // attribution: production share today vs 8w avg

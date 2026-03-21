@@ -450,7 +450,7 @@ function classifyTask_Sakura(taskDescription) {
  */
 function computeShiftAnalytics_Sakura(shiftData, warehouseId) {
   // Column index map (0-based) — matches M2 and warehouse append order exactly
-  var COLS = { date: 0, day: 1, netRevenue: 4, tipsTotal: 7, production: 10, discounts: 11 };
+  var COLS = { date: 0, day: 1, netRevenue: 4, tipsTotal: 7, production: 10, discounts: 11, deposit: 12 };
 
   try {
     // --- Input guards ---
@@ -465,6 +465,7 @@ function computeShiftAnalytics_Sakura(shiftData, warehouseId) {
     var todaySurchTips  = parseFloat(shiftData.surchargeTips) || 0;
     var todayTips       = todayCardTips + todayCashTips + todaySurchTips;
     var todayProduction = parseFloat(shiftData.productionAmount) || 0;
+    var todayDiscounts  = parseFloat(shiftData.discounts) || 0;
     // Accept either shiftData.day (NightlyExport) or shiftData.dayOfWeek (extractShiftData_)
     var todayDay        = (shiftData.day || shiftData.dayOfWeek || '').toString().trim();
     var todayMod        = (shiftData.mod || 'Unknown').toString().trim();
@@ -553,14 +554,11 @@ function computeShiftAnalytics_Sakura(shiftData, warehouseId) {
       return (current - baseline) / baseline * 100;
     }
 
+    // Sort descending by value; find today's rank (1 = best)
     function rankInHistory_(todayValue, historicValues) {
-      // Rank 1 = highest. Sort descending, find first position where value <= today.
-      var sorted = historicValues.slice().sort(function(a, b) { return b - a; });
-      var rank = 1;
-      for (var i = 0; i < sorted.length; i++) {
-        if (sorted[i] > todayValue) rank++;
-      }
-      return { rank: rank, total: historicValues.length + 1 }; // +1 to include today
+      var all = historicValues.concat([todayValue]).sort(function(a, b) { return b - a; });
+      var rank = all.indexOf(todayValue) + 1;
+      return { rank: rank, total: all.length };
     }
 
     // =========================================================
@@ -569,6 +567,7 @@ function computeShiftAnalytics_Sakura(shiftData, warehouseId) {
     var histRevenues8  = history.map(function(row)  { return parseFloat(row[COLS.netRevenue]) || 0; });
     var histTips8      = history.map(function(row)  { return parseFloat(row[COLS.tipsTotal]) || 0; });
     var histProd8      = history.map(function(row)  { return parseFloat(row[COLS.production]) || 0; });
+    var histDiscount8  = history.map(function(row)  { return parseFloat(row[COLS.discounts]) || 0; });
     var histRevenues4  = history4.map(function(row) { return parseFloat(row[COLS.netRevenue]) || 0; });
     var histTips4      = history4.map(function(row) { return parseFloat(row[COLS.tipsTotal]) || 0; });
 
@@ -678,6 +677,17 @@ function computeShiftAnalytics_Sakura(shiftData, warehouseId) {
     var ratioAnomalyPct = percentChange_(todayTipRatio, ratioMean8);
 
     // =========================================================
+    // Discount impact: today's discount rate vs 8w average
+    // Sakura uses Discounts/NetRevenue (no gross sales column)
+    // =========================================================
+    var todayDiscRate = todayRevenue > 0 ? todayDiscounts / todayRevenue : 0;
+    var hist8DiscRates = histRevenues8.map(function(rev, i) {
+      return rev > 0 ? histDiscount8[i] / rev : 0;
+    });
+    var avgDiscRate8 = mean_(hist8DiscRates);
+    var discDelta    = todayDiscRate - avgDiscRate8;
+
+    // =========================================================
     // Build and return result object
     // =========================================================
     return {
@@ -685,47 +695,47 @@ function computeShiftAnalytics_Sakura(shiftData, warehouseId) {
       dataWeeks:         history.length,
 
       today: {
-        revenue:    todayRevenue,
-        tips:       todayTips,
-        tipRatio:   todayTipRatio * 100,   // stored as % (e.g. 4.2)
-        production: todayProduction,
+        revenue:    parseFloat(todayRevenue.toFixed(2)),
+        tips:       parseFloat(todayTips.toFixed(2)),
+        tipRatio:   parseFloat((todayTipRatio * 100).toFixed(2)),
+        production: parseFloat(todayProduction.toFixed(2)),
         day:        todayDay,
         date:       (shiftData.date || '').toString().trim(),
         mod:        todayMod
       },
 
       trailing8w: {
-        revenueMean:    revMean8,
-        revenueStddev:  revStddev8,
-        tipRatioMean:   tipRatioMean8 * 100,   // as %
-        productionMean: productionMean8
+        revenueMean:    parseFloat(revMean8.toFixed(2)),
+        revenueStddev:  parseFloat(revStddev8.toFixed(2)),
+        tipRatioMean:   parseFloat((tipRatioMean8 * 100).toFixed(2)),
+        productionMean: parseFloat(productionMean8.toFixed(2))
       },
 
       trailing4w: {
-        revenueMean:  revMean4,
-        tipRatioMean: tipRatioMean4 * 100      // as %
+        revenueMean:  parseFloat(revMean4.toFixed(2)),
+        tipRatioMean: parseFloat((tipRatioMean4 * 100).toFixed(2))
       },
 
       weekOverWeek: {
         lastWeekDate:    lastWeekDateStr,
-        lastWeekRevenue: lastWeekRevenue,
-        deltaAbs:        wowDeltaAbs,
+        lastWeekRevenue: parseFloat(lastWeekRevenue.toFixed(2)),
+        deltaAbs:        parseFloat(wowDeltaAbs.toFixed(2)),
         deltaPct:        wowDeltaPct !== null ? parseFloat(wowDeltaPct.toFixed(1)) : null
       },
 
       trend: {
         direction:    trendDirection,
-        slopePerWeek: slope
+        slopePerWeek: parseFloat(slope.toFixed(2))
       },
 
       attribution: {
-        productionShareDelta: parseFloat((prodShareDelta * 100).toFixed(2)),  // as % points
+        productionShareDelta: parseFloat((prodShareDelta * 100).toFixed(2)),
         description:          attributionDesc
       },
 
       comparables: {
-        best:  { date: formatRowDate_(bestRow),  revenue: bestRev  === -Infinity ? 0 : bestRev  },
-        worst: { date: formatRowDate_(worstRow), revenue: worstRev === Infinity  ? 0 : worstRev },
+        best:  { date: formatRowDate_(bestRow),  revenue: parseFloat((bestRev  === -Infinity ? 0 : bestRev).toFixed(2))  },
+        worst: { date: formatRowDate_(worstRow), revenue: parseFloat((worstRev === Infinity  ? 0 : worstRev).toFixed(2)) },
         rank:  rankResult.rank,
         total: rankResult.total
       },
@@ -743,6 +753,12 @@ function computeShiftAnalytics_Sakura(shiftData, warehouseId) {
           deltaPct:  ratioAnomalyPct !== null ? parseFloat(ratioAnomalyPct.toFixed(1)) : null,
           direction: todayTipRatio >= ratioMean8 ? 'above' : 'below'
         }
+      },
+
+      discountImpact: {
+        todayRate: parseFloat((todayDiscRate * 100).toFixed(2)),
+        avgRate:   parseFloat((avgDiscRate8 * 100).toFixed(2)),
+        delta:     parseFloat((discDelta * 100).toFixed(2))
       }
     };
 
@@ -793,51 +809,50 @@ function generateShiftInsight_Sakura(shiftData, analytics) {
   }
 
   try {
-    // --- Truncate narrative fields (same guard as M1) ---
-    var MAX_FIELD = 300;
-    var truncate  = function(str) {
+    // --- Truncate helper for raw narrative fields ---
+    var MAX_FIELD = 200;
+    var truncate = function(str) {
       if (!str) return '';
       var s = str.toString().trim();
       return s.length > MAX_FIELD ? s.substring(0, MAX_FIELD) + '...' : s;
     };
 
+    // --- Destructure analytics for readability ---
     var t8   = analytics.trailing8w;
+    var t4   = analytics.trailing4w;
     var wow  = analytics.weekOverWeek;
     var comp = analytics.comparables;
     var anom = analytics.anomalies;
+    var disc = analytics.discountImpact;
     var tod  = analytics.today;
-    var tr   = analytics.trend;
+    var trd  = analytics.trend;
+    var dw   = analytics.dataWeeks;
 
-    // Compute variance % against 8w mean for the prompt
+    // Confidence qualifier based on weeks of data
+    var confidence = dw >= 8 ? 'high confidence' : dw >= 4 ? 'moderate confidence' : 'low confidence';
+
+    // Variance from 8w mean
     var variancePct = t8.revenueMean > 0
       ? ((tod.revenue - t8.revenueMean) / t8.revenueMean * 100).toFixed(1)
       : '0.0';
-    var varianceDir = tod.revenue >= t8.revenueMean ? 'above average' : 'below average';
+    var varianceDir = tod.revenue >= t8.revenueMean ? 'above' : 'below';
 
-    // Week-over-week text
-    var wowPctStr = wow.deltaPct !== null ? wow.deltaPct.toFixed(1) : 'N/A';
+    // Week-over-week display (signed)
+    var wowPctStr = wow.deltaPct !== null ? (wow.deltaPct >= 0 ? '+' : '') + wow.deltaPct + '%' : 'N/A';
 
-    // --- Build anomaly section (only included if either anomaly fires) ---
+    // Anomaly section — only included when detected (compact format)
     var anomalySection = '';
     if (anom.revenueAnomaly.detected || anom.tipRatioAnomaly.detected) {
       anomalySection = '\nANOMALIES DETECTED:';
       if (anom.revenueAnomaly.detected) {
-        var revDeltaStr = anom.revenueAnomaly.deltaPct !== null
-          ? Math.abs(anom.revenueAnomaly.deltaPct).toFixed(1) + '%'
-          : 'significantly';
-        anomalySection +=
-          '\n- Revenue is ' + revDeltaStr + ' ' + anom.revenueAnomaly.direction +
-          ' the ' + analytics.dataWeeks + '-week average (z-score: ' +
-          anom.revenueAnomaly.zScore.toFixed(1) + ')';
+        var revFlag = Math.abs(anom.revenueAnomaly.zScore) > 3 ? ' [z>' + anom.revenueAnomaly.zScore.toFixed(1) + ' — significant outlier, verify data]' : ' [z=' + anom.revenueAnomaly.zScore.toFixed(1) + ']';
+        anomalySection += '\n- Revenue ' + anom.revenueAnomaly.direction + ' average by ' +
+          (anom.revenueAnomaly.deltaPct !== null ? Math.abs(anom.revenueAnomaly.deltaPct) + '%' : 'N/A') + revFlag;
       }
       if (anom.tipRatioAnomaly.detected) {
-        var ratioDeltaStr = anom.tipRatioAnomaly.deltaPct !== null
-          ? Math.abs(anom.tipRatioAnomaly.deltaPct).toFixed(1) + '%'
-          : 'significantly';
-        anomalySection +=
-          '\n- Tip ratio is ' + ratioDeltaStr + ' ' + anom.tipRatioAnomaly.direction +
-          ' the ' + analytics.dataWeeks + '-week average (z-score: ' +
-          anom.tipRatioAnomaly.zScore.toFixed(1) + ')';
+        var ratFlag = Math.abs(anom.tipRatioAnomaly.zScore) > 3 ? ' [z>' + anom.tipRatioAnomaly.zScore.toFixed(1) + ' — significant outlier, verify data]' : ' [z=' + anom.tipRatioAnomaly.zScore.toFixed(1) + ']';
+        anomalySection += '\n- Tip ratio ' + anom.tipRatioAnomaly.direction + ' average by ' +
+          (anom.tipRatioAnomaly.deltaPct !== null ? Math.abs(anom.tipRatioAnomaly.deltaPct) + '%' : 'N/A') + ratFlag;
       }
     }
 
@@ -861,28 +876,27 @@ function generateShiftInsight_Sakura(shiftData, analytics) {
     // --- User prompt ---
     var userPrompt =
       'SHIFT CONTEXT:\n' +
-      'Date: ' + tod.date + ', Day: ' + tod.day + ', MOD: ' + tod.mod + '\n\n' +
+      'Date: ' + tod.date + ', Day: ' + tod.day + ', MOD: ' + tod.mod + '\n' +
+      'Data confidence: ' + confidence + ' (' + dw + '-week trailing)\n\n' +
 
-      'TODAY\'S NUMBERS:\n' +
-      'Net Revenue: $' + tod.revenue.toFixed(0) +
-      ' | Tips: $' + tod.tips.toFixed(0) +
-      ' (' + tod.tipRatio.toFixed(1) + '% of revenue)' +
-      ' | Production: $' + tod.production.toFixed(0) + '\n\n' +
+      "TODAY'S NUMBERS:\n" +
+      'Net Revenue: $' + tod.revenue.toFixed(2) +
+      ' | Tips: $' + tod.tips.toFixed(2) + ' (' + tod.tipRatio + '% of revenue)' +
+      ' | Production: $' + tod.production.toFixed(2) + '\n\n' +
 
-      'BENCHMARKS (same ' + tod.day + ', ' + analytics.dataWeeks + '-week trailing):\n' +
-      'Revenue avg: $' + t8.revenueMean.toFixed(0) +
-      ' (stddev: $' + t8.revenueStddev.toFixed(0) + ')\n' +
-      'Revenue vs avg: ' + variancePct + '% (' + varianceDir + ')\n' +
-      'Tip ratio avg: ' + t8.tipRatioMean.toFixed(1) + '%\n' +
-      'Week-over-week: ' + wowPctStr + '%\n\n' +
+      'BENCHMARKS (same ' + tod.day + ', trailing averages):\n' +
+      '8-week revenue avg: $' + t8.revenueMean.toFixed(2) + ' (stddev: $' + t8.revenueStddev.toFixed(2) + ')\n' +
+      '4-week revenue avg: $' + t4.revenueMean.toFixed(2) + ' | 4-week tip ratio avg: ' + t4.tipRatioMean + '%\n' +
+      'Revenue vs 8w avg: ' + Math.abs(variancePct) + '% ' + varianceDir + '\n' +
+      '8-week tip ratio avg: ' + t8.tipRatioMean + '%\n' +
+      'Week-over-week: ' + wowPctStr + ' (vs last ' + tod.day + ' $' + wow.lastWeekRevenue.toFixed(2) + ')\n' +
+      'Discount rate today: ' + disc.todayRate + '% | 8-week avg: ' + disc.avgRate + '%\n' +
+      '  (discount delta: ' + (disc.delta >= 0 ? '+' : '') + disc.delta + '%)\n\n' +
 
-      'TREND: Revenue over ' + analytics.dataWeeks + ' weeks: ' + tr.direction +
-      ' ($' + tr.slopePerWeek.toFixed(0) + '/week)\n' +
-
+      'TREND: Revenue over ' + dw + ' weeks: ' + trd.direction + ' ($' + trd.slopePerWeek.toFixed(0) + '/week slope)\n' +
       'RANKING: Today ranks #' + comp.rank + ' of ' + comp.total + ' recent ' + tod.day + 's\n' +
-      'Best: ' + comp.best.date + ' at $' + comp.best.revenue.toFixed(0) +
-      ' | Worst: ' + comp.worst.date + ' at $' + comp.worst.revenue.toFixed(0) +
-      '\n' +
+      'Best: ' + comp.best.date + ' at $' + comp.best.revenue.toFixed(2) +
+      ' | Worst: ' + comp.worst.date + ' at $' + comp.worst.revenue.toFixed(2) + '\n' +
 
       anomalySection +
 

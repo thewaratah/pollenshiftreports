@@ -179,6 +179,8 @@ function continueExport(sheetName, isTest) {
           cardTips:      readF_('cardTips'),
           cashTips:      readF_('cashTips'),
           surchargeTips: readF_('surchargeTips'),
+          productionAmount: readF_('productionAmount'),
+          discounts:     readF_('discounts'),
           fohStaff:      readF_('fohStaff'),
           bohStaff:      readF_('bohStaff'),
           shiftSummary:  readF_('shiftSummary'),
@@ -424,6 +426,8 @@ function postToSlackFromSheet_(spreadsheet, sheet, sheetName, webhookUrl) {
       cardTips: cardTips,
       cashTips: cashTips,
       surchargeTips: surchargeTips,
+      productionAmount: productionAmt,
+      discounts: discounts,
       fohStaff: fohStaff,
       bohStaff: bohStaff,
       shiftSummary: shiftSummary,
@@ -538,7 +542,7 @@ function postToSlackFromSheet_(spreadsheet, sheet, sheetName, webhookUrl) {
   // --- AI Insights / Summary (conditional — only shown when API call succeeded) ---
   if (aiSummary) {
     blocks.push(bk_divider());
-    var aiLabel_ = aiIsUpgraded_ ? '*AI Insights*' : '*AI Summary*';
+    var aiLabel_ = aiIsUpgraded_ ? '*Sakura House Analytics Insights*' : '*AI Summary*';
     blocks.push(bk_section(aiLabel_ + "\n" + aiSummary));
   }
 
