@@ -267,8 +267,13 @@ main                          ← stable, merged code only
 
 ---
 
-**Last Updated:** March 18, 2026
+**Last Updated:** March 22, 2026
 **Status:** Both venues fully operational and production-ready ✅
+
+**Deployment (Mar 22, 2026) — AI Insights Refinement:**
+- Sakura: M4 discount impact metrics added to `computeShiftAnalytics_Sakura()` — discounts/netRevenue today vs 8w avg; M5 prompt enriched with confidence qualifier, 4-week benchmarks, discount rates, signed WoW delta, compact anomaly format with z-scores, truncation standardized to 200 chars (matches Waratah); Slack title `*Sakura House Analytics Insights*`; all numeric returns standardized to `parseFloat(x.toFixed(2))`
+- Waratah: M4 trend threshold unified to dynamic 0.5% of 8w mean (replaces fixed $50); Slack title `*The Waratah Analytics Insights*`; all numeric returns standardized to `parseFloat(x.toFixed(2))`
+- Both venues: AI insights prompts now symmetrical — confidence qualifier, 4-week benchmarks, discount metrics, compact anomaly format, signed WoW; venues now have parity in analytics depth
 
 **Deployment (Mar 18, 2026) — Sakura Shift Reports:**
 - Sakura: M4–M7 AI Insights Agent upgrade — `computeShiftAnalytics_Sakura()` (4-week/8-week averages, z-score anomalies), `generateShiftInsight_Sakura()` (PERFORMANCE/TREND/ACTION format), `deliverAIInsights_Sakura()` (evan_only soft launch routing), `logInsightToWarehouse_Sakura()` (AI_INSIGHTS_LOG sheet); NightlyExportSakura rewired with try/catch fallback to M1 generic summary; new Script Properties AI_INSIGHTS_MODE, AI_INSIGHTS_EVAN_EMAIL
@@ -296,18 +301,14 @@ main                          ← stable, merged code only
 - Waratah SR M9: `namedRangeHealthCheck_Waratah()` in RunWaratah.js + `pw_namedRangeHealthCheck_Waratah()` wrapper in Menu.js — Step 9 of rollover validates named range integrity; fixes stale ranges silently
 - Waratah: S1-S9 all verified complete; M1 AI shift summaries + M4-M7 analytics upgrade operational; 11 SR files + 2 TM files changed; clasp pushed to Google Apps Script
 
+**Recent Updates (Mar 22, 2026):**
+- Both venues: AI Insights parity achieved — M4 discount impact (Sakura added; Waratah unified to 0.5% threshold), M5 prompt enriched (confidence qualifier, 4-week benchmarks, discount rates, signed WoW delta, compact anomaly format, 200 char truncation), Slack titles venue-specific (`*Sakura House Analytics Insights*`, `*The Waratah Analytics Insights*`), numeric standardization (`parseFloat(x.toFixed(2))`)
+
 **Recent Updates (Mar 18, 2026):**
-- Sakura: M4–M7 AI Insights Agent upgrade — analytics engine (`computeShiftAnalytics_Sakura`), structured insight generation (`generateShiftInsight_Sakura`), soft launch routing (`deliverAIInsights_Sakura`, 'evan_only' mode), insight warehouse logging (`logInsightToWarehouse_Sakura`); new Script Properties AI_INSIGHTS_MODE and AI_INSIGHTS_EVAN_EMAIL; rewired NightlyExportSakura email + Slack paths with try/catch fallback to M1 generic summary
-- Sakura: M2–M9 full implementation — revenue anomaly detection, AI task classification, shift input validation, extended analytics trends (13-week + 26-week + day heatmap + YTD), task SLA tracking, named range health monitor (all 9 files integrated, auto-wiring in rollover Step 10, graceful degradation if ANTHROPIC_API_KEY missing)
-- Both venues: `/saks` + `/tah` pipeline commands upgraded — Phase 0 classification output block, file-scope declaration for parallel agents, max-2-retry ceiling in Phase 2 re-review loop
-- Both venues: All 12 agents enhanced — `model:` + `color:` fields added, `<example>` routing blocks added to all agents
-- Both venues: `gas-code-review-agent` major upgrade — 3-phase review (Context→Comparison→Assessment), confidence threshold, caller-impact check, re-review protocol with 2-retry ceiling
-- Both venues: Venue agents (`sakura-gas-agent`, `waratah-gas-agent`) upgraded — parallel read-only exploration phase, 5 modular constraint fragments, no-clasp-push-from-pipeline rule clarified
-- Waratah: Named range system now active — `usesNamedRanges: true` confirmed in `VenueConfig.js`; named ranges operational via `RunWaratah.js` (32-field `FIELD_CONFIG`, self-healing rollover, graceful fallback)
-- Waratah: M1 AI shift summarisation — new `AIInsightsWaratah.js` (135 LOC); generates 2-3 sentence Claude Haiku summary; non-blocking; integrates into email + Slack Shift Reports
-- Waratah: P0 bug fix — `WeeklyRolloverInPlace.js` Step 6b `verifyAndFixNamedRanges_(ss)` ReferenceError resolved (ss was undefined in performWeeklyRollover scope)
-- Waratah: `ANTHROPIC_API_KEY` added to Script Properties table (19 total); S1-S9 items all verified clean
-- Both venues: Sheet protection upgraded from warning-only to editor-restricted — only SHEET_PROTECTION_OWNER_EMAIL (new Script Property, falls back to script owner if not set) can edit protected areas; GAS scripts (rollover, triggers) unaffected
+- Sakura: M4–M7 AI Insights Agent upgrade — analytics engine (`computeShiftAnalytics_Sakura`), structured insight generation (`generateShiftInsight_Sakura`), soft launch routing (`deliverAIInsights_Sakura`, 'evan_only' mode), insight warehouse logging (`logInsightToWarehouse_Sakura`); new Script Properties AI_INSIGHTS_MODE and AI_INSIGHTS_EVAN_EMAIL
+- Sakura: M2–M9 full implementation — revenue anomaly detection, AI task classification, shift input validation, extended analytics trends, task SLA tracking, named range health monitor (all 9 files integrated, auto-wiring in rollover Step 10, graceful degradation if ANTHROPIC_API_KEY missing)
+- Waratah: Named range system active — `usesNamedRanges: true` in `VenueConfig.js`; named ranges operational via `RunWaratah.js` (32-field `FIELD_CONFIG`, self-healing rollover, graceful fallback); M1 AI shift summaries + M4-M7 analytics upgrade operational
+- Both venues: Sheet protection upgraded — only SHEET_PROTECTION_OWNER_EMAIL can edit protected areas; GAS scripts (rollover, triggers) unaffected
 
 **Recent Updates (Mar 6, 2026):**
 - Waratah SR Phase 0+1: 3 critical bug fixes + performance/code quality improvements (6 files, net -42 lines)

@@ -30,14 +30,16 @@
 - New function `computeShiftAnalytics_Sakura(shiftData, warehouseId)` in `AIInsightsSakura.gs` — pure GAS math engine
 - Reads NIGHTLY_FINANCIAL warehouse sheet; computes 4-week and 8-week trailing averages, week-over-week delta, revenue trend (linear regression: rising/falling/flat)
 - Performs performance attribution (production share %), best/worst comparable shifts, anomaly detection (z-scores)
-- Returns structured analytics object with all metrics pre-computed
+- **NEW:** Discount impact computation — `discounts / netRevenue` today vs 8-week average; highlights discount-driven revenue shifts
+- Returns structured analytics object with all metrics pre-computed; all numeric values standardized to `parseFloat(x.toFixed(2))`
 - Non-blocking: returns `null` if insufficient warehouse data; graceful fallback to M1 generic summary
 
 **M5 — Structured Shift Insight:**
 - New function `generateShiftInsight_Sakura(shiftData, analytics)` in `AIInsightsSakura.gs` — structured Claude Haiku prompt
 - Receives pre-computed analytics from M4; generates insight in PERFORMANCE / TREND / ACTION format
+- Enhanced prompt includes: confidence qualifier (high/moderate/low based on data weeks), 4-week revenue/tip benchmarks, discount rate metrics (today vs 8w avg), week-over-week signed delta (e.g., +5.1%), compact anomaly format with z-score (`[z=2.3]` or `[z>3.1 — significant outlier]`)
 - Only runs if analytics available (M4 succeeded); falls back to old `generateShiftSummary_Sakura` if insufficient data
-- 2-3 sentences, formatted for email and Slack integration
+- 2-3 sentences, 200 char max; formatted for email and Slack integration (matches Waratah)
 - Non-blocking: API errors fall back to generic summary
 
 **M6 — AI Insights Routing:**
@@ -60,7 +62,7 @@
 - Flow: computeShiftAnalytics → generateShiftInsight → logInsightToWarehouse → deliverAIInsights → route to email/Slack
 - All wrapped in try/catch; failures fall back to old M1 generic summary (resilience maintained)
 - Email: shows `*AI Insights*` header when upgraded, `*AI Summary*` when fallback
-- Slack: block text updates to show insight in Block Kit message
+- Slack: title changed to `*Sakura House Analytics Insights*`; block text shows insight in Block Kit message
 
 **Script Properties Added (M4-M7):**
 - `AI_INSIGHTS_MODE`: 'evan_only' (default) or 'live' — controls soft launch routing

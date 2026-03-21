@@ -56,12 +56,12 @@
 - Computes metrics:
   - 4-week and 8-week trailing averages (net revenue, production amount, cash takings, total tips)
   - Week-over-week delta (pct change vs last week)
-  - Revenue trend: linear regression → rising / falling / flat
+  - Revenue trend: linear regression → rising / falling / flat; dynamic threshold (0.5% of 8w mean)
   - Performance attribution: production share of revenue
   - Best/worst comparable shift days (same day of week, past 8 weeks)
   - Anomaly detection: z-score analysis (flags if revenue > 2 std devs from mean)
   - **Waratah-specific metric:** Discount impact ratio = TotalDiscount / GrossSalesIncCash (vs trailing avg) — highlights discount-driven revenue impact
-- Returns structured analytics object with all metrics
+- Returns structured analytics object with all metrics; all numeric values standardized to `parseFloat(x.toFixed(2))`
 - Graceful fallback: if insufficient warehouse data (< 8 rows), returns partial analytics
 
 ### M5 — Structured Prompt Generator (NEW March 18, 2026)
@@ -104,7 +104,7 @@
 
 **Slack path (~lines 829-862):**
 1. Same pipeline as email path
-2. Block label changes dynamically based on `AI_INSIGHTS_MODE` (`*AI Insights*` in live mode, `*AI Summary (Beta)*` in evan_only mode)
+2. Block title changed to `*The Waratah Analytics Insights*`; label changes dynamically based on `AI_INSIGHTS_MODE` (`*AI Insights*` in live mode, `*AI Summary (Beta)*` in evan_only mode)
 
 ### No Impact If Absent
 
