@@ -1,6 +1,6 @@
 # THE WARATAH - Quick Reference
 
-**Last Updated:** March 18, 2026
+**Last Updated:** March 22, 2026 (AI Insights parity: M4 threshold, Slack title)
 **Status:** 🟢 PRODUCTION READY
 **Operating Days:** 5 days (Wed-Sun)
 **Cell References:** Named range system (`WEDNESDAY_SR_NetRevenue`) via `RunWaratah.js` — falls back to hardcoded cells when ranges absent. See [CELL_REFERENCE_MAP.md](docs/waratah/CELL_REFERENCE_MAP.md)

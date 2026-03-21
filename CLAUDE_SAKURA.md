@@ -1,6 +1,6 @@
 # SAKURA HOUSE - Claude Code Project Guide
 
-**Last Updated:** March 18, 2026 (M4-M7 AI Insights Agent upgrade, M2-M9 implementation)
+**Last Updated:** March 22, 2026 (AI Insights parity: M4 discount impact, M5 prompt enrichment, Slack titles)
 **Project Type:** Google Apps Script (Hospitality Management System)
 **Venue:** Sakura House (Single-Venue Documentation)
 

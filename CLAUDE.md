@@ -1,6 +1,6 @@
 # SHIFT REPORTS 3.0 - Navigation Guide
 
-**Last Updated:** March 18, 2026
+**Last Updated:** March 22, 2026
 **Project Type:** Google Apps Script (Multi-Venue Hospitality Management System)
 **Venues:** Sakura House, The Waratah
 
@@ -267,7 +267,7 @@ main                          ← stable, merged code only
 
 ---
 
-**Last Updated:** March 22, 2026
+**Last Updated:** March 22, 2026 (AI Insights parity refinements)
 **Status:** Both venues fully operational and production-ready ✅
 
 **Deployment (Mar 22, 2026) — AI Insights Refinement:**
