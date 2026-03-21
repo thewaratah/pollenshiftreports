@@ -358,9 +358,10 @@ function postToSlackFromSheet_(spreadsheet, sheet, sheetName, webhookUrl) {
     catch (e) { return ""; }
   };
 
-  // --- Helper: format currency ---
+  // --- Helper: format currency (strips $, commas from display values) ---
   const fmtAUD = (val) => {
-    const n = parseFloat(val);
+    const cleaned = String(val).replace(/[$,\s]/g, '');
+    const n = parseFloat(cleaned);
     if (isNaN(n)) return "N/A";
     return "$" + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
