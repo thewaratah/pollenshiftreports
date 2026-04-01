@@ -1,0 +1,113 @@
+name: Deploy to Google Apps Script
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'THE WARATAH/SHIFT REPORT SCRIPTS/**'
+      - 'THE WARATAH/TASK MANAGEMENT SCRIPTS/**'
+      - 'SAKURA HOUSE/SHIFT REPORT SCRIPTS/**'
+      - 'SAKURA HOUSE/TASK MANAGEMENT SCRIPTS/**'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      waratah-sr: ${{ steps.changes.outputs.waratah-sr }}
+      waratah-tm: ${{ steps.changes.outputs.waratah-tm }}
+      sakura-sr: ${{ steps.changes.outputs.sakura-sr }}
+      sakura-tm: ${{ steps.changes.outputs.sakura-tm }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            waratah-sr:
+              - 'THE WARATAH/SHIFT REPORT SCRIPTS/**'
+            waratah-tm:
+              - 'THE WARATAH/TASK MANAGEMENT SCRIPTS/**'
+            sakura-sr:
+              - 'SAKURA HOUSE/SHIFT REPORT SCRIPTS/**'
+            sakura-tm:
+              - 'SAKURA HOUSE/TASK MANAGEMENT SCRIPTS/**'
+
+  deploy-waratah-sr:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.waratah-sr == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g @google/clasp
+      - name: Authenticate clasp
+        run: echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+      - name: Create .clasp.json
+        run: |
+          cat > "THE WARATAH/.clasp.json" << 'EOF'
+          {"scriptId": "${{ secrets.WARATAH_SR_SCRIPT_ID }}", "rootDir": "SHIFT REPORT SCRIPTS"}
+          EOF
+      - name: Push to Google Apps Script
+        run: cd "THE WARATAH" && clasp push
+
+  deploy-waratah-tm:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.waratah-tm == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g @google/clasp
+      - name: Authenticate clasp
+        run: echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+      - name: Create .clasp.json
+        run: |
+          cat > "THE WARATAH/TASK MANAGEMENT SCRIPTS/.clasp.json" << 'EOF'
+          {"scriptId": "${{ secrets.WARATAH_TM_SCRIPT_ID }}", "rootDir": "."}
+          EOF
+      - name: Push to Google Apps Script
+        run: cd "THE WARATAH/TASK MANAGEMENT SCRIPTS" && clasp push
+
+  deploy-sakura-sr:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.sakura-sr == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g @google/clasp
+      - name: Authenticate clasp
+        run: echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+      - name: Create .clasp.json
+        run: |
+          cat > "SAKURA HOUSE/SHIFT REPORT SCRIPTS/.clasp.json" << 'EOF'
+          {"scriptId": "${{ secrets.SAKURA_SR_SCRIPT_ID }}", "rootDir": "."}
+          EOF
+      - name: Push to Google Apps Script
+        run: cd "SAKURA HOUSE/SHIFT REPORT SCRIPTS" && clasp push
+
+  deploy-sakura-tm:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.sakura-tm == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g @google/clasp
+      - name: Authenticate clasp
+        run: echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+      - name: Create .clasp.json
+        run: |
+          cat > "SAKURA HOUSE/TASK MANAGEMENT SCRIPTS/.clasp.json" << 'EOF'
+          {"scriptId": "${{ secrets.SAKURA_TM_SCRIPT_ID }}", "rootDir": "."}
+          EOF
+      - name: Push to Google Apps Script
+        run: cd "SAKURA HOUSE/TASK MANAGEMENT SCRIPTS" && clasp push

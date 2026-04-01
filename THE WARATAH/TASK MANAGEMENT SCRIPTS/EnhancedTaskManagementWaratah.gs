@@ -273,10 +273,8 @@ const RECURRENCE_OPTIONS = [
 const STAFF_LIST = [
   "Evan",
   "Cynthia",
-  "Andie",
   "Adam",
   "Lily",
-  "Blade",
   "Bar Team",
   "Dipti",
   "Howie",
