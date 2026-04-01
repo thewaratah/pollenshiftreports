@@ -1,6 +1,6 @@
 # SAKURA HOUSE - Integration Flows
 
-**Last Updated:** April 2, 2026
+**Last Updated:** April 2, 2026 (Date parsing hardening + NIGHTLY_FINANCIAL schema change)
 **Type:** Detailed Integration Documentation
 **Load:** On-demand only (reference material)
 
@@ -137,7 +137,7 @@ const todoAssignValues = getFieldValues(sheet, "todoAssignees"); // D69:D84
 
 **Function:** `logToDataWarehouse_(shiftData)`
 
-### Sheet 1: NIGHTLY_FINANCIAL (13 columns A-M)
+### Sheet 1: NIGHTLY_FINANCIAL (16 columns A-P)
 
 > The main financial record — one row per shift, tracking revenue, tips, production, and discounts. Dates are wrapped with `toDateOnly_()` to strip any time components.
 
@@ -152,16 +152,24 @@ financialSheet.appendRow([
   shiftData.cashTips,             // G: Cash Tips (C29)
   shiftData.tipsTotal,            // H: Tips Total (C32)
   new Date(),                     // I: Logged At
-  shiftData.totalTips,            // J: Total Tips (computed)
-  shiftData.productionAmount,     // K: Production Amount
-  shiftData.discounts,            // L: Discounts
-  shiftData.deposit               // M: Deposit
+  shiftData.productionAmount,     // J: Production Amount (was K)
+  shiftData.discounts,            // K: Discounts (was L)
+  shiftData.deposit,              // L: Deposit (was M)
+  shiftData.fohStaff,             // M: FOH Staff (added Mar 6)
+  shiftData.bohStaff,             // N: BOH Staff (added Mar 6)
+  shiftData.cardTips,             // O: Card Tips (added Mar 6)
+  shiftData.surchargeTips         // P: Surcharge Tips (added Mar 6)
 ]);
 ```
 
+**Column changes (April 2, 2026):**
+- Deleted original column J "Total Tips" (redundant with H "Tips Total" from cell C32)
+- Renumbered columns J–M down one letter (Production, Discounts, Deposit, FOH Staff)
+- Final count: 16 columns A-P (was 17 after March 6 expansion, minus deleted column J)
+
 **Duplicate key:** Date (A) + MOD (D)
 
-**Note:** The `toDateOnly_()` helper was added April 2, 2026 to ensure dates have no time components when written to warehouse — preventing ambiguity when dates are manually edited or backfilled.
+**Note:** The `toDateOnly_()` helper was added April 2, 2026 to ensure dates have no time components when written to warehouse — preventing ambiguity when dates are manually edited or backfilled. Spreadsheet locale was also set to Australia on April 2, 2026 to prevent GAS from misinterpreting Australian dd/mm/yyyy dates as US mm/dd/yyyy format.
 
 ### Sheet 2: OPERATIONAL_EVENTS (9 columns A-I)
 
@@ -485,4 +493,4 @@ backfillShiftToWarehouse()  // Active sheet → warehouse (menu-accessible)
 ---
 
 **Last Updated:** April 2, 2026
-**Key Insight:** All integrations are non-blocking — warehouse, Slack, and task push failures are logged but never prevent the email from being sent. Date parsing and warehouse writes are hardened against AU-format date misinterpretation via `parseCellDate_()` and `toDateOnly_()` helpers.
+**Key Insight:** All integrations are non-blocking — warehouse, Slack, and task push failures are logged but never prevent the email from being sent. Date parsing and warehouse writes are hardened against AU-format date misinterpretation via `parseCellDate_()` and `toDateOnly_()` helpers. NIGHTLY_FINANCIAL schema now 16 columns (A-P) after deletion of redundant column J on April 2, 2026. Spreadsheet locale must be set to Australia to prevent GAS from misinterpreting dd/mm/yyyy dates.

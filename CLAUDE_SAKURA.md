@@ -1,6 +1,6 @@
 # SAKURA HOUSE - Claude Code Project Guide
 
-**Last Updated:** April 2, 2026 (Date parsing hardening and warehouse write safety)
+**Last Updated:** April 2, 2026 (Date parsing + Task Management changes)
 **Project Type:** Google Apps Script (Hospitality Management System)
 **Venue:** Sakura House (Single-Venue Documentation)
 
@@ -10,9 +10,14 @@
 
 ## DEPLOYMENT (April 2, 2026) -- Date Parsing & Warehouse Write Safety
 
+**Root Cause Identified:**
+- Sakura shift report spreadsheet locale was set to US (not Australia) — caused GAS to interpret dates as mm/dd/yyyy instead of dd/mm/yyyy
+- Result: April 1 read as January 4; day-of-week columns showed "Sunday" instead of "Wednesday"
+- Manual fix applied April 2: Changed spreadsheet locale to Australia (File → Settings → Locale)
+
 **Date Parsing Hardening:**
-- New function `parseCellDate_()` in `IntegrationHubSakura.gs` — parses Australian dd/MM/yyyy format safely
-- **CRITICAL FIX:** Removed fallback to `new Date(str)` which silently mis-parses AU-format dates as US-format (e.g., "03/04/2026" becomes April 3 instead of April 3). Now returns Invalid Date with Logger warning on parse failure.
+- New function `parseCellDate_()` in `IntegrationHubSakura.gs` — parses Australian dd/MM/yyyy format safely using `Utilities.parseDate(str, 'Australia/Sydney', 'dd/MM/yyyy')`
+- **CRITICAL FIX:** Removed fallback to `new Date(str)` which silently mis-parses AU-format dates as US-format (e.g., "03/04/2026" becomes April 3 instead of March 4). Now returns Invalid Date with Logger warning on parse failure.
 - Used in `extractShiftData_()` to parse the date cell value before warehouse write
 
 **New `toDateOnly_()` Helper:**
@@ -27,13 +32,35 @@
 - Ensures dates written to warehouse have no time components (prevents spreadsheet display ambiguity during manual edits and backfills)
 - Non-blocking: if `toDateOnly_()` receives invalid input, it returns as-is; warehouse write proceeds
 
+**NIGHTLY_FINANCIAL Schema Change (16 columns A-P):**
+- Removed column J: "Total Tips" (redundant — column H "Tips Total" from cell C32 is the authoritative field)
+- New column order: A=Date, B=Day, C=Week Ending, D=MOD, E=Net Revenue, F=Cash Total, G=Cash Tips, H=Tips Total (was column H, no change), I=Logged At, J=Total Tips (computed), K=Production Amount, L=Discounts, M=Deposit, N=FOH Staff, O=BOH Staff, P=Card Tips, Q=Surcharge Tips — **now 17 columns after March 6 expansion; column J deletion makes current count 16 after Mar 6's 17 - 1 = 16 columns**
+
 **Impact:**
 - Backfills and manual date corrections now write clean dates to warehouse
 - AU-format date parsing no longer fails silently with US-format misinterpretation
 - Data warehouse dates remain consistent across all 4 sheets
+- Spreadsheet locale now correctly displays Australian dates as dd/mm/yyyy
 
 **Files Changed:**
 - `IntegrationHubSakura.gs` (2 new functions + 6 updated `appendRow()` calls in `logToDataWarehouse_()`)
+
+---
+
+## DEPLOYMENT (April 2, 2026) -- Task Management Changes
+
+**Overdue summaries removed from daily maintenance:**
+- `sendOverdueTasksSummary_()` removed from `runDailyTaskMaintenance()` trigger
+- Daily 7am maintenance no longer posts overdue task summaries to Slack
+- Menu item "Send Overdue Summary Now" removed from Task Management menu
+
+**Weekly active tasks now DM-only:**
+- `sendWeeklyActiveTasksSummary()` no longer posts to managers channel (Monday)
+- Now sends direct messages to individual staff members only
+- FOH leads channel post (`#sakura_foh_leads`) is retained — FOH-only summary still posts Monday
+- Menu items for weekly summary updated accordingly
+
+**Impact:** Managers channel no longer receives overdue or team weekly summary posts. Staff receive individual DM notifications. FOH leads still get their dedicated Monday summary.
 
 ---
 
@@ -725,6 +752,19 @@ Accessed via: **Menu -> Admin Tools -> Weekly Rollover (In-Place) -> Open Rollov
 ```javascript
 previewInPlaceRollover()  // Dry run - shows what will happen, no changes
 ```
+
+---
+
+## Critical Notes & Gotchas
+
+**CRITICAL: Spreadsheet Locale Must Be Australia**
+
+> Both the shift report AND data warehouse spreadsheets must have their locale set to Australia. If either is set to US, GAS will misinterpret Australian dd/mm/yyyy dates as mm/dd/yyyy, causing date columns to show wrong values (e.g., April 1 read as January 4, day-of-week columns show "Sunday" instead of "Wednesday"). Root cause identified and fixed April 2, 2026.
+
+- **Fix:** File → Settings → Locale → Select "Australia (Sydney)"
+- **Both spreadsheets affected:** Sakura Shift Report (SAKURA HOUSE - CURRENT WEEK) AND Sakura Data Warehouse
+- **Why it matters:** AU dates are ambiguous until locale is set (03/04 could be March 4 or April 3). Spreadsheet locale tells GAS which interpretation to use.
+- **Verification:** After changing locale, dates should display as dd/mm/yyyy (e.g., 01/04/2026 for April 1, 2026). Check day-of-week columns show correct values (e.g., Wednesday for April 1, 2026).
 
 ---
 

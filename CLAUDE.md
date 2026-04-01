@@ -270,11 +270,22 @@ main                          ← stable, merged code only
 **Last Updated:** April 2, 2026 (Warehouse date handling fix)
 **Status:** Both venues fully operational and production-ready ✅
 
+**Deployment (Apr 2, 2026) — Task Management Restructuring:**
+- Both venues: `sendOverdueTasksSummary_()` removed from daily task maintenance; no longer posts overdue summaries to Slack
+- Both venues: `sendWeeklyActiveTasksSummary()` changed to DM-only (no longer posts to managers channel)
+- Waratah: `runScheduledOverdueSummary()` trigger (Sun 9am) gutted to no-op; kept for backward compatibility but does nothing
+- Sakura: Daily `runDailyTaskMaintenance()` trigger updated (removed overdue summary call)
+- Sakura: FOH leads summary (`sendWeeklyFohLeadsSummary_Live()`) retained; posts to #sakura_foh_leads Monday
+- Both venues: Menu items "Send Overdue Summary Now" and "Create Overdue Summary Trigger" removed
+- Documentation: CLAUDE_SHARED.md, CLAUDE_SAKURA.md, CLAUDE_WARATAH.md updated; FILE EXPLAINERS task management sections refreshed
+
 **Deployment (Apr 2, 2026) — Warehouse Date Fix:**
-- Both venues: `parseCellDate_()` fallback hardened — `new Date(str)` replaced with `new Date('')` to prevent US-format misparse of AU dd/mm/yyyy dates; Logger.log warning added
+- **Root cause identified:** Sakura shift report spreadsheet locale was set to US (not Australia) — caused GAS to interpret dates as mm/dd/yyyy instead of dd/mm/yyyy (e.g., April 1 read as January 4; day-of-week columns showed "Sunday" instead of "Wednesday")
+- **Spreadsheet locale fix (manual):** Changed Sakura shift report AND data warehouse spreadsheets to Australia locale (File → Settings → Locale) — April 2, 2026
+- Both venues: `parseCellDate_()` fallback hardened — replaced `new Date(str)` with `new Date('')` to prevent US-format misparse of AU dd/mm/yyyy dates; Logger.log warning added
 - Both venues: New `toDateOnly_(d)` helper — strips time component from dates before warehouse writes; guards against Invalid Date input
 - Both venues: All `appendRow()` calls in `logToDataWarehouse_()` now wrap `shiftData.date` and `shiftData.weekEnding` with `toDateOnly_()` — NIGHTLY_FINANCIAL, OPERATIONAL_EVENTS, WASTAGE_COMPS, QUALITATIVE_NOTES
-- Manual action required: Set Sakura Data Warehouse spreadsheet locale to Australia (File → Settings → Locale) to display dates as dd/mm/yyyy
+- **Sakura schema change:** NIGHTLY_FINANCIAL column J "Total Tips" deleted (redundant with H "Tips Total" from cell C32); schema now 16 columns (A-P) after March 6's expansion to 17 columns minus deleted J
 - Manual action required: Fix the `1/4/2026 19:00:00` row in NIGHTLY_FINANCIAL — correct to April 1, 2026 with no time component
 
 **Deployment (Mar 22, 2026) — AI Insights Refinement:**
