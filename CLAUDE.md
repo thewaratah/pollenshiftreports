@@ -147,8 +147,10 @@ SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/polle
 │       └── explainers/              # 6-tier manager-facing explainers (Shift Reports + Task Mgmt)
 ├── scripts/                             # Node.js utilities (Drive sync)
 ├── .claude/
-│   └── agents/                       # 12 specialist agents (excluded from git)
-├── .gitignore                        # Excludes _SETUP_*, .clasp*, .claude/, etc.
+│   ├── agents/                       # 12 specialist agents (git-tracked)
+│   ├── commands/                     # 11 custom commands (git-tracked)
+│   └── skills/                       # 1 shared skill (git-tracked)
+├── .gitignore                        # Excludes _SETUP_*, .clasp*, settings.local.json, etc.
 ├── CLAUDE.md                         # This navigation file
 ├── CLAUDE_SAKURA.md                  # Sakura House guide
 ├── CLAUDE_WARATAH.md                 # The Waratah guide
@@ -232,7 +234,7 @@ The project is version-controlled at `https://github.com/thewaratah/pollenshiftr
 
 Standard workflow: **edit code --> `clasp push` (deploy to Google) --> `git commit` + `git push` (save to GitHub)**
 
-The `.gitignore` excludes: `_SETUP_*` files (contain Slack webhook secrets), `docs/_archive/`, `docs/_archive_analysis/`, `.clasp.json`, `.clasprc.json`, `.DS_Store`, `.claude/`, `node_modules/`, `.vscode/`, `.idea/`
+The `.gitignore` excludes: `_SETUP_*` files (contain Slack webhook secrets), `docs/_archive/`, `docs/_archive_analysis/`, `.clasp.json`, `.clasprc.json`, `.DS_Store`, `.claude/settings.local.json`, `node_modules/`, `.vscode/`, `.idea/`. **Note:** `.claude/agents/`, `.claude/commands/`, and `.claude/skills/` are now git-tracked per Anthropic's recommendations.
 
 **Git Branching (Venue Independence):**
 

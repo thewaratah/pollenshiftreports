@@ -201,7 +201,7 @@ git commit -m "deploy: [Venue] [System] — [brief description of what changed]"
 - **Check branch first** — run `git branch` before staging; ensure you're on the correct venue branch
 - **Stage specific files** — never use `git add -A` or `git add .` (the `.gitignore` excludes secrets, but be explicit)
 - **Commit message format:** `deploy: [Venue] [System] — [description]` (e.g., `deploy: Waratah SR — NightlyExport warning notifications`)
-- **Files excluded by `.gitignore`:** `_SETUP_*` (secrets), `docs/_archive/`, `docs/_archive_analysis/`, `.clasp.json`, `.DS_Store`, `.claude/`, `node_modules/`
+- **Files excluded by `.gitignore`:** `_SETUP_*` (secrets), `docs/_archive/`, `docs/_archive_analysis/`, `.clasp.json`, `.DS_Store`, `.claude/settings.local.json`, `node_modules/`. **Note:** `.claude/agents/`, `.claude/commands/`, `.claude/skills/` are git-tracked.
 
 ## Post-Deployment Verification
 
