@@ -23,6 +23,10 @@ docs/_archive_analysis/
 # Service account keys (Google Cloud credentials)
 mcp-sheets-*.json
 
+# Word documents (build artifacts; .md is source of truth)
+*.docx
+~$*.docx
+
 # Session state
 .remember/
 

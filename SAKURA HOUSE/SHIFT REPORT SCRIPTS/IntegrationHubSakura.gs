@@ -328,6 +328,36 @@ function normaliseDateKey_(v) {
 }
 
 /**
+ * Returns true if an existing row in the sheet matches the given date key and
+ * identifier value, indicating a duplicate that should not be re-appended.
+ *
+ * Reads all rows from row 2 onwards (skipping the header) and checks whether
+ * any row has a matching normalised date at dateCol and an exact string match
+ * at matchCol.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet     - Target warehouse sheet.
+ * @param {string}                             dateKey   - Pre-normalised date string
+ *                                                         from normaliseDateKey_().
+ * @param {string}                             matchVal  - Value to match (e.g. MOD name
+ *                                                         or task description).
+ * @param {number}                             dateCol   - 0-based column index for the
+ *                                                         date field in the values array.
+ * @param {number}                             matchCol  - 0-based column index for the
+ *                                                         match field in the values array.
+ * @returns {boolean} true if a duplicate row was found; false otherwise.
+ */
+function isDuplicateInSheet_(sheet, dateKey, matchVal, dateCol, matchCol) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return false;
+  const numCols = matchCol + 1; // read only as many columns as needed
+  const data = sheet.getRange(2, 1, lastRow - 1, numCols).getValues();
+  return data.some(row => {
+    const rowKey = normaliseDateKey_(row[dateCol]);
+    return rowKey !== null && rowKey === dateKey && row[matchCol] === matchVal;
+  });
+}
+
+/**
  * Log shift data to centralized analytics warehouse.
  * Populates: NIGHTLY_FINANCIAL, OPERATIONAL_EVENTS
  *
@@ -372,15 +402,8 @@ function logToDataWarehouse_(shiftData, skipLock) {
   }
 
   // Duplicate detection (same date + MOD)
-  const lastFinRow = financialSheet.getLastRow();
-  const existingData = lastFinRow > 1
-    ? financialSheet.getRange(2, 1, lastFinRow - 1, 4).getValues()
-    : [];
   const shiftDateKey = normaliseDateKey_(shiftData.date);
-  const isDuplicate = existingData.some(row => {
-    const rowKey = normaliseDateKey_(row[0]);
-    return rowKey !== null && rowKey === shiftDateKey && row[3] === shiftData.mod;
-  });
+  const isDuplicate = isDuplicateInSheet_(financialSheet, shiftDateKey, shiftData.mod, 0, 3);
 
   if (isDuplicate) {
     Logger.log(`  Duplicate prevented: ${shiftData.date.toDateString()} (${shiftData.mod}) already logged`);
@@ -413,19 +436,11 @@ function logToDataWarehouse_(shiftData, skipLock) {
   const eventsSheet = warehouse.getSheetByName(INTEGRATION_CONFIG.sheets.operationalLog);
   if (eventsSheet && shiftData.todos && shiftData.todos.length > 0) {
     // Duplicate detection: per-row check on Date (col A) + Item text (col C).
-    // Read columns A:C (3 columns) from row 2 onwards to skip the header row.
-    const lastEvtRow = eventsSheet.getLastRow();
-    const existingEvents = lastEvtRow > 1
-      ? eventsSheet.getRange(2, 1, lastEvtRow - 1, 3).getValues()
-      : [];
     const shiftDateKeyEvt = normaliseDateKey_(shiftData.date);
 
     shiftData.todos.forEach(todo => {
       // Skip this todo if an identical date + item row already exists
-      const isDupeRow = existingEvents.some(row => {
-        const rowKey = normaliseDateKey_(row[0]);
-        return rowKey !== null && rowKey === shiftDateKeyEvt && row[2] === todo.description;
-      });
+      const isDupeRow = isDuplicateInSheet_(eventsSheet, shiftDateKeyEvt, todo.description, 0, 2);
       if (isDupeRow) {
         Logger.log(`  Skipped OPERATIONAL_EVENTS duplicate: ${shiftData.date.toDateString()} / "${todo.description}"`);
         return;
@@ -453,14 +468,7 @@ function logToDataWarehouse_(shiftData, skipLock) {
     const wastageSheet = warehouse.getSheetByName(INTEGRATION_CONFIG.sheets.wastageLog);
     if (wastageSheet) {
       const shiftDateKeyWast = normaliseDateKey_(shiftData.date);
-      const lastWastRow = wastageSheet.getLastRow();
-      const wastDup = (lastWastRow > 1
-        ? wastageSheet.getRange(2, 1, lastWastRow - 1, 4).getValues()
-        : []
-      ).some(row => {
-        const rowKey = normaliseDateKey_(row[0]);
-        return rowKey !== null && rowKey === shiftDateKeyWast && row[3] === shiftData.mod;
-      });
+      const wastDup = isDuplicateInSheet_(wastageSheet, shiftDateKeyWast, shiftData.mod, 0, 3);
       if (!wastDup) {
         wastageSheet.appendRow([
           toDateOnly_(shiftData.date),           // A: Date
@@ -479,14 +487,7 @@ function logToDataWarehouse_(shiftData, skipLock) {
   const qualSheet = warehouse.getSheetByName(INTEGRATION_CONFIG.sheets.qualitativeLog);
   if (qualSheet) {
     const shiftDateKeyQual = normaliseDateKey_(shiftData.date);
-    const lastQualRow = qualSheet.getLastRow();
-    const qualDup = (lastQualRow > 1
-      ? qualSheet.getRange(2, 1, lastQualRow - 1, 3).getValues()
-      : []
-    ).some(row => {
-      const rowKey = normaliseDateKey_(row[0]);
-      return rowKey !== null && rowKey === shiftDateKeyQual && row[2] === shiftData.mod;
-    });
+    const qualDup = isDuplicateInSheet_(qualSheet, shiftDateKeyQual, shiftData.mod, 0, 2);
     if (!qualDup) {
       qualSheet.appendRow([
         toDateOnly_(shiftData.date),           // A: Date

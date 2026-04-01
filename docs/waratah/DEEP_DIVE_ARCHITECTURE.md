@@ -12,15 +12,15 @@
 THE WARATAH/
 ├── SHIFT REPORT SCRIPTS/         # 13 code files (.js), ~4,700 LOC
 │   ├── VenueConfig.js           # Venue configuration (hardcoded cells)
-│   ├── IntegrationHub.js        # Data integration orchestrator
-│   ├── NightlyExport.js         # PDF export, email, Slack
-│   ├── WeeklyRolloverInPlace.js # In-place rollover ✅
-│   ├── Menu.js                  # Custom menu system
-│   ├── AnalyticsDashboard.js    # Financial dashboards
-│   ├── TaskIntegration.js       # Task management constants
+│   ├── IntegrationHubWaratah.js        # Data integration orchestrator
+│   ├── NightlyExportWaratah.js         # PDF export, email, Slack
+│   ├── WeeklyRolloverInPlaceWaratah.js # In-place rollover ✅
+│   ├── MenuWaratah.js                  # Custom menu system
+│   ├── AnalyticsDashboardWaratah.js    # Financial dashboards
+│   ├── TaskIntegrationWaratah.js       # Task management constants
 │   ├── DiagnoseSlack.js         # Slack webhook diagnostics
 │   ├── Run.js                   # Test runner utilities
-│   ├── UIServer.js              # HTML UI server
+│   ├── UIServerWaratah.js              # HTML UI server
 │   ├── TEST_SlackBlockKitLibrary.js  # Slack library test
 │   ├── TEST_VenueConfig.js      # Config validation test
 │   ├── _SETUP_ScriptProperties.js    # One-time setup
@@ -31,7 +31,7 @@ THE WARATAH/
 │   └── _ARCHIVED/               # Legacy files (archived Feb 15, 2026)
 │       ├── WeeklyDuplication.js
 │       ├── WeeklyRollover.js
-│       ├── WeeklyRolloverInPlace.js.backup
+│       ├── WeeklyRolloverInPlaceWaratah.js.backup
 │       └── AnalyticsDashboardWaratah
 └── TASK MANAGEMENT SCRIPTS/      # 6 code files (.gs), ~3,258 LOC
     ├── EnhancedTaskManagementWaratah.gs  # Main task system (2,103 LOC)
@@ -206,7 +206,7 @@ createOnEditTrigger()
 
 ## Menu System
 
-**File:** [`Menu.js`](../../THE%20WARATAH/SHIFT%20REPORT%20SCRIPTS/Menu.js)
+**File:** [`MenuWaratah.js`](../../THE%20WARATAH/SHIFT%20REPORT%20SCRIPTS/MenuWaratah.js)
 
 ```
 Waratah Tools

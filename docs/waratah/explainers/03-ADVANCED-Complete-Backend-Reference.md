@@ -16,10 +16,10 @@ The system consists of 16 JavaScript files and 4 HTML files. Together they conta
 
 | File | Lines | What It Does |
 |------|-------|-------------|
-| **NightlyExport.js** | 1,016 | The main daily workflow. PDF generation, email distribution, Slack posting, TO-DO aggregation, task push to Master Actionables, weekly TO-DO summary. |
-| **IntegrationHub.js** | 1,064 | Data warehouse orchestrator. Reads shift data from the spreadsheet, validates it, writes to 4 warehouse sheets with duplicate prevention, maintains an audit log. |
-| **WeeklyRolloverInPlace.js** | 965 | Weekly rollover. Archives the week (PDF + spreadsheet copy), clears all data, updates dates to next week, sends notifications. |
-| **Menu.js** | 156 | Builds the "Waratah Tools" menu when the spreadsheet opens. Password-gates all admin functions. |
+| **NightlyExportWaratah.js** | 1,016 | The main daily workflow. PDF generation, email distribution, Slack posting, TO-DO aggregation, task push to Master Actionables, weekly TO-DO summary. |
+| **IntegrationHubWaratah.js** | 1,064 | Data warehouse orchestrator. Reads shift data from the spreadsheet, validates it, writes to 4 warehouse sheets with duplicate prevention, maintains an audit log. |
+| **WeeklyRolloverInPlaceWaratah.js** | 965 | Weekly rollover. Archives the week (PDF + spreadsheet copy), clears all data, updates dates to next week, sends notifications. |
+| **MenuWaratah.js** | 156 | Builds the "Waratah Tools" menu when the spreadsheet opens. Password-gates all admin functions. |
 | **VenueConfig.js** | 276 | Central configuration. Defines which cells to read for each data field, operating days, sheet names. Every other file depends on this. |
 | **SlackBlockKitWaratahSR.js** | 159 | Builds formatted Slack messages. Provides 7 block-type functions (header, section, fields, divider, context, buttons, list) plus a posting function. |
 
@@ -28,10 +28,10 @@ The system consists of 16 JavaScript files and 4 HTML files. Together they conta
 | File | Lines | What It Does |
 |------|-------|-------------|
 | **WeeklyDigestWaratah.js** | 202 | Posts the weekly revenue comparison to Slack (this week vs last week). |
-| **AnalyticsDashboard.js** | 517 | Builds formula-driven dashboards (Financial + Executive) in the data warehouse spreadsheet. |
+| **AnalyticsDashboardWaratah.js** | 517 | Builds formula-driven dashboards (Financial + Executive) in the data warehouse spreadsheet. |
 | **NightlyBasicExport.js** | 261 | Standalone simplified export. Self-contained with its own configuration. Designed as a fallback if the main export breaks. |
-| **UIServer.js** | 308 | Bridge between HTML dialogs and server-side functions. Serves the rollover wizard, export dashboard, and analytics viewer. |
-| **TaskIntegration.js** | 59 | Configuration constants for the Master Actionables push (column positions, spreadsheet ID). |
+| **UIServerWaratah.js** | 308 | Bridge between HTML dialogs and server-side functions. Serves the rollover wizard, export dashboard, and analytics viewer. |
+| **TaskIntegrationWaratah.js** | 59 | Configuration constants for the Master Actionables push (column positions, spreadsheet ID). |
 | **DiagnoseSlack.js** | 170 | Diagnostic tools for testing Slack webhooks and viewing system configuration. |
 
 ### Setup and Test Files
@@ -63,23 +63,23 @@ The files form a layered architecture. Lower-level files provide services that h
 - **SlackBlockKitWaratahSR.js** — Every file that posts to Slack depends on this
 
 **Service layer (depends on foundation):**
-- **IntegrationHub.js** — Uses VenueConfig for cell references
-- **TaskIntegration.js** — Provides task push configuration
+- **IntegrationHubWaratah.js** — Uses VenueConfig for cell references
+- **TaskIntegrationWaratah.js** — Provides task push configuration
 
 **Application layer (depends on foundation + services):**
-- **NightlyExport.js** — Uses VenueConfig, SlackBlockKit, IntegrationHub, TaskIntegration
-- **WeeklyRolloverInPlace.js** — Uses VenueConfig, SlackBlockKit
+- **NightlyExportWaratah.js** — Uses VenueConfig, SlackBlockKit, IntegrationHub, TaskIntegration
+- **WeeklyRolloverInPlaceWaratah.js** — Uses VenueConfig, SlackBlockKit
 - **WeeklyDigestWaratah.js** — Uses IntegrationHub (for warehouse ID), SlackBlockKit
-- **AnalyticsDashboard.js** — Uses IntegrationHub (for warehouse ID)
+- **AnalyticsDashboardWaratah.js** — Uses IntegrationHub (for warehouse ID)
 
 **Entry point:**
-- **Menu.js** — Calls functions from all application-layer files via menu items
+- **MenuWaratah.js** — Calls functions from all application-layer files via menu items
 
 **UI layer:**
-- **checklist-dialog.html** — Calls `continueExport()` in NightlyExport.js
-- **rollover-wizard.html** — Calls functions in UIServer.js
-- **export-dashboard.html** — Calls functions in UIServer.js
-- **analytics-viewer.html** — Calls functions in UIServer.js
+- **checklist-dialog.html** — Calls `continueExport()` in NightlyExportWaratah.js
+- **rollover-wizard.html** — Calls functions in UIServerWaratah.js
+- **export-dashboard.html** — Calls functions in UIServerWaratah.js
+- **analytics-viewer.html** — Calls functions in UIServerWaratah.js
 
 ```mermaid
 graph TB
@@ -89,20 +89,20 @@ graph TB
     end
 
     subgraph Services
-        IH[IntegrationHub.js]
-        TI[TaskIntegration.js]
+        IH[IntegrationHubWaratah.js]
+        TI[TaskIntegrationWaratah.js]
     end
 
     subgraph Application
-        NE[NightlyExport.js]
-        WR[WeeklyRolloverInPlace.js]
+        NE[NightlyExportWaratah.js]
+        WR[WeeklyRolloverInPlaceWaratah.js]
         WD[WeeklyDigestWaratah.js]
-        AD[AnalyticsDashboard.js]
+        AD[AnalyticsDashboardWaratah.js]
         NBE[NightlyBasicExport.js]
     end
 
     subgraph Entry
-        M[Menu.js]
+        M[MenuWaratah.js]
     end
 
     subgraph UI
@@ -128,9 +128,9 @@ graph TB
     M --> AD
     M --> NBE
     CD --> NE
-    RW --> UIServer.js
-    ED --> UIServer.js
-    AV --> UIServer.js
+    RW --> UIServerWaratah.js
+    ED --> UIServerWaratah.js
+    AV --> UIServerWaratah.js
 ```
 
 ---
@@ -139,7 +139,7 @@ graph TB
 
 Every function that the system exposes (callable from menus, triggers, or HTML dialogs).
 
-### NightlyExport.js — Daily Export Functions
+### NightlyExportWaratah.js — Daily Export Functions
 
 | Function | How It's Called | What It Does |
 |----------|----------------|-------------|
@@ -153,7 +153,7 @@ Every function that the system exposes (callable from menus, triggers, or HTML d
 | `sendWeeklyTodoSummary_WARATAH()` | Menu: Admin > Weekly Reports > Weekly To-Do Summary (LIVE) | Compiles all week's tasks and posts a summary to Slack. |
 | `backfillAllDaysTodos()` | Menu: Admin > Setup > Backfill TO-DOs (All Days) | Pushes all 5 days' tasks to Master Actionables at once. |
 
-### IntegrationHub.js — Data Warehouse Functions
+### IntegrationHubWaratah.js — Data Warehouse Functions
 
 | Function | How It's Called | What It Does |
 |----------|----------------|-------------|
@@ -166,7 +166,7 @@ Every function that the system exposes (callable from menus, triggers, or HTML d
 | `runWeeklyBackfill_()` | Automatic trigger: Monday 8am | Scans all 5 sheets and logs any that weren't already in the warehouse. |
 | `runValidationReport()` | Run from Apps Script editor | Health check: validates all connections and data extraction. |
 
-### WeeklyRolloverInPlace.js — Rollover Functions
+### WeeklyRolloverInPlaceWaratah.js — Rollover Functions
 
 | Function | How It's Called | What It Does |
 |----------|----------------|-------------|
@@ -183,14 +183,14 @@ Every function that the system exposes (callable from menus, triggers, or HTML d
 | `sendWeeklyRevenueDigest_Waratah()` | Automatic trigger: Monday 9am + Menu (password required) | Reads warehouse data, compares this week vs last week, posts to Slack. |
 | `setupWeeklyDigestTrigger_Waratah()` | Menu: Admin > Weekly Digest > Setup Trigger | Installs the Monday 9am timer. |
 
-### Menu.js — Menu and Access Control
+### MenuWaratah.js — Menu and Access Control
 
 | Function | How It's Called | What It Does |
 |----------|----------------|-------------|
 | `onOpen()` | Automatic: when the spreadsheet opens | Builds the entire "Waratah Tools" menu. Runs every time any user opens the spreadsheet. |
 | `requirePassword_()` | Called before any admin function | Prompts for the admin password. Blocks execution if incorrect. |
 
-### AnalyticsDashboard.js — Dashboard Builder
+### AnalyticsDashboardWaratah.js — Dashboard Builder
 
 | Function | How It's Called | What It Does |
 |----------|----------------|-------------|
@@ -272,15 +272,15 @@ Three time-based triggers run the automated components. These are set up once an
 
 | Trigger | Schedule | Function | File | Purpose |
 |---------|----------|----------|------|---------|
-| Weekly Rollover | Monday 10:00am AEST | `performWeeklyRollover()` | WeeklyRolloverInPlace.js | Archive, clear, update dates, notify |
+| Weekly Rollover | Monday 10:00am AEST | `performWeeklyRollover()` | WeeklyRolloverInPlaceWaratah.js | Archive, clear, update dates, notify |
 | Weekly Revenue Digest | Monday 9:00am AEST | `sendWeeklyRevenueDigest_Waratah()` | WeeklyDigestWaratah.js | This-week vs last-week Slack comparison |
-| Weekly Backfill | Monday 8:00am AEST | `runWeeklyBackfill_()` | IntegrationHub.js | Catch unlogged shifts |
+| Weekly Backfill | Monday 8:00am AEST | `runWeeklyBackfill_()` | IntegrationHubWaratah.js | Catch unlogged shifts |
 
 Plus one event trigger:
 
 | Trigger | Event | Function | File |
 |---------|-------|----------|------|
-| Menu creation | Spreadsheet opened | `onOpen()` | Menu.js |
+| Menu creation | Spreadsheet opened | `onOpen()` | MenuWaratah.js |
 
 **To check if triggers are active:** Extensions > Apps Script > Triggers (clock icon on the left sidebar).
 
@@ -303,7 +303,7 @@ The system stores 18 configuration values as Google Apps Script "Script Properti
 | `WARATAH_WORKING_FILE_ID` | Same as above — used by rollover for validation |
 | `WARATAH_DATA_WAREHOUSE_ID` | Google Sheets ID of the data warehouse |
 | `WARATAH_TASK_MANAGEMENT_ID` | Google Sheets ID of the task management spreadsheet |
-| `TASK_MANAGEMENT_SPREADSHEET_ID` | Same as above — used by TaskIntegration.js |
+| `TASK_MANAGEMENT_SPREADSHEET_ID` | Same as above — used by TaskIntegrationWaratah.js |
 | `ARCHIVE_ROOT_FOLDER_ID` | Google Drive folder ID where archives are saved |
 | `WARATAH_CASH_RECON_FOLDER_ID` | Reserved for future cash reconciliation feature |
 | `SLACK_MANAGERS_CHANNEL_WEBHOOK` | Managers-only Slack channel webhook |
@@ -329,9 +329,9 @@ graph LR
     end
 
     subgraph GAS Functions
-        NE[NightlyExport.js]
-        IH[IntegrationHub.js]
-        WR[WeeklyRolloverInPlace.js]
+        NE[NightlyExportWaratah.js]
+        IH[IntegrationHubWaratah.js]
+        WR[WeeklyRolloverInPlaceWaratah.js]
         WD[WeeklyDigestWaratah.js]
     end
 

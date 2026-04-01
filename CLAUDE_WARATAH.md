@@ -10,7 +10,7 @@
 
 ## 🐛 Date Handling Hardening (April 2, 2026)
 
-**File:** `IntegrationHub.js`
+**File:** `IntegrationHubWaratah.js`
 
 - **`parseCellDate_(value)`** — Fallback parser no longer uses `new Date(str)`, which silently mis-parses dd/mm/yyyy dates as mm/dd/yyyy in JavaScript. Now returns `Invalid Date` with a `Logger.log()` warning when parsing fails (e.g., `parseCellDate_("25/03/2026")` on systems that interpret dd/MM/yyyy as MM/dd/yyyy). Non-blocking — system continues to function but invalid dates are flagged for debugging.
 
@@ -42,17 +42,17 @@
 ## 🆕 Small Items S1-S9 (March 18, 2026)
 
 **S1 — Trigger Setup Menu:**
-- New function `setupAllTriggers_Waratah()` in `Menu.js` — installs all 3 SR triggers (rollover Mon 10am, backfill Mon 8am, digest Wed 8am) in one call; deduplicates before creating
+- New function `setupAllTriggers_Waratah()` in `MenuWaratah.js` — installs all 3 SR triggers (rollover Mon 10am, backfill Mon 8am, digest Wed 8am) in one call; deduplicates before creating
 - New menu item: Admin Tools → Setup & Utilities → "Setup All SR Triggers"
 - `onOpen()` shows "⚠ Admin Tools" warning if triggers missing
 - `requirePassword_()` now reads from MENU_PASSWORD Script Property (fallback: 'chocolateteapot')
 
 **S2 — Post-Rollover Validation:**
-- New Step 8 in `WeeklyRolloverInPlace.js`: `validateRolloverResult_()` — checks rollover completion; posts Slack alert to TEST webhook on failure; non-blocking
+- New Step 8 in `WeeklyRolloverInPlaceWaratah.js`: `validateRolloverResult_()` — checks rollover completion; posts Slack alert to TEST webhook on failure; non-blocking
 - `createWeeklyRolloverTrigger()` and `removeWeeklyRolloverTrigger()` now wrap `getUi()` in try/catch for trigger context safety
 
 **S8 — Data Warehouse Auto-Build & LockService Re-entrancy:**
-- `IntegrationHub.js`: `logToDataWarehouse_(shiftData, config, skipLock)` — new `skipLock` parameter prevents LockService deadlock when called from backfill
+- `IntegrationHubWaratah.js`: `logToDataWarehouse_(shiftData, config, skipLock)` — new `skipLock` parameter prevents LockService deadlock when called from backfill
 - Auto-builds ANALYTICS tab on first warehouse write if missing
 - `logPipelineLearning_()` called in catch block of `runIntegrations()`
 
@@ -60,9 +60,9 @@
 - New utility `logPipelineLearning_(context, issue, fix)` in `SlackBlockKitWaratahSR.js` — appends to LEARNINGS tab
 
 **Other changes:**
-- `Menu.js`: `requirePassword_()` reads from Script Properties (not hardcoded)
+- `MenuWaratah.js`: `requirePassword_()` reads from Script Properties (not hardcoded)
 - `Menu_Updated_Waratah.gs`: Removed dead `getMenuPassword_()` helper
-- `NightlyExport.js`: `pushTodosToMasterActionables()` — duplicate detection now checks ALL open tasks (not just today's)
+- `NightlyExportWaratah.js`: `pushTodosToMasterActionables()` — duplicate detection now checks ALL open tasks (not just today's)
 
 ---
 
@@ -124,7 +124,7 @@
 - Logs: date, day, venue, insight text, revenue vs benchmark %, trend direction, anomaly detected flag
 - Enables trend analysis of AI-generated insights over time
 
-### Integration Points (Updated NightlyExport.js)
+### Integration Points (Updated NightlyExportWaratah.js)
 
 **Email path (~lines 224-262):**
 1. `computeShiftAnalytics_Waratah()` — read warehouse metrics
@@ -147,7 +147,7 @@
 
 ## 🆕 Named Range System (March 18, 2026)
 
-`RunWaratah.js` added — mirrors Sakura's `RunSakura.gs` architecture. All field-to-cell mappings now live in `FIELD_CONFIG` (32 fields). Consumer files (`WeeklyRolloverInPlace.js`, `IntegrationHub.js`, `TEST_DataExtractionVerification.js`, `Menu.js`) updated.
+`RunWaratah.js` added — mirrors Sakura's `RunSakura.gs` architecture. All field-to-cell mappings now live in `FIELD_CONFIG` (32 fields). Consumer files (`WeeklyRolloverInPlaceWaratah.js`, `IntegrationHubWaratah.js`, `TEST_DataExtractionVerification.js`, `MenuWaratah.js`) updated.
 
 **Status: Active.** `usesNamedRanges: true` is set in `VenueConfig.js`. Named ranges are live and routing through `RunWaratah.js`. If a named range is missing from the spreadsheet, reads/writes fall back gracefully to hardcoded cells (no user-visible failure).
 
@@ -160,13 +160,13 @@
 **6 files modified — 3 critical bug fixes + performance/code quality (net -42 lines)**
 
 **Phase 0 — Critical Bugs Fixed:**
-1. **Rollover silent failure** (WeeklyRolloverInPlace.js) — `performWeeklyRollover()` catch block now calls `notifyError_()` for Slack alert before UI try/catch
-2. **Malformed email recipients** (WeeklyRolloverInPlace.js) — `WARATAH_EMAIL_RECIPIENTS` JSON parsed via `Object.keys()` instead of raw string
-3. **Dead executeRollover()** (UIServer.js) — rewrote as thin wrapper around `performWeeklyRollover()` (was calling 5 non-existent functions from old rollover)
+1. **Rollover silent failure** (WeeklyRolloverInPlaceWaratah.js) — `performWeeklyRollover()` catch block now calls `notifyError_()` for Slack alert before UI try/catch
+2. **Malformed email recipients** (WeeklyRolloverInPlaceWaratah.js) — `WARATAH_EMAIL_RECIPIENTS` JSON parsed via `Object.keys()` instead of raw string
+3. **Dead executeRollover()** (UIServerWaratah.js) — rewrote as thin wrapper around `performWeeklyRollover()` (was calling 5 non-existent functions from old rollover)
 
 **Phase 1 — Performance & Code Quality:**
-1. **Batch cell reads** (IntegrationHub.js) — `extractShiftData_()` replaced ~30 individual `getRange().getValue()` with 3 batched reads (B3:B39, A43:A65, A53:F61)
-2. **Shared `notifyError_()`** (SlackBlockKitWaratahSR.js) — consolidated error notification utility; applied to WeeklyDigestWaratah.js, NightlyExport.js (`sendWeeklyTodoSummary_WARATAH`), IntegrationHub.js (`runWeeklyBackfill_`)
+1. **Batch cell reads** (IntegrationHubWaratah.js) — `extractShiftData_()` replaced ~30 individual `getRange().getValue()` with 3 batched reads (B3:B39, A43:A65, A53:F61)
+2. **Shared `notifyError_()`** (SlackBlockKitWaratahSR.js) — consolidated error notification utility; applied to WeeklyDigestWaratah.js, NightlyExportWaratah.js (`sendWeeklyTodoSummary_WARATAH`), IntegrationHubWaratah.js (`runWeeklyBackfill_`)
 3. **Weekly Digest trigger** — `setupWeeklyDigestTrigger_Waratah()` exists but needs manual activation from Apps Script editor
 
 **Improvement plan:** `docs/plans/2026-03-06-waratah-shift-report-scripts-improvement-plan.md` (Phases 2-6 pending)
@@ -185,7 +185,7 @@
 
 **Weekly Functions Audit (Mar 6) — 4 functions reviewed, fixed, deployed:**
 
-1. **NightlyExport.js `continueExport()`** — Silent failure → Slack warning notifications
+1. **NightlyExportWaratah.js `continueExport()`** — Silent failure → Slack warning notifications
    - Added warning collection across all 4 non-blocking steps (PDF, email, Slack, warehouse)
    - New `_notifyExportWarnings_()` sends failures to Evan via `WARATAH_SLACK_WEBHOOK_TEST`
    - `pushTodosDirectToMasterActionables_()`: `appendRow()` loop → batch `setValues()` (single API call)
@@ -196,7 +196,7 @@
    - Changed Apr 2, 2026: sends DMs to individual staff only (no longer posts to managers channel)
    - BLOCKED tasks remain excluded from weekly summary (by design)
 
-3. **WeeklyRolloverInPlace.js `performWeeklyRollover()`**
+3. **WeeklyRolloverInPlaceWaratah.js `performWeeklyRollover()`**
    - **P1 BUG FIXED:** `generateWeekSummary_()` read `B53:E61` → `A53:E61` (todo count was always 0)
    - Trigger timing: 5:15am → **10am** (`.atHour(10).nearMinute(0)`)
    - `MailApp.sendEmail` → `GmailApp.sendEmail` (positional args: `recipient, subject, '', {htmlBody}`)
@@ -208,7 +208,7 @@
 - Cell Reference Audit: All 8 SR files corrected; narrative fields odd rows for data (43,45,47,49,51); TODO A53:E61; Wastage/RSA A63:F63, A65:F65
 - Merged Cell Clearing Fix: `A##:F##` for merged narrative/TODO fields; formula cells B37:B40 removed from CLEARABLE_FIELDS
 - `getUi()` try/catch for trigger safety; `LockService` on `performWeeklyRollover()` and `cleanupAndSortMasterActionables()`
-- `getTaskSpreadsheetId_()` added to TaskIntegration.js
+- `getTaskSpreadsheetId_()` added to TaskIntegrationWaratah.js
 
 **Design constraint (confirmed):** `continueExport()` is called from the HTML dialog via `google.script.run`. It MUST return `{ success: boolean, message: string }` and MUST NOT call `SpreadsheetApp.getUi()` or `ui.alert()` — these throw 'Authorisation is required to perform that action' in the google.script.run context. All UI feedback must be handled by the dialog's JavaScript callbacks.
 
@@ -222,7 +222,7 @@
 
 **checklist-dialog.html (updated Feb 25):** Pre-send checklist modal — Deputy Timesheets Approved + Fruit Order Done must both be confirmed before export proceeds. Calls continueExport() via google.script.run. Identical implementation to Sakura House version.
 
-**NightlyExport.js continueExport() note:** Explicit JSDoc added clarifying that SpreadsheetApp.getUi() must NOT be called from google.script.run context. Returns { success, message } object for dialog-side handling.
+**NightlyExportWaratah.js continueExport() note:** Explicit JSDoc added clarifying that SpreadsheetApp.getUi() must NOT be called from google.script.run context. Returns { success, message } object for dialog-side handling.
 
 ---
 
@@ -230,7 +230,7 @@
 
 🐛 **Fixed `TypeError: Cannot read properties of undefined (reading 'dmWebhooks')`** in `EnhancedTaskManagementWaratah.gs` — same fix as Sakura. All `TASK_CONFIG.slack.*` references replaced with Script Properties helper functions.
 
-🔄 **`WeeklyRolloverInPlace.js` — Fresh template handling added**
+🔄 **`WeeklyRolloverInPlaceWaratah.js` — Fresh template handling added**
 - If no previous week data exists, rollover skips archiving (Steps 3-4) and still clears + updates dates
 - Tab renaming now appends short date: `"WEDNESDAY 26/02"` etc.
 - `previewRollover()` function added (dry run before executing)
@@ -243,13 +243,13 @@
 ```
 THE WARATAH/
 ├── SHIFT REPORT SCRIPTS/    (16 .js files, ~6,022 LOC + 4 .html)
-│   ├── NightlyExport.js              # Daily PDF export, email, Slack (1,016 LOC)
-│   ├── IntegrationHub.js             # Data warehouse orchestrator (1,064 LOC)
-│   ├── WeeklyRolloverInPlace.js      # Weekly rollover automation (965 LOC)
-│   ├── AnalyticsDashboard.js         # Financial + executive dashboards (517 LOC)
+│   ├── NightlyExportWaratah.js              # Daily PDF export, email, Slack (1,016 LOC)
+│   ├── IntegrationHubWaratah.js             # Data warehouse orchestrator (1,064 LOC)
+│   ├── WeeklyRolloverInPlaceWaratah.js      # Weekly rollover automation (965 LOC)
+│   ├── AnalyticsDashboardWaratah.js         # Financial + executive dashboards (517 LOC)
 │   ├── NightlyBasicExport.js         # Standalone basic report (261 LOC)
 │   ├── TEST_DataExtractionVerification.js  # Data extraction tests (332 LOC)
-│   ├── UIServer.js                   # HTML dialog serving (308 LOC)
+│   ├── UIServerWaratah.js                   # HTML dialog serving (308 LOC)
 │   ├── RunWaratah.js                 # Named range infrastructure — FIELD_CONFIG, helpers, diagnostics (NEW)
 │   ├── VenueConfig.js                # Venue configuration (usesNamedRanges: true → routes through RunWaratah.js)
 │   ├── _SETUP_ScriptProperties.js    # Script Properties setup (222 LOC)
@@ -258,9 +258,9 @@ THE WARATAH/
 │   ├── DiagnoseSlack.js              # Webhook diagnostics (170 LOC)
 │   ├── AIInsightsWaratah.js          # AI shift summaries via Claude Haiku API (135 LOC) — M1
 │   ├── SlackBlockKitWaratahSR.js     # Block Kit message builders (159 LOC)
-│   ├── Menu.js                       # Menu system (156 LOC)
+│   ├── MenuWaratah.js                       # Menu system (156 LOC)
 │   ├── TEST_SlackBlockKitLibrary.js  # Block Kit tests (103 LOC)
-│   ├── TaskIntegration.js            # Bridge to task management (59 LOC)
+│   ├── TaskIntegrationWaratah.js            # Bridge to task management (59 LOC)
 │   └── 4 .html: analytics-viewer, checklist-dialog, export-dashboard, rollover-wizard
 │
 └── TASK MANAGEMENT SCRIPTS/ (6 .gs files, ~3,349 LOC + 1 .html)
@@ -318,7 +318,7 @@ runValidationReport()    // Full system validation
 
 2. **Password:** `chocolateteapot`
    - Stored in Script Properties as `MENU_PASSWORD` (S1: now reads from Script Properties, not hardcoded)
-   - Used by `requirePassword_()` in Menu.js and Menu_Updated_Waratah.gs
+   - Used by `requirePassword_()` in MenuWaratah.js and Menu_Updated_Waratah.gs
    - TODO: Rotate and document securely
 
 3. **Test on Copies**
@@ -409,7 +409,7 @@ deliverAIInsights_Waratah(insight, shiftDate)          // M6: Routes based on AI
 logInsightToWarehouse_Waratah(analytics, insightText)  // M7: Appends to AI_INSIGHTS_LOG sheet (auto-creates on first use)
 ```
 
-### NightlyExport.js
+### NightlyExportWaratah.js
 ```javascript
 exportAndEmailPDF()              // Line 299 - Opens checklist dialog
 continueExport(sheetName, isTest) // Line 170 - Main export (called from dialog)
@@ -419,7 +419,7 @@ generatePdfForSheet_NoUI_()      // Line 826 - Generate PDF (no UI context)
 _getExportConfig_()              // Line 96 - Lazy-load venue config
 ```
 
-### IntegrationHub.js
+### IntegrationHubWaratah.js
 ```javascript
 runIntegrations(sheetName)       // Line 73 - Orchestrate all integrations
 extractShiftData_(sheetName)     // Line 188 - Read cells B3, B4, B34, etc.
@@ -427,7 +427,7 @@ logToDataWarehouse_(shiftData, config, skipLock)  // Line 339 - Write to 4 wareh
 validateShiftData_(shiftData)    // Line 511 - Check revenue logic, required fields
 ```
 
-### WeeklyRolloverInPlace.js
+### WeeklyRolloverInPlaceWaratah.js
 ```javascript
 performWeeklyRollover()          // Main rollover function
 validatePreconditions_()         // Check file ID, venue, archive folder
@@ -469,7 +469,7 @@ resetScriptProperties()     // CAUTION: Deletes all properties
 **Key Properties:**
 ```
 VENUE_NAME: "WARATAH"
-MENU_PASSWORD: "chocolateteapot"                       // S1: Read by requirePassword_() in Menu.js
+MENU_PASSWORD: "chocolateteapot"                       // S1: Read by requirePassword_() in MenuWaratah.js
 SHEET_PROTECTION_OWNER_EMAIL: "evan@pollenhospitality.com"  // Only user allowed to edit protected sheet areas; falls back to script owner if not set
 WARATAH_WORKING_FILE_ID: "[current_week_spreadsheet_id]"
 WARATAH_DATA_WAREHOUSE_ID: "[warehouse_spreadsheet_id]"
@@ -520,7 +520,7 @@ See [DEEP_DIVE_ARCHITECTURE.md](docs/waratah/DEEP_DIVE_ARCHITECTURE.md#script-pr
 
 **Duplicate Prevention (hardened Feb 23, 2026):** Uses `normaliseDateKey_()` to handle both Date objects and string-stored dates. Date + MOD composite key checked across all 4 sheets before logging.
 
-**New helpers (Feb 23, 2026) in IntegrationHub.js:**
+**New helpers (Feb 23, 2026) in IntegrationHubWaratah.js:**
 - `parseCellDate_(value)` -- Parses `dd/MM/yyyy` strings using `Utilities.parseDate` with Australia/Sydney timezone
 - `normaliseDateKey_(v)` -- Normalises Date objects OR string-stored dates to canonical `toDateString()` form
 - `showIntegrationLogStats()` -- 30-day summary dialog of INTEGRATION_LOG

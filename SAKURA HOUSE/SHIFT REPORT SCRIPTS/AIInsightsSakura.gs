@@ -14,9 +14,109 @@
  * Credential: ANTHROPIC_API_KEY in Script Properties only.
  * Never hardcoded.
  *
- * @version 1.2.0
- * @updated 2026-03-18
+ * @version 1.3.0
+ * @updated 2026-04-02
  ****************************************************/
+
+
+// ============================================================================
+// MODULE-LEVEL STATISTICAL HELPERS
+// Private to this file. Used by M2 and M4.
+// ============================================================================
+
+/**
+ * Arithmetic mean of a numeric array.
+ * @param {number[]} arr
+ * @returns {number}
+ */
+function mean_(arr) {
+  return arr.reduce(function(s, v) { return s + v; }, 0) / arr.length;
+}
+
+/**
+ * Population standard deviation of a numeric array, given the mean.
+ * @param {number[]} arr
+ * @param {number}   m    - Pre-computed mean (avoids redundant pass)
+ * @returns {number}
+ */
+function stddev_(arr, m) {
+  var variance = arr.reduce(function(s, v) { return s + Math.pow(v - m, 2); }, 0) / arr.length;
+  return Math.sqrt(variance);
+}
+
+
+// ============================================================================
+// SHARED CLAUDE API HELPER
+// Centralises payload construction, headers, fetch, HTTP check, JSON parse,
+// and content[0].text extraction for all M1 / M3 / M4 call sites.
+// ============================================================================
+
+/**
+ * Call the Claude API via UrlFetchApp and return content[0].text on success.
+ *
+ * Non-blocking: returns null on any HTTP error, parse error, or missing
+ * content — callers must treat null as a signal to fall back gracefully.
+ *
+ * @param {string}   apiKey   - Anthropic API key (from Script Properties)
+ * @param {Object[]} messages - Array of {role, content} message objects
+ * @param {Object}   [opts]   - Optional overrides:
+ *   {string} opts.model      - Default: 'claude-haiku-4-5-20251001'
+ *   {number} opts.max_tokens - Default: 300
+ *   {string} opts.system     - System prompt (omitted if not provided)
+ * @returns {string|null} Trimmed response text, or null on failure
+ */
+function callClaudeApi_(apiKey, messages, opts) {
+  opts = opts || {};
+  var model     = opts.model      || 'claude-haiku-4-5-20251001';
+  var maxTokens = opts.max_tokens || 300;
+
+  var payload = {
+    model:      model,
+    max_tokens: maxTokens,
+    messages:   messages
+  };
+  if (opts.system) {
+    payload.system = opts.system;
+  }
+
+  var fetchOpts = {
+    method:      'post',
+    contentType: 'application/json',
+    headers: {
+      'x-api-key':         apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    payload:            JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  try {
+    var response = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', fetchOpts);
+    var code     = response.getResponseCode();
+
+    if (code !== 200) {
+      Logger.log(
+        'callClaudeApi_ (Sakura): HTTP ' + code +
+        ' — ' + response.getContentText().substring(0, 300)
+      );
+      return null;
+    }
+
+    var json = JSON.parse(response.getContentText());
+    var text = json.content && json.content[0] && json.content[0].text
+      ? json.content[0].text.trim()
+      : null;
+
+    if (!text) {
+      Logger.log('callClaudeApi_ (Sakura): Unexpected response shape — content missing.');
+    }
+    return text;
+
+  } catch (e) {
+    Logger.log('callClaudeApi_ (Sakura): fetch/parse error — ' + e.message);
+    return null;
+  }
+}
 
 
 /**
@@ -89,54 +189,19 @@ function generateShiftSummary_Sakura(shiftData) {
     '- TO-DOs created: ' + (shiftData.todoCount || 0) + '\n\n' +
     'Write the 2-3 sentence summary now. Return plain text only — no headers, no bullet points.';
 
-  // --- Call Claude API via UrlFetchApp ---
-  const payload = {
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 300,
+  // --- Call Claude API ---
+  var summary = callClaudeApi_(apiKey, [{ role: 'user', content: userPrompt }], {
     system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }]
-  };
+    max_tokens: 300
+  });
 
-  const options = {
-    method: 'post',
-    contentType: 'application/json',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
-
-  try {
-    const response = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', options);
-    const code = response.getResponseCode();
-
-    if (code !== 200) {
-      Logger.log(
-        'AI Insights (Sakura): Claude API returned HTTP ' + code +
-        ' — ' + response.getContentText().substring(0, 300)
-      );
-      return null;
-    }
-
-    const json = JSON.parse(response.getContentText());
-    const summary = json.content && json.content[0] && json.content[0].text
-      ? json.content[0].text.trim()
-      : null;
-
-    if (!summary) {
-      Logger.log('AI Insights (Sakura): Unexpected API response shape — content missing.');
-      return null;
-    }
-
-    Logger.log('AI Insights (Sakura): Summary generated successfully (' + summary.length + ' chars).');
-    return summary;
-
-  } catch (e) {
-    Logger.log('AI Insights (Sakura): API call failed — ' + e.message);
+  if (!summary) {
+    Logger.log('AI Insights (Sakura): Summary generation failed or returned empty.');
     return null;
   }
+
+  Logger.log('AI Insights (Sakura): Summary generated successfully (' + summary.length + ' chars).');
+  return summary;
 }
 
 
@@ -192,7 +257,7 @@ function detectRevenueAnomalies_Sakura(shiftData, warehouseId) {
     }
 
     const lastRow  = financialSheet.getLastRow();
-    const allRows  = financialSheet.getRange(2, 1, lastRow - 1, 17).getValues();
+    const allRows  = financialSheet.getRange(2, 1, lastRow - 1, 16).getValues();
 
     // Filter rows matching today's day of week (col B, index 1); exclude today's own row
     const todayDateKey = shiftData.date instanceof Date ? shiftData.date.toDateString() : '';
@@ -212,15 +277,6 @@ function detectRevenueAnomalies_Sakura(shiftData, warehouseId) {
         ' historical rows for ' + todayDay + ' — need ≥4. Skipping.'
       );
       return { anomalyDetected: false, details: [] };
-    }
-
-    // --- Statistical helpers ---
-    function mean_(arr) {
-      return arr.reduce(function(s, v) { return s + v; }, 0) / arr.length;
-    }
-    function stddev_(arr, m) {
-      var variance = arr.reduce(function(s, v) { return s + Math.pow(v - m, 2); }, 0) / arr.length;
-      return Math.sqrt(variance);
     }
 
     // --- NetRevenue stats ---
@@ -343,39 +399,10 @@ function classifyTask_Sakura(taskDescription) {
       'MEDIUM=maintenance/improvements, LOW=nice-to-have. ' +
       'dueDaysOffset: 0=today, 1=tomorrow, 3=within 3 days, 7=within a week.';
 
-    const payload = {
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 60,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }]
-    };
-
-    const options = {
-      method: 'post',
-      contentType: 'application/json',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    };
-
-    const response = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', options);
-    const code = response.getResponseCode();
-
-    if (code !== 200) {
-      Logger.log(
-        'M3 Classify (Sakura): Claude API returned HTTP ' + code +
-        ' — ' + response.getContentText().substring(0, 200)
-      );
-      return null;
-    }
-
-    const json = JSON.parse(response.getContentText());
-    const raw  = json.content && json.content[0] && json.content[0].text
-      ? json.content[0].text.trim()
-      : null;
+    var raw = callClaudeApi_(apiKey, [{ role: 'user', content: userPrompt }], {
+      system:     systemPrompt,
+      max_tokens: 60
+    });
 
     if (!raw) {
       Logger.log('M3 Classify (Sakura): Empty response from API.');
@@ -496,7 +523,7 @@ function computeShiftAnalytics_Sakura(shiftData, warehouseId) {
     }
 
     var lastRow = financialSheet.getLastRow();
-    var allRows = financialSheet.getRange(2, 1, lastRow - 1, 17).getValues();
+    var allRows = financialSheet.getRange(2, 1, lastRow - 1, 16).getValues();
 
     // Filter: same day-of-week, exclude today's own row
     var sameDay = allRows.filter(function(row) {
@@ -520,16 +547,9 @@ function computeShiftAnalytics_Sakura(shiftData, warehouseId) {
     }
 
     // =========================================================
-    // Statistical helper functions (inner — no outer scope leak)
+    // Statistical helper functions (module-level mean_ / stddev_
+    // are used directly; only local helpers defined below)
     // =========================================================
-    function mean_(arr) {
-      return arr.reduce(function(s, v) { return s + v; }, 0) / arr.length;
-    }
-
-    function stddev_(arr, m) {
-      var variance = arr.reduce(function(s, v) { return s + Math.pow(v - m, 2); }, 0) / arr.length;
-      return Math.sqrt(variance);
-    }
 
     /**
      * Ordinary least-squares slope over an array of values (0-indexed positions).
@@ -906,43 +926,14 @@ function generateShiftInsight_Sakura(shiftData, analytics) {
 
       'Write PERFORMANCE, TREND, and ACTION now.';
 
-    // --- Call Claude API (same pattern as M1/M3) ---
-    var payload = {
-      model:      'claude-haiku-4-5-20251001',
-      max_tokens: 300,
+    // --- Call Claude API ---
+    var insight = callClaudeApi_(apiKey, [{ role: 'user', content: userPrompt }], {
       system:     systemPrompt,
-      messages:   [{ role: 'user', content: userPrompt }]
-    };
-
-    var options = {
-      method:          'post',
-      contentType:     'application/json',
-      headers: {
-        'x-api-key':          apiKey,
-        'anthropic-version':  '2023-06-01'
-      },
-      payload:          JSON.stringify(payload),
-      muteHttpExceptions: true
-    };
-
-    var response = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', options);
-    var code     = response.getResponseCode();
-
-    if (code !== 200) {
-      Logger.log(
-        'M4 Insight (Sakura): Claude API returned HTTP ' + code +
-        ' — ' + response.getContentText().substring(0, 300)
-      );
-      return null;
-    }
-
-    var json    = JSON.parse(response.getContentText());
-    var insight = json.content && json.content[0] && json.content[0].text
-      ? json.content[0].text.trim()
-      : null;
+      max_tokens: 300
+    });
 
     if (!insight) {
-      Logger.log('M4 Insight (Sakura): Unexpected API response shape — content missing.');
+      Logger.log('M4 Insight (Sakura): Insight generation failed or returned empty.');
       return null;
     }
 

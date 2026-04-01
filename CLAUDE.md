@@ -50,30 +50,7 @@
 
 ### Pipeline architecture (`/saks` and `/tah`)
 
-```
-Phase 0 — Scope analysis (inline, no agent)
-  ↓ classifies: code change / docs only / deploy only
-  ↓ identifies extra agents needed (rollover, Slack, task mgmt, warehouse)
-
-Phase 1 — Implementation  ←── PARALLEL
-  sakura-gas-agent (or waratah-gas-agent)
-  + rollover-trigger-agent   (if rollover/trigger changes)
-  + slack-block-kit-agent    (if Slack notification changes)
-  + task-management-agent    (if 8-status workflow changes)
-  + data-warehouse-agent     (if warehouse schema changes)
-
-Phase 2 — Review  ←── sequential (waits for Phase 1)
-  gas-code-review-agent
-  → if blocking issues: re-dispatch venue agent → re-review (loop until CLEAR TO DEPLOY)
-
-Phase 3 — Documentation  ←── sequential (waits for CLEAR TO DEPLOY)
-  documentation-agent
-  → updates CLAUDE_*.md + docs/sakura/ or docs/waratah/ + FILE EXPLAINERS/
-
-Phase 4 — Deployment  ←── sequential (waits for Phase 3)
-  deployment-agent
-  → clasp push → git commit → sync-explainers-to-drive.js
-```
+Scope → Implementation (parallel agents) → Review → Docs → Deploy. See `.claude/commands/saks.md` or `tah.md` for full pipeline details.
 
 ---
 
@@ -197,20 +174,7 @@ SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/polle
 
 ## Agent Auto-Use Rules
 
-Specialist agents live in `.claude/agents/`. Claude uses the Task tool to invoke them. The following rules apply to every session — no manual invocation needed when these conditions are met:
-
-| Condition | Agent to invoke |
-|-----------|----------------|
-| Any `.gs` file edited | `gas-code-review-agent` before reporting work complete |
-| Task touches both venues | `shift-report-orchestrator` first to parallelise |
-| Rollover or trigger code changed | `rollover-trigger-agent` — never touch rollover without it |
-| Slack notification added or changed | `slack-block-kit-agent` |
-| Task management workflow changed | `task-management-agent` |
-| Ready to `clasp push` | `deployment-agent` must run pre-deploy checklist first |
-| Significant code change completed | `documentation-agent` to update relevant CLAUDE_*.md |
-| External API integration needed | `external-integrations-agent` |
-
-**Single entry point for non-trivial tasks:** describe the task to `shift-report-orchestrator` and it will route and parallelise automatically.
+Specialist agents live in `.claude/agents/` (version-controlled). Auto-routing rules are defined in the [Auto-routing table](#auto-routing-triggered-without-slash-commands) above. For non-trivial tasks, describe the task to `shift-report-orchestrator` and it will route and parallelise automatically.
 
 ---
 

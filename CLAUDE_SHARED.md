@@ -193,7 +193,7 @@ function logPipelineLearning_(context, issue, fix) {
 ```
 
 **Called from:**
-- `IntegrationHub.js`: catch block of `runIntegrations()` (Waratah S8)
+- `IntegrationHubWaratah.js`: catch block of `runIntegrations()` (Waratah S8)
 - `IntegrationHubSakura.gs`: catch block of `runIntegrations()` (Sakura S9)
 - `SlackBlockKitWaratahSR.js` and `SlackBlockKitSakuraSR.gs`: error handlers
 

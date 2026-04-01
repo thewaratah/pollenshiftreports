@@ -150,7 +150,7 @@ This is the single source of truth. All consumer files call `getFieldValue()`, `
 
 ## Integration Hub Extraction
 
-**File:** `THE WARATAH/SHIFT REPORT SCRIPTS/IntegrationHub.js`
+**File:** `THE WARATAH/SHIFT REPORT SCRIPTS/IntegrationHubWaratah.js`
 
 The `extractShiftData_()` function uses **batch reads** (3 GAS API calls) for performance, then maps values against FIELD_CONFIG fallback positions. The batch-read approach was intentionally preserved — individual `getFieldValue()` calls per field would be ~20× more API calls.
 
@@ -172,7 +172,7 @@ const todoValues = sheet.getRange("A53:F61").getValues();
 
 ## Rollover Clearable Fields
 
-**File:** `THE WARATAH/SHIFT REPORT SCRIPTS/WeeklyRolloverInPlace.js`
+**File:** `THE WARATAH/SHIFT REPORT SCRIPTS/WeeklyRolloverInPlaceWaratah.js`
 
 Clearable fields are now derived programmatically from FIELD_CONFIG (no separate list to maintain):
 
@@ -182,7 +182,7 @@ function getClearableFieldKeys_() {
   return Object.keys(FIELD_CONFIG).filter(key => !FIELD_CONFIG[key].isFormula);
 }
 
-// In WeeklyRolloverInPlace.js:
+// In WeeklyRolloverInPlaceWaratah.js:
 const CLEARABLE_FIELD_KEYS = getClearableFieldKeys_();
 // → ['date','mod','staff','productionAmount','deposit','airbnbCovers','cancellations',
 //    'cashReturns','cdDiscount','refunds','cdRedeem','totalDiscount','pettyCash',

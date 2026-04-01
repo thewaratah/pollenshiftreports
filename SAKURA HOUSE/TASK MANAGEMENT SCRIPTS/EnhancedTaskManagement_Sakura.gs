@@ -75,14 +75,6 @@ function getSlackDmWebhooks_() {
   return JSON.parse(json);
 }
 
-/** Get sakura_foh_leads Slack channel webhook from Script Properties */
-function getFohLeadsWebhook_() {
-  const webhook = PropertiesService.getScriptProperties().getProperty('SLACK_FOH_LEADS_WEBHOOK');
-  if (!webhook) {
-    throw new Error('SLACK_FOH_LEADS_WEBHOOK not configured in Script Properties. Run _SETUP_ScriptProperties_TaskMgmt_Sakura.gs first.');
-  }
-  return webhook;
-}
 
 
 /* ==========================================================================
@@ -1126,122 +1118,6 @@ function getNextMonday_(fromDate, weeksAhead) {
    OVERDUE TRACKING
    ========================================================================== */
 
-/**
- * Sends a daily summary of overdue tasks.
- * Called by daily maintenance trigger.
- */
-function sendOverdueTasksSummary_() {
-  const ss = SpreadsheetApp.openById(getTaskSpreadsheetId_());
-  const sheet = ss.getSheetByName(TASK_CONFIG.sheets.master);
-
-  if (!sheet) return;
-
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return;
-
-  const data = sheet.getRange(2, 1, lastRow - 1, TOTAL_COLS).getValues();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const overdueTasks = [];
-
-  data.forEach((row, index) => {
-    const status = (row[COLS.STATUS] || "").toString().trim().toUpperCase();
-    const dueDate = row[COLS.DUE_DATE];
-
-    if (!ETM_ACTIVE_STATUSES.includes(status)) return;
-
-    if (dueDate instanceof Date) {
-      const dueDateOnly = new Date(dueDate);
-      dueDateOnly.setHours(0, 0, 0, 0);
-
-      if (dueDateOnly < today) {
-        const daysOverdue = Math.floor((today - dueDateOnly) / (24 * 60 * 60 * 1000));
-
-        overdueTasks.push({
-          rowNum: index + 2,
-          description: row[COLS.DESCRIPTION],
-          assignee: row[COLS.STAFF] || "Unassigned",
-          dueDate: Utilities.formatDate(dueDate, TASK_CONFIG.timezone, "dd/MM/yyyy"),
-          daysOverdue: daysOverdue,
-          priority: row[COLS.PRIORITY],
-          status: status
-        });
-      }
-    }
-  });
-
-  if (overdueTasks.length === 0) {
-    Logger.log("No overdue tasks today.");
-    return;
-  }
-
-  overdueTasks.sort((a, b) => b.daysOverdue - a.daysOverdue);
-
-  const byAssignee = {};
-  overdueTasks.forEach(task => {
-    if (!byAssignee[task.assignee]) byAssignee[task.assignee] = [];
-    byAssignee[task.assignee].push(task);
-  });
-
-  // Build overdue Block Kit message
-  const overdueBlocks = [
-    bk_header("Daily Overdue Tasks"),
-    bk_section(`*${overdueTasks.length} task(s) past their due date*`)
-  ];
-
-  Object.entries(byAssignee).forEach(([assignee, tasks]) => {
-    overdueBlocks.push(bk_divider());
-    let staffSection = `*${assignee}* (${tasks.length}):\n`;
-    tasks.forEach(task => {
-      const priorityEmoji = PRIORITY_EMOJI[task.priority] || "";
-      staffSection += `${priorityEmoji} ${task.description} _(${task.daysOverdue}d overdue)_\n`;
-    });
-    overdueBlocks.push(bk_section(staffSection));
-  });
-
-  overdueBlocks.push(bk_divider());
-  overdueBlocks.push(bk_buttons([{ text: "View All Tasks", url: `https://docs.google.com/spreadsheets/d/${getTaskSpreadsheetId_()}` }]));
-
-  bk_post(getManagersChannelWebhook_(), overdueBlocks,
-    `Daily Overdue: ${overdueTasks.length} task(s) past due`);
-
-  sendOverdueTasksDMs_(byAssignee);
-}
-
-
-/**
- * Sends individual Slack DMs to assignees about their overdue tasks.
- */
-function sendOverdueTasksDMs_(tasksByAssignee) {
-  const dmWebhooks = getSlackDmWebhooks_();
-  Object.entries(tasksByAssignee).forEach(([assignee, tasks]) => {
-    const webhook = dmWebhooks[assignee];
-
-    if (!webhook) {
-      Logger.log(`No DM webhook for "${assignee}", skipping individual notification.`);
-      return;
-    }
-
-    const dmBlocks = [
-      bk_header("Your Overdue Tasks"),
-      bk_section(`_You have ${tasks.length} task(s) past their due date_`)
-    ];
-
-    tasks.forEach(task => {
-      const priorityEmoji = PRIORITY_EMOJI[task.priority] || "";
-      let detail = `${priorityEmoji} *${task.description}*\nDue: ${task.dueDate} (${task.daysOverdue}d overdue)`;
-      if (task.status === STATUSES.BLOCKED) detail += `\nStatus: BLOCKED`;
-      dmBlocks.push(bk_section(detail));
-    });
-
-    dmBlocks.push(bk_divider());
-    dmBlocks.push(bk_buttons([{ text: "Update Your Tasks", url: `https://docs.google.com/spreadsheets/d/${getTaskSpreadsheetId_()}` }]));
-
-    const sent = bk_post(webhook, dmBlocks, `You have ${tasks.length} overdue task(s)`);
-    Logger.log(sent ? `Overdue DM sent to ${assignee}` : `Failed to DM ${assignee}`);
-  });
-}
 
 
 /* ==========================================================================

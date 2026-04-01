@@ -15,7 +15,7 @@ The Integration Hub orchestrates data flow between:
 4. **Shift Reports** → Email (7 recipients)
 5. **Shift Reports** → Master Actionables (tasks)
 
-**Primary File:** [`IntegrationHub.js`](../../THE%20WARATAH/SHIFT%20REPORT%20SCRIPTS/IntegrationHub.js)
+**Primary File:** [`IntegrationHubWaratah.js`](../../THE%20WARATAH/SHIFT%20REPORT%20SCRIPTS/IntegrationHubWaratah.js)
 
 ---
 
@@ -773,6 +773,6 @@ Apps Script Editor → Executions (list icon)
 ---
 
 **Last Updated:** March 6, 2026
-**Key Files:** IntegrationHub.js (v3.0.0), NightlyExport.js
+**Key Files:** IntegrationHubWaratah.js (v3.0.0), NightlyExportWaratah.js
 **Data Warehouse:** 4 sheets with duplicate prevention (schemas overhauled Mar 6, 2026)
 **Error Strategy:** Non-blocking integrations, blocking validations

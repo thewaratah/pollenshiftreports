@@ -10,7 +10,7 @@
 
 The Weekly Rollover (In-Place) system archives the previous week's data and prepares the spreadsheet for the next week—all **without creating duplicate files**.
 
-**File:** [`WeeklyRolloverInPlace.js`](../../THE%20WARATAH/SHIFT%20REPORT%20SCRIPTS/WeeklyRolloverInPlace.js)
+**File:** [`WeeklyRolloverInPlaceWaratah.js`](../../THE%20WARATAH/SHIFT%20REPORT%20SCRIPTS/WeeklyRolloverInPlaceWaratah.js)
 
 **Key Concept:**
 - ONE permanent working file: "The Waratah - Current Week"
@@ -467,4 +467,4 @@ ss.setSpreadsheetTimeZone('Australia/Sydney');
 
 **Last Updated:** March 6, 2026
 **Status:** ✅ Deployed and automated (Mondays 10:00am)
-**Key File:** `WeeklyRolloverInPlace.js` (680 LOC)
+**Key File:** `WeeklyRolloverInPlaceWaratah.js` (680 LOC)

@@ -1,6 +1,6 @@
 ---
 name: waratah-gas-agent
-description: Use for any Waratah code change, debugging, or feature implementation. Specialises in the hardcoded-cell GAS architecture, 5-day operation (Wed–Sun), and Waratah-specific patterns. Always reads CLAUDE_WARATAH.md before touching any file. Examples: <example>Context: User wants to fix a bug in the Sunday nightly export. user: "Sunday's export isn't sending to Slack" assistant: "I'll use waratah-gas-agent — it specialises in the Waratah codebase and knows the Slack webhook Script Properties" <commentary>Waratah-specific code changes always go to waratah-gas-agent.</commentary></example> <example>Context: User wants to add a new financial field to the warehouse export. user: "Add labour cost to the Waratah nightly export" assistant: "Dispatching waratah-gas-agent to add the field to FIELD_CONFIG and IntegrationHub.js" <commentary>New fields must go through FIELD_CONFIG first, then IntegrationHub — waratah-gas-agent knows this pattern.</commentary></example>
+description: Use for any Waratah code change, debugging, or feature implementation. Specialises in the hardcoded-cell GAS architecture, 5-day operation (Wed–Sun), and Waratah-specific patterns. Always reads CLAUDE_WARATAH.md before touching any file. Examples: <example>Context: User wants to fix a bug in the Sunday nightly export. user: "Sunday's export isn't sending to Slack" assistant: "I'll use waratah-gas-agent — it specialises in the Waratah codebase and knows the Slack webhook Script Properties" <commentary>Waratah-specific code changes always go to waratah-gas-agent.</commentary></example> <example>Context: User wants to add a new financial field to the warehouse export. user: "Add labour cost to the Waratah nightly export" assistant: "Dispatching waratah-gas-agent to add the field to FIELD_CONFIG and IntegrationHubWaratah.js" <commentary>New fields must go through FIELD_CONFIG first, then IntegrationHub — waratah-gas-agent knows this pattern.</commentary></example>
 model: sonnet
 tools: Read, Glob, Grep, Bash, Edit, Write, TodoWrite
 color: green
@@ -52,7 +52,7 @@ The Waratah uses **named ranges** (`WEDNESDAY_SR_NetRevenue` etc.) defined in `F
 - `getFieldRange(sheet, 'shiftSummary')` — returns the Range object
 - `getFieldValues(sheet, 'todoTasks')` — returns 2D array
 - When adding new fields, add them to `FIELD_CONFIG` in `RunWaratah.js` first, then use the helpers
-- For performance-sensitive batch reads (e.g. IntegrationHub.js extractShiftData_), direct `getRange().getValues()` is acceptable — add a comment explaining why
+- For performance-sensitive batch reads (e.g. IntegrationHubWaratah.js extractShiftData_), direct `getRange().getValues()` is acceptable — add a comment explaining why
 - Consult `docs/waratah/CELL_REFERENCE_MAP.md` for the full field map
 
 ## Operating Parameters
@@ -104,11 +104,11 @@ After any code change that affects user-facing behavior, update the relevant han
 
 | Handover Doc | Covers These Code Files |
 |-------------|------------------------|
-| `DAILY_SHIFT_REPORT.md` | NightlyExport.js, NightlyBasicExport.js, IntegrationHub.js, TaskIntegration.js, checklist-dialog.html |
-| `WEEKLY_AUTOMATED_EVENTS.md` | WeeklyRolloverInPlace.js, WeeklyDigestWaratah.js, AnalyticsDashboard.js |
+| `DAILY_SHIFT_REPORT.md` | NightlyExportWaratah.js, NightlyBasicExport.js, IntegrationHubWaratah.js, TaskIntegrationWaratah.js, checklist-dialog.html |
+| `WEEKLY_AUTOMATED_EVENTS.md` | WeeklyRolloverInPlaceWaratah.js, WeeklyDigestWaratah.js, AnalyticsDashboard.js |
 | `TASK_MANAGEMENT.md` | EnhancedTaskManagementWaratah.gs, TaskDashboardWaratah.gs, SlackBlockKitWaratah.gs, Menu_Updated_Waratah.gs |
 | `TROUBLESHOOTING.md` | DiagnoseSlack.js, any error handling changes |
-| `CONFIGURATION_REFERENCE.md` | _SETUP_ScriptProperties.js, VenueConfig.js, Menu.js |
+| `CONFIGURATION_REFERENCE.md` | _SETUP_ScriptProperties.js, VenueConfig.js, MenuWaratah.js |
 
 ## Output Format
 Return:
