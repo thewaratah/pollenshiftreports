@@ -1,6 +1,6 @@
 # SAKURA HOUSE - Claude Code Project Guide
 
-**Last Updated:** April 2, 2026 (Rollover notifications removed, 5 menu items removed, NightlyBasicExportSakura deleted, WeeklyDigest enhanced)
+**Last Updated:** April 2, 2026 (Rollover notifications removed, menu simplified, NightlyBasicExportSakura deleted, WeeklyDigest enhanced, dead functions removed, schema column refs updated, helper functions centralized)
 **Project Type:** Google Apps Script (Hospitality Management System)
 **Venue:** Sakura House (Single-Venue Documentation)
 
@@ -133,6 +133,42 @@
 - Menu items for weekly summary updated accordingly (FOH menu item removed)
 
 **Impact:** Managers channel and FOH leads channel no longer receive task summary posts. Staff receive individual DM notifications only.
+
+---
+
+## DEPLOYMENT (April 2, 2026) -- Code Refactor (F5-F8): Dead Functions, Schema Validation, Helper Consolidation
+
+**F5 — Task Management Dead Functions Cleanup:**
+- `EnhancedTaskManagement_Sakura.gs`: Deleted 3 dead functions that were already removed from daily maintenance in earlier Apr 2 deployment:
+  - `sendOverdueTasksSummary_()` — function body deleted (no longer called from trigger)
+  - `sendOverdueTasksDMs_()` — function body deleted (never wired to production)
+  - `getFohLeadsWebhook_()` — function body deleted (FOH leads summary removed from menu)
+- Impact: ~124 lines of dead code removed; system behavior unchanged (functions were already unreachable)
+
+**F6 — Schema Column Reference Update:**
+- `AIInsightsSakura.gs`: Updated NIGHTLY_FINANCIAL schema references from 17 to 16 columns (reflects April 2 column J deletion)
+- Ensures AI insight generation uses correct column indices for analytics computation
+- No impact on insight logic — purely internal schema consistency
+
+**F7 — Helper Function Refactoring & Centralization:**
+- `AIInsightsSakura.gs`: Extracted and promoted utility functions to module level:
+  - New `callClaudeApi_()` helper — centralized Claude API UrlFetchApp calls (used by M2-M7 insight functions)
+  - Moved `mean_()` and `stddev_()` to module scope (previously nested; used by M4 analytics)
+- Impact: Reduced function nesting, improved testability, cleaner call stacks; no behavior change
+
+**F8 — Duplicate Detection Consolidation:**
+- `IntegrationHubSakura.gs`: New `isDuplicateInSheet_()` helper function
+  - Centralized duplicate detection logic used by warehouse write functions
+  - Checks NIGHTLY_FINANCIAL for existing rows with matching date + MOD; prevents duplicate logging
+  - Used by `logToDataWarehouse_()` before append operations
+- Impact: Reduced code duplication, improved maintainability; same duplicate prevention logic
+
+**Context:** This is internal refactoring (F5-F8 refer to system optimization features identified in agent evolution). No user-facing behavior changes; functions already removed or simply consolidated. All deadlock risks from earlier Apr 2 deployments resolved.
+
+**Files Changed:**
+- `EnhancedTaskManagement_Sakura.gs` (3 dead functions deleted, ~124 lines)
+- `AIInsightsSakura.gs` (schema validation, new `callClaudeApi_()` helper, `mean_()` and `stddev_()` promoted to module level)
+- `IntegrationHubSakura.gs` (new `isDuplicateInSheet_()` helper)
 
 ---
 
@@ -458,11 +494,11 @@
 - **Venue isolation:** 100% achieved (no shared files)
 
 📋 **New Documentation:**
-- **[Deployment Guide](SAKURA%20HOUSE/CODE_REVIEW_REPORTS_2026-02-16/DEPLOYMENT_GUIDE.md)** - Complete deployment procedure via clasp
-- **[Testing Guide](SAKURA%20HOUSE/CODE_REVIEW_REPORTS_2026-02-16/ROLLOVER_TESTING_GUIDE.md)** - 4-phase testing procedure (400+ lines)
-- **[Phase 1 Cleanup](SAKURA%20HOUSE/CODE_REVIEW_REPORTS_2026-02-16/PHASE1_CLEANUP_COMPLETE.md)** - Legacy code removal (1,363 lines)
-- **[Phase 2 Cleanup](SAKURA%20HOUSE/CODE_REVIEW_REPORTS_2026-02-16/PHASE2_CLEANUP_COMPLETE.md)** - Additional cleanup (370 lines)
-- **[Implementation Summary](SAKURA%20HOUSE/CODE_REVIEW_REPORTS_2026-02-16/SESSION_IMPLEMENTATION_SUMMARY.md)** - What changed and why
+- **[Deployment Guide](docs/_archive/CODE_REVIEW_REPORTS_2026-02-16/DEPLOYMENT_GUIDE.md)** - Complete deployment procedure via clasp
+- **[Testing Guide](docs/_archive/CODE_REVIEW_REPORTS_2026-02-16/ROLLOVER_TESTING_GUIDE.md)** - 4-phase testing procedure (400+ lines)
+- **[Phase 1 Cleanup](docs/_archive/CODE_REVIEW_REPORTS_2026-02-16/PHASE1_CLEANUP_COMPLETE.md)** - Legacy code removal (1,363 lines)
+- **[Phase 2 Cleanup](docs/_archive/CODE_REVIEW_REPORTS_2026-02-16/PHASE2_CLEANUP_COMPLETE.md)** - Additional cleanup (370 lines)
+- **[Implementation Summary](docs/_archive/CODE_REVIEW_REPORTS_2026-02-16/SESSION_IMPLEMENTATION_SUMMARY.md)** - What changed and why
 
 🔒 **Security Hardening (42 → 75 points):**
 - Created Sakura-only setup file (no cross-venue credentials)
@@ -539,12 +575,7 @@ SAKURA HOUSE/
 │   ├── SlackActionablesPoster_Sakura.gs
 │   ├── VenueConfigSakura.gs, UIServerSakura.gs
 │   └── SlackBlockKitSAKURA.gs + task-manager.html
-└── CODE_REVIEW_REPORTS_2026-02-16/  # Documentation
-    ├── DEPLOYMENT_GUIDE.md
-    ├── ROLLOVER_TESTING_GUIDE.md
-    ├── PHASE1_CLEANUP_COMPLETE.md
-    ├── PHASE2_CLEANUP_COMPLETE.md
-    └── SESSION_IMPLEMENTATION_SUMMARY.md
+└── (archived → docs/_archive/CODE_REVIEW_REPORTS_2026-02-16/)
 ```
 
 **Total:** ~9,700 lines of code across 21 .gs + 4 .html files (12 SR .gs + 8 TM .gs + _SETUP + 4 HTML; NightlyBasicExportSakura deleted Apr 2)
@@ -717,7 +748,7 @@ const SAKURA_CONFIG = {
 ## Weekly Rollover In-Place ✅
 
 **File:** [`WeeklyRolloverInPlace.gs`](SAKURA%20HOUSE/SHIFT%20REPORT%20SCRIPTS/WeeklyRolloverInPlace.gs)
-**Plan:** [docs/plans/2026-02-11-feat-in-place-weekly-rollover-plan.md](docs/plans/2026-02-11-feat-in-place-weekly-rollover-plan.md)
+**Plan:** [docs/_archive/plans/2026-02-11-feat-in-place-weekly-rollover-plan.md](docs/_archive/plans/2026-02-11-feat-in-place-weekly-rollover-plan.md) (archived)
 
 ### Why In-Place?
 

@@ -121,6 +121,12 @@ clasp open
 - [ ] `clearContent()` confirmed (no `clear()`)
 - [ ] Trigger count checked: `ScriptApp.getProjectTriggers().length`
 
+### 6b. Schema Smoke Test (if warehouse/dashboard files changed)
+- [ ] Open the data warehouse spreadsheet for the venue
+- [ ] Check NIGHTLY_FINANCIAL header row column count matches documented schema (Sakura: 16 cols A-P, Waratah: 22 cols A-V)
+- [ ] If a dashboard builder was changed: open the ANALYTICS or EXECUTIVE_DASHBOARD tab and verify data populates (no #REF!, no empty sections)
+- [ ] If CLEARABLE_FIELDS was modified: verify no formula cells (isFormula: true) are in the clearable list — run `getClearableFieldKeys_()` in GAS editor and cross-check
+
 ## Deployment Commands
 
 **CRITICAL: `clasp push` MUST be run from the directory containing `.clasp.json`.** Each venue's scripts directory has its own `.clasp.json` with `"rootDir": "."` — this means clasp reads and pushes files relative to that directory. Running `clasp push` from a parent directory will fail with "Project settings not found".
@@ -366,8 +372,8 @@ Each venue has 5 manager-facing handover `.md` files in `[VENUE]/FILE EXPLAINERS
 - [ ] FILE EXPLAINERS synced to Google Drive (if any `.md` files in `*/FILE EXPLAINERS/` changed)
 
 ## Reference Files
-- `SAKURA HOUSE/CODE_REVIEW_REPORTS_2026-02-16/DEPLOYMENT_GUIDE.md` — Sakura-specific deployment detail
-- `SAKURA HOUSE/CODE_REVIEW_REPORTS_2026-02-16/ROLLOVER_TESTING_GUIDE.md` — rollover test procedure
+- `docs/_archive/CODE_REVIEW_REPORTS_2026-02-16/DEPLOYMENT_GUIDE.md` — Sakura-specific deployment detail
+- `docs/_archive/CODE_REVIEW_REPORTS_2026-02-16/ROLLOVER_TESTING_GUIDE.md` — rollover test procedure
 - `CLAUDE_WARATAH.md` — Waratah Script IDs and properties
 
 ## Output Format

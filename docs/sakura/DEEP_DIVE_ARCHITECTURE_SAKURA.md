@@ -1,6 +1,6 @@
 # SAKURA HOUSE - Deep Dive Architecture
 
-**Last Updated:** March 18, 2026
+**Last Updated:** April 2, 2026 (File structure updated: NightlyBasicExportSakura.gs deleted, dead functions cleaned up)
 **Type:** Detailed Technical Documentation
 **Load:** On-demand only (reference material)
 
@@ -12,12 +12,11 @@
 
 ```
 SAKURA HOUSE/
-├── SHIFT REPORT SCRIPTS/         # 13 code files (.gs), ~5,700 LOC
+├── SHIFT REPORT SCRIPTS/         # 12 code files (.gs), ~5,570 LOC
 │   ├── RunSakura.gs              # Named range system & FIELD_CONFIG (529 LOC)
 │   ├── VenueConfigSakura.gs      # Venue configuration (named ranges)
 │   ├── IntegrationHubSakura.gs   # Data integration orchestrator (918 LOC)
 │   ├── NightlyExportSakura.gs    # PDF export, email, Slack, TO-DO aggregation
-│   ├── NightlyBasicExportSakura.gs  # Standalone handover export (no deps)
 │   ├── WeeklyRolloverInPlace.gs  # In-place rollover system
 │   ├── MenuSakura.gs             # Custom menu system
 │   ├── AnalyticsDashboardSakura.gs  # Financial dashboards
@@ -42,13 +41,10 @@ SAKURA HOUSE/
 │   └── TEST_VenueConfigSakura.gs # Config validation test
 ├── TASK MANAGEMENT SCRIPTS/ (HTML)
 │   └── task-manager.html         # Task management UI
-└── CODE_REVIEW_REPORTS_2026-02-16/  # Documentation
-    ├── DEPLOYMENT_GUIDE.md
-    ├── ROLLOVER_TESTING_GUIDE.md
-    └── SESSION_IMPLEMENTATION_SUMMARY.md
+└── (archived → docs/_archive/CODE_REVIEW_REPORTS_2026-02-16/)
 ```
 
-**Total:** ~9,500 lines of code across 22 code files (.gs) + 4 HTML + 3 docs
+**Total:** ~9,250 lines of code across 21 code files (.gs) + 4 HTML + 3 docs
 
 ---
 

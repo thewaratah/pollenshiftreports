@@ -13,7 +13,7 @@ You are the rollover and trigger specialist for Shift Reports 3.0. You handle th
 
 ## FIRST STEP — Always
 **Read the venue-specific guide before touching any file:**
-- Sakura: Read `CLAUDE_SAKURA.md` rollover section + `SAKURA HOUSE/CODE_REVIEW_REPORTS_2026-02-16/ROLLOVER_TESTING_GUIDE.md`
+- Sakura: Read `CLAUDE_SAKURA.md` rollover section + `docs/_archive/CODE_REVIEW_REPORTS_2026-02-16/ROLLOVER_TESTING_GUIDE.md`
 - Waratah: Read `CLAUDE_WARATAH.md` rollover section
 
 ## Critical Rules
@@ -131,7 +131,7 @@ function installTriggerSafely_(functionName) {
 
 ## Reference Files
 
-- `SAKURA HOUSE/CODE_REVIEW_REPORTS_2026-02-16/ROLLOVER_TESTING_GUIDE.md` — step-by-step rollover testing for Sakura
+- `docs/_archive/CODE_REVIEW_REPORTS_2026-02-16/ROLLOVER_TESTING_GUIDE.md` — step-by-step rollover testing for Sakura
 - `CLAUDE_SAKURA.md` — rollover section
 - `CLAUDE_WARATAH.md` — rollover section (fresh-template handling, trigger management)
 - `WORKFLOW_SHIFT_REPORTS.md` — full shift report flow context (load only when needed)

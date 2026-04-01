@@ -90,8 +90,9 @@ Style and architecture suggestions. Non-blocking.
 - Named range format: `{DAY}_{SYSTEM}_{FieldName}` (e.g. `MONDAY_SR_NetRevenue`)
 
 **The Waratah files** (`THE WARATAH/` path):
-- Cell references MUST use hardcoded coordinates (`sheet.getRange('B54')`)
-- Never use named ranges in Waratah code
+- Cell references MUST use `getFieldValue()` / `getFieldRange()` helpers from `RunWaratah.js` FIELD_CONFIG
+- Direct `sheet.getRange('B54')` is only acceptable in performance-sensitive batch reads (e.g. `extractShiftData_`) with a comment explaining why
+- Never introduce new raw `getRange()` calls for fields that exist in FIELD_CONFIG
 
 **Both venues:**
 - `clearContent()` not `clear()` — always
@@ -128,11 +129,37 @@ Style and architecture suggestions. Non-blocking.
 **Nice to fix:** [count of P2+P3 issues]
 ```
 
+## Phase 4: Schema & Data Integrity Validation
+
+Run these checks on any change that touches warehouse writes, dashboard builders, or field clearing:
+
+### 4a. Warehouse Schema Alignment
+- Count arguments in any `appendRow()` call inside `logToDataWarehouse_()` functions
+- Compare against documented schema column count in `CLAUDE_SHARED.md` (NIGHTLY_FINANCIAL = 16 cols Sakura / 22 cols Waratah; OPERATIONAL_EVENTS, WASTAGE_COMPS, QUALITATIVE_NOTES have their own counts)
+- **P1 if mismatch** — schema drift causes silent column shifting in the warehouse
+
+### 4b. Clearable Fields vs Formula Protection
+- If change touches `CLEARABLE_FIELDS` or `getClearableFieldKeys_()`: verify that every `isFormula: true` field in FIELD_CONFIG is excluded
+- If a new field is added to FIELD_CONFIG: check if it should be `isFormula: true` or clearable
+- **P0 if formula cell is clearable** — rollover will destroy the formula
+
+### 4c. Date Handling
+- Flag any `new Date(str)` where `str` comes from a cell value — this is locale-dependent (US vs AU)
+- Safe pattern: use `parseCellDate_()` which handles locale fallback
+- Flag any date written to warehouse without `toDateOnly_()` wrapping
+- **P1 if unguarded** — causes wrong dates in warehouse rows
+
+### 4d. Dashboard QUERY Formula Validation
+- If change touches dashboard builder functions: verify that QUERY `MONTH()` references use `+1` offset (GAS QUERY MONTH is 0-indexed)
+- Verify column letters in QUERY strings match current schema (e.g., after column deletion, G might now be F)
+- **P1 if column reference is stale** — dashboard shows wrong data silently
+
 ## Self-Check (run before returning report)
 1. Did I read every modified file before issuing a finding about it? If not, read it now.
 2. Is every finding assigned a confidence score ≥ 8? If not, demote to ADVISORY.
 3. Did I check all public function call sites (no `_` suffix) for caller breakage?
 4. Does my deploy decision (BLOCKED / CLEAR TO DEPLOY) match the P0+P1 finding count?
+5. Did I run schema validation (Phase 4) on any warehouse/dashboard/field-clearing changes?
 
 ## Re-Review Protocol (if this is a second or later review)
 If the same files have been reviewed before in this pipeline run:

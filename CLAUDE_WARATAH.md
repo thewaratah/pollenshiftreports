@@ -169,7 +169,7 @@
 2. **Shared `notifyError_()`** (SlackBlockKitWaratahSR.js) — consolidated error notification utility; applied to WeeklyDigestWaratah.js, NightlyExportWaratah.js (`sendWeeklyTodoSummary_WARATAH`), IntegrationHubWaratah.js (`runWeeklyBackfill_`)
 3. **Weekly Digest trigger** — `setupWeeklyDigestTrigger_Waratah()` exists but needs manual activation from Apps Script editor
 
-**Improvement plan:** `docs/plans/2026-03-06-waratah-shift-report-scripts-improvement-plan.md` (Phases 2-6 pending)
+**Improvement plan:** `docs/_archive/plans/2026-03-06-waratah-shift-report-scripts-improvement-plan.md` (archived, Phases 2-6 pending)
 
 ---
 

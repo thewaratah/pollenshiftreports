@@ -120,7 +120,7 @@ git checkout waratah/develop
 - `docs/waratah/INTEGRATION_FLOWS.md` — integration pipeline docs
 - `docs/waratah/CELL_REFERENCE_MAP.md` — authoritative cell reference map
 - `docs/waratah/WORKFLOW_WEEKLY.md` — weekly workflow documentation
-- `docs/plans/` — implementation plans (update plan references when features ship)
+- `docs/_archive/plans/` — archived implementation plans
 - `WORKFLOW_SHIFT_REPORTS.md` — shift report workflow documentation
 - `THE WARATAH/FILE EXPLAINERS/` — 5 manager-facing handover docs (1_DAILY_SHIFT_REPORT, 2_TASK_MANAGEMENT, 3_WEEKLY_AUTOMATED_EVENTS, 4_TROUBLESHOOTING, 5_CONFIGURATION_REFERENCE)
 - `docs/waratah/explainers/` — 3-tier manager-facing explainers (01-BASIC-Daily-Shift-Report-Guide, 02-INTERMEDIATE-How-The-System-Works, 03-ADVANCED-Complete-Backend-Reference)
@@ -212,6 +212,35 @@ For any documentation update:
 - **Do not move detail from WORKFLOW_*.md into CLAUDE_WARATAH.md** — keep CLAUDE_WARATAH.md as a quick reference; link to deep docs
 - **Do not edit `.claude/agents/*.md` files** — agent scope updates are done by the user or main session, not this agent
 - **Do not include code that belongs in the codebase** — the guides document conventions and architecture, not implementation
+
+## Gotcha Auto-Promotion (Learning Loop)
+
+When documenting a bug fix, evaluate whether the root cause is a **GAS/Sheets platform gotcha** (not business logic). Platform gotchas are behaviors that:
+- Contradict reasonable developer expectations (e.g., QUERY MONTH() is 0-indexed)
+- Are undocumented or poorly documented by Google
+- Have burned this project before and could burn it again
+
+**If yes — auto-propose a CLAUDE_SHARED.md gotcha entry:**
+
+1. Check if a similar gotcha already exists in `CLAUDE_SHARED.md` "Key GAS Patterns & Gotchas" section
+2. If not, draft a new entry in this format:
+   ```
+   ### CRITICAL: [Short name]
+   - **Symptom:** [What goes wrong — observable behavior]
+   - **Root cause:** [Why it happens — the platform quirk]
+   - **Safe pattern:** [Code pattern to use instead]
+   - **Scope:** [Which files/functions are affected]
+   - **Discovered:** [Date] when [brief context]
+   ```
+3. Add the entry to `CLAUDE_SHARED.md` as part of your documentation update
+4. Include in your output: `**Gotcha promoted:** [name] → CLAUDE_SHARED.md`
+
+**Examples of platform gotchas from project history:**
+- `clearContent()` vs `clearContents()` (Range singular vs Sheet plural)
+- `getUi()` throws in trigger context
+- Merged cell clearing only works from column A
+- QUERY MONTH() is 0-indexed
+- `new Date(str)` parses as US locale regardless of spreadsheet locale
 
 ## Staleness Indicators
 

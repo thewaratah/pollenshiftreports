@@ -113,13 +113,13 @@ SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/polle
 ├── SAKURA HOUSE/
 │   ├── SHIFT REPORT SCRIPTS/         # 13 .gs + 3 .html, ~5,700 LOC
 │   ├── TASK MANAGEMENT SCRIPTS/      # 9 .gs + 1 .html, ~3,800 LOC
-│   └── CODE_REVIEW_REPORTS_2026-02-16/  # Deployment & testing guides
+│   └── (archived → docs/_archive/)
 ├── THE WARATAH/
 │   ├── SHIFT REPORT SCRIPTS/         # 16 .js + 4 .html, ~6,300 LOC
 │   └── TASK MANAGEMENT SCRIPTS/      # 6 .gs + 1 .html, ~3,400 LOC
 ├── docs/
 │   ├── brainstorms/                  # Design documents
-│   ├── plans/                        # Implementation plans
+│   ├── _archive/                     # Archived plans, reports (gitignored)
 │   └── waratah/
 │       └── explainers/              # 6-tier manager-facing explainers (Shift Reports + Task Mgmt)
 ├── scripts/                             # Node.js utilities (Drive sync)
@@ -155,8 +155,8 @@ SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/polle
 
 ### For Sakura House:
 - **Start with:** [`CLAUDE_SAKURA.md`](CLAUDE_SAKURA.md) - Production-ready system
-- Deployment guide: [`DEPLOYMENT_GUIDE.md`](SAKURA%20HOUSE/CODE_REVIEW_REPORTS_2026-02-16/DEPLOYMENT_GUIDE.md)
-- Testing rollover: [`ROLLOVER_TESTING_GUIDE.md`](SAKURA%20HOUSE/CODE_REVIEW_REPORTS_2026-02-16/ROLLOVER_TESTING_GUIDE.md)
+- Deployment guide: [`DEPLOYMENT_GUIDE.md`](docs/_archive/CODE_REVIEW_REPORTS_2026-02-16/DEPLOYMENT_GUIDE.md)
+- Testing rollover: [`ROLLOVER_TESTING_GUIDE.md`](docs/_archive/CODE_REVIEW_REPORTS_2026-02-16/ROLLOVER_TESTING_GUIDE.md)
 - Fix missing named ranges: See [`CLAUDE_SAKURA.md`](CLAUDE_SAKURA.md#diagnostics--setup)
 
 ### For The Waratah:

@@ -98,6 +98,17 @@ When task affects both venues:
    Do not report task complete until clasp push has run and confirmed "Pushed N files."
 ```
 
+## Cross-Venue Parity Verification
+
+After both venue agents return from a parallel dispatch, run this parity check before proceeding to code review:
+
+1. **Function parity** — if a new helper was added in one venue (e.g. `toDateOnly_()`), verify the other venue got an equivalent
+2. **Schema parity** — if warehouse writes changed in one venue, verify the other venue's schema was updated symmetrically
+3. **Gotcha parity** — if a fix addressed a GAS platform gotcha (clearContent, date parsing, QUERY indexing), verify it was applied to both venues
+4. **Config parity** — if a Script Property was added/renamed in one venue, check if the other venue needs the same
+
+Report parity results before dispatching code review. If asymmetric, flag it and ask the user whether the asymmetry is intentional.
+
 ## Critical Rules
 - **Never write GAS code directly** — delegate to venue-specific agents
 - **Always read the guide first** — CLAUDE_SAKURA.md or CLAUDE_WARATAH.md before any dispatch
@@ -106,6 +117,7 @@ When task affects both venues:
 - **Parallel > sequential** — if two tasks don't share state, run them at the same time
 - **Document changes** — dispatch `documentation-agent` when system behaviour changes
 - **Deployment is not optional** — if the user asked to implement something, the work is not done until `clasp push` returns "Pushed N files."
+- **Parity check is mandatory** — after any parallel venue dispatch, run the cross-venue parity verification before code review
 
 ## Output Format
 After completing any orchestration cycle, report:

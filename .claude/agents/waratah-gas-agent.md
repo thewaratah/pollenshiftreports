@@ -117,4 +117,5 @@ Return:
 3. **Why** — rationale
 4. **P0/P1 check** — explicit confirmation that no critical rules were violated
 5. **Handover doc update needed?** — which FILE EXPLAINER needs updating (if any)
-6. **Next step** — suggest code review via `gas-code-review-agent` before deployment
+6. **Gotcha discovered?** — If this fix revealed a non-obvious GAS/Sheets platform behavior (not business logic), describe it here for promotion to CLAUDE_SHARED.md. Format: `Symptom → Root cause → Safe pattern`. Leave blank if no new gotcha.
+7. **Next step** — suggest code review via `gas-code-review-agent` before deployment
