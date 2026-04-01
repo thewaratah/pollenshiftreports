@@ -1,6 +1,6 @@
 # SAKURA HOUSE - Claude Code Project Guide
 
-**Last Updated:** April 2, 2026 (Analytics Dashboard consolidation + Date parsing + Task Management changes)
+**Last Updated:** April 2, 2026 (Analytics Dashboard consolidation + QUERY MONTH() fix + Date parsing + Task Management changes)
 **Project Type:** Google Apps Script (Hospitality Management System)
 **Venue:** Sakura House (Single-Venue Documentation)
 
@@ -784,6 +784,18 @@ previewInPlaceRollover()  // Dry run - shows what will happen, no changes
 - **Both spreadsheets affected:** Sakura Shift Report (SAKURA HOUSE - CURRENT WEEK) AND Sakura Data Warehouse
 - **Why it matters:** AU dates are ambiguous until locale is set (03/04 could be March 4 or April 3). Spreadsheet locale tells GAS which interpretation to use.
 - **Verification:** After changing locale, dates should display as dd/mm/yyyy (e.g., 01/04/2026 for April 1, 2026). Check day-of-week columns show correct values (e.g., Wednesday for April 1, 2026).
+
+---
+
+**CRITICAL: QUERY MONTH() is 0-indexed, Spreadsheet MONTH() is 1-indexed**
+
+> Google Sheets QUERY language uses 0-indexed months (Jan=0, Dec=11), while normal spreadsheet formulas use 1-indexed months (Jan=1, Dec=12). If you use `MONTH(A)` in a QUERY without adjustment, months will display one behind (2026/03 instead of 2026/04). Fixed April 2, 2026 in Executive Dashboard Monthly Trend.
+
+- **Symptom:** QUERY grouped by `YEAR(A)*100+MONTH(A)` displays one month behind actual data
+- **Fix:** Use `YEAR(A)*100+(MONTH(A)+1)` in SELECT, GROUP BY, ORDER BY, and LABEL clauses
+- **Example:** For April 2026 data, `YEAR(A)*100+(MONTH(A)+1)` produces `202604`, which formats as "2026/04" with number format `0000"/"00`
+- **Scope:** Only affects QUERY formulas. Regular spreadsheet `=MONTH()` functions are unaffected (they are 1-indexed and correct). SUMPRODUCT with MONTH() is also unaffected.
+- **Applied in:** `AnalyticsDashboardSakura.gs` `buildExecutiveDashboard()` Monthly Trend section (line 355-363)
 
 ---
 

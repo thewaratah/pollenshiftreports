@@ -1,11 +1,14 @@
 # SHIFT REPORTS 3.0 - Shared Architecture Guide
 
-**Last Updated:** March 18, 2026
+**Last Updated:** April 2, 2026
 **Project Type:** Google Apps Script (Multi-Venue Hospitality Management System)
 
 > **Note:** This guide covers patterns and systems **shared by both venues**. For venue-specific details, see `CLAUDE_SAKURA.md` or `CLAUDE_WARATAH.md`.
 
-**Recent Updates (Mar 18, 2026):**
+**Recent Updates (Apr 2, 2026):**
+- **Both venues:** Added QUERY MONTH() 0-indexing gotcha — QUERY language months are 0-indexed (Jan=0) vs spreadsheet MONTH() which is 1-indexed (Jan=1); fix: use `MONTH(A)+1` in QUERY clauses to display correct months (Sakura buildExecutiveDashboard example provided)
+
+**Previous Updates (Mar 18, 2026):**
 - **Both venues:** Small items S1-S9 — setupAllTriggers menu item (S1), post-rollover validation (S2), LockService re-entrancy fix via `skipLock` param (S8), `logPipelineLearning_()` utility appends to LEARNINGS tab (S9)
 - **Sakura:** `requirePassword_()` reads from Script Properties (S1); `validateRolloverResult_()` Step 9 in rollover (S2); IntegrationHub auto-builds ANALYTICS tab (S8)
 - **Waratah:** `requirePassword_()` reads from MENU_PASSWORD Script Property (S1); WeeklyRolloverInPlace `validateRolloverResult_()` + trigger helper try/catch (S2); NightlyExport duplicate detection checks ALL open tasks (S9)
@@ -281,6 +284,55 @@ function protectedOperation() {
 - Waratah: `_SETUP_ScriptProperties_WaratahOnly.gs`
 
 **Status:** ✅ Implemented in both venues (Feb 2026)
+
+---
+
+### 8. QUERY MONTH() is 0-indexed (Google Sheets Language Gotcha)
+
+**Problem:** Google Sheets QUERY language uses 0-indexed months (Jan=0, Dec=11), unlike spreadsheet formulas which use 1-indexed months (Jan=1, Dec=12).
+
+**Symptom:**
+```javascript
+// ❌ WRONG — displays one month behind
+sheet.getRange(row, 1).setFormula(
+  `=QUERY(${src}!A2:P,"SELECT YEAR(A)*100+MONTH(A) GROUP BY YEAR(A)*100+MONTH(A)")`
+);
+// Result: April 2026 data shows as "2026/03" instead of "2026/04"
+```
+
+**Solution:**
+```javascript
+// ✅ CORRECT — add 1 to MONTH() in QUERY (only)
+sheet.getRange(row, 1).setFormula(
+  `=QUERY(${src}!A2:P,` +
+  `"SELECT YEAR(A)*100+(MONTH(A)+1) GROUP BY YEAR(A)*100+(MONTH(A)+1)")`
+);
+// Result: April 2026 data correctly shows as "2026/04"
+```
+
+**Key Points:**
+- QUERY language only (affects `MONTH()`, `QUARTER()` in QUERY string)
+- Regular spreadsheet `=MONTH()` is unaffected (already 1-indexed, correct)
+- SUMPRODUCT with `MONTH()` is unaffected (uses spreadsheet engine, 1-indexed)
+- Must adjust in all references: SELECT, WHERE, GROUP BY, ORDER BY, LABEL
+
+**Example (Sakura Executive Dashboard Monthly Trend):**
+```javascript
+// buildExecutiveDashboard() line 355–363
+const monthHeaders = ["Month", "Revenue", "Tips", "Production", "Discounts", "Cash Takings", "Shifts"];
+sheet.getRange(row, 1).setFormula(
+  `=IFERROR(QUERY(${src}!A2:P,` +
+  `"SELECT YEAR(A)*100+(MONTH(A)+1), SUM(E), SUM(H), SUM(J), SUM(K), SUM(F), COUNT(A) ` +
+  `WHERE A IS NOT NULL ` +
+  `GROUP BY YEAR(A)*100+(MONTH(A)+1) ` +
+  `ORDER BY YEAR(A)*100+(MONTH(A)+1) DESC ` +
+  `LABEL YEAR(A)*100+(MONTH(A)+1) 'Month', SUM(E) 'Revenue', ..."),"")`
+);
+// Format 202604 as "2026/04" using number format: 0000"/"00
+sheet.getRange(12, 1, 50, 1).setNumberFormat("0000\"/\"00");
+```
+
+**Status:** ✅ Fixed in Sakura buildExecutiveDashboard() (Apr 2, 2026)
 
 ---
 
