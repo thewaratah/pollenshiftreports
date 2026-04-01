@@ -336,6 +336,38 @@ sheet.getRange(12, 1, 50, 1).setNumberFormat("0000\"/\"00");
 
 ---
 
+### 9. Known Pitfalls from Production Incidents
+
+> Sourced from `docs/pipeline-learnings.md`. After each new incident, add a summary here AND append to that log.
+
+**9a. clearContent() vs clearContents() — Range vs Sheet**
+
+| Method | Works On | Exists? |
+|--------|----------|---------|
+| `range.clearContent()` | Range | ✅ Yes |
+| `sheet.clearContents()` | Sheet | ✅ Yes (plural) |
+| `sheet.clearContent()` | Sheet | ❌ **TypeError** |
+| `sheet.clear()` | Sheet | ⚠️ **Destroys formatting** — never use |
+
+**Safe pattern:** `sheet.getDataRange().clearContent()` (gets Range first, then clears). Incident: TaskDashboard in both venues, Mar 2026.
+
+**9b. Formula cells must NEVER appear in CLEARABLE_FIELDS**
+
+Rollover CLEARABLE_FIELDS must not include formula cells. Clearing them destroys the formula permanently.
+
+| Venue | Formula cells (never clear) |
+|-------|---------------------------|
+| Waratah | B15, B16, B26-B29, B34, B36, B38, B39 |
+| Sakura | Depends on named range `isFormula: true` flags in FIELD_CONFIG |
+
+Mark formula cells with `isFormula: true` in FIELD_CONFIG. Incident: Waratah B34 (Net Revenue) cleared during rollover, Mar 2026.
+
+**9c. CLEARABLE_FIELDS keys must match FIELD_CONFIG keys exactly**
+
+If CLEARABLE_FIELDS uses `cashDiscount` but FIELD_CONFIG uses `cdDiscount`, the field won't be cleared during rollover (silent mismatch). Always use `getClearableFieldKeys_()` from FIELD_CONFIG — never maintain a parallel list. Incident: Waratah named range migration, Mar 18 2026.
+
+---
+
 ## Shared Systems
 
 ### 1. Enhanced Task Management (8-Status Workflow)
