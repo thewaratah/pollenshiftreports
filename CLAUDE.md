@@ -1,6 +1,6 @@
 # SHIFT REPORTS 3.0 - Navigation Guide
 
-**Last Updated:** March 22, 2026
+**Last Updated:** April 2, 2026
 **Project Type:** Google Apps Script (Multi-Venue Hospitality Management System)
 **Venues:** Sakura House, The Waratah
 
@@ -99,7 +99,7 @@ Phase 4 — Deployment  ←── sequential (waits for Phase 3)
 
 **Deep Dive (Load Only When Needed):**
 - 📋 Task Management: [`WORKFLOW_TASK_MANAGEMENT.md`](docs/_archive/WORKFLOW_TASK_MANAGEMENT.md) (866 lines - detailed backend flows)
-- 📋 Shift Reports: [`WORKFLOW_SHIFT_REPORTS.md`](WORKFLOW_SHIFT_REPORTS.md) (updated Mar 6)
+- 📋 Shift Reports: [`WORKFLOW_SHIFT_REPORTS.md`](docs/_archive/WORKFLOW_SHIFT_REPORTS.md) (archived, local only — not in git)
 - 🏗️ Architecture: [`docs/waratah/DEEP_DIVE_ARCHITECTURE.md`](docs/waratah/DEEP_DIVE_ARCHITECTURE.md)
 - 🔌 Integrations: [`docs/waratah/INTEGRATION_FLOWS.md`](docs/waratah/INTEGRATION_FLOWS.md)
 - 📖 Manager Explainers: [`docs/waratah/explainers/`](docs/waratah/explainers/) (6-tier: Basic/Intermediate/Advanced for Shift Reports + Task Mgmt)
@@ -145,14 +145,14 @@ SHIFT REPORTS 3.0/                       # Git repo: github.com/thewaratah/polle
 │   ├── plans/                        # Implementation plans
 │   └── waratah/
 │       └── explainers/              # 6-tier manager-facing explainers (Shift Reports + Task Mgmt)
+├── scripts/                             # Node.js utilities (Drive sync)
 ├── .claude/
 │   └── agents/                       # 12 specialist agents (excluded from git)
 ├── .gitignore                        # Excludes _SETUP_*, .clasp*, .claude/, etc.
 ├── CLAUDE.md                         # This navigation file
 ├── CLAUDE_SAKURA.md                  # Sakura House guide
 ├── CLAUDE_WARATAH.md                 # The Waratah guide
-├── CLAUDE_SHARED.md                  # Shared patterns guide
-└── CODE_ANALYSIS.md                  # Full code analysis
+└── CLAUDE_SHARED.md                  # Shared patterns guide
 ```
 
 **Total:** ~19,200 lines of code across 44 .gs/.js files + 9 .html files (53 files total)
@@ -304,63 +304,13 @@ main                          ← stable, merged code only
 - **Sakura schema change:** NIGHTLY_FINANCIAL column J "Total Tips" deleted (redundant with H "Tips Total" from cell C32); schema now 16 columns (A-P) after March 6's expansion to 17 columns minus deleted J
 - Manual action required: Fix the `1/4/2026 19:00:00` row in NIGHTLY_FINANCIAL — correct to April 1, 2026 with no time component
 
-**Deployment (Mar 22, 2026) — AI Insights Refinement:**
-- Sakura: M4 discount impact metrics added to `computeShiftAnalytics_Sakura()` — discounts/netRevenue today vs 8w avg; M5 prompt enriched with confidence qualifier, 4-week benchmarks, discount rates, signed WoW delta, compact anomaly format with z-scores, truncation standardized to 200 chars (matches Waratah); Slack title `*Sakura House Analytics Insights*`; all numeric returns standardized to `parseFloat(x.toFixed(2))`
-- Waratah: M4 trend threshold unified to dynamic 0.5% of 8w mean (replaces fixed $50); Slack title `*The Waratah Analytics Insights*`; all numeric returns standardized to `parseFloat(x.toFixed(2))`
-- Both venues: AI insights prompts now symmetrical — confidence qualifier, 4-week benchmarks, discount metrics, compact anomaly format, signed WoW; venues now have parity in analytics depth
-
-**Deployment (Mar 18, 2026) — Sakura Shift Reports:**
-- Sakura: M4–M7 AI Insights Agent upgrade — `computeShiftAnalytics_Sakura()` (4-week/8-week averages, z-score anomalies), `generateShiftInsight_Sakura()` (PERFORMANCE/TREND/ACTION format), `deliverAIInsights_Sakura()` (evan_only soft launch routing), `logInsightToWarehouse_Sakura()` (AI_INSIGHTS_LOG sheet); NightlyExportSakura rewired with try/catch fallback to M1 generic summary; new Script Properties AI_INSIGHTS_MODE, AI_INSIGHTS_EVAN_EMAIL
-- Sakura: M1 AI Shift Summarisation — new `AIInsightsSakura.gs` (`generateShiftSummary_Sakura()`), Claude Haiku, non-blocking; integrated into Slack BK and email body in `NightlyExportSakura.gs`
-- Sakura: M2 Revenue Anomaly Detection — `detectRevenueAnomalies_Sakura()` flags >2σ deviations, posts to test Slack channel, wired into IntegrationHub after financialLogged check
-- Sakura: M3 AI Task Classification — `classifyTask_Sakura()` auto-classifies tasks with priority (High/Medium/Low) and area (FOH/BOH/Kitchen/Admin) when pushed to Master Actionables; wired into TaskIntegrationSakura.gs
-- Sakura: M5 Shift Input Validation — `validateShiftBeforeExport_Sakura()` blocks export if MOD empty or revenue zero; warns if notes/task assignments missing; non-blocking; wired into UIServerSakura.gs
-- Sakura: M7 Extended Analytics Trends — `buildExtendedTrends_Sakura()` adds 13-week rolling average, 26-week rolling average, day-of-week heatmap, YTD aggregation to AnalyticsDashboardSakura.gs; auto-builds on first warehouse write
-- Sakura: M8 Task SLA Tracking — `buildSLASection_()` + `sendWeeklySLASummary_Sakura()` in TaskDashboard_Sakura.gs tracks due dates, days open, escalation time; weekly summary posts to TEST webhook
-- Sakura: M9 Named Range Health Monitor — `namedRangeHealthCheck_Sakura()` in RunSakura.gs + `pw_namedRangeHealthCheck_Sakura()` wrapper in MenuSakura.gs; Step 10 of rollover validates + repairs named ranges; fixes stale ranges silently
-- Sakura: New Script Property `ANTHROPIC_API_KEY` required for M1/M2/M3 AI features (optional — AI skipped gracefully if not set)
-- Sakura: S1-S9 small items verified complete — trigger setup, post-rollover validation, onOpen trigger check, LockService skipLock, todo dedup, analytics auto-build, pipeline learning
-- Sakura: Fixed P1 bug — `createRolloverTrigger_Sakura()` and `removeRolloverTrigger_Sakura()` added to `MenuSakura.gs` (were referenced by menu items but not implemented)
-- Sakura: Fixed FILE EXPLAINERS — "Backfill Entire Week to Warehouse" menu path corrected to "Backfill This Sheet to Warehouse" in `WEEKLY_AUTOMATED_EVENTS.md` and `CONFIGURATION_REFERENCE.md`
-- Sakura: 21 files changed (M1-M9 + S1-S9 integration); clasp pushed to Google Apps Script
-
-**Deployment (Mar 18, 2026) — Waratah Shift Reports & Task Management:**
-- Waratah SR: M4–M7 AI Insights Agent upgrade — `computeShiftAnalytics_Waratah()` (4w/8w trailing averages, ww delta, linear regression trend, discount impact, anomaly z-scores, best/worst comparables), `generateShiftInsight_Waratah()` (PERFORMANCE/TREND/ACTION output format with pre-computed metrics), `deliverAIInsights_Waratah()` (evan_only soft launch routing), `logInsightToWarehouse_Waratah()` (AI_INSIGHTS_LOG auto-creates); NightlyExport rewired email + Slack paths (lines 224–262, 829–862); new Script Properties AI_INSIGHTS_MODE ('evan_only' | 'live'), AI_INSIGHTS_EVAN_EMAIL; Waratah-specific discount impact metric (TotalDiscount/GrossSalesIncCash vs trailing avg) in analytics; total 21 Script Properties
-- Waratah SR: Full M2/M3/M5/M7/M8/M9 implementation — revenue anomaly detection, AI task classification, shift input validation, extended analytics trends, task SLA tracking, named range health monitor
-- Waratah SR M2: `detectRevenueAnomalies_Waratah()` — flags >2σ revenue deviations, posts to test Slack channel on anomaly, wired into IntegrationHub after financialLogged check
-- Waratah SR M3: `classifyTask_Waratah()` — auto-classifies tasks with priority (High/Medium/Low) and area (FOH/BOH/Kitchen/Admin) when pushed to Master Actionables, wired into NightlyExport pushTodosDirectToMasterActionables_
-- Waratah SR M5: `validateShiftBeforeExport_Waratah()` — blocks export if MOD empty or revenue is zero; warns if notes or task assignments missing; non-blocking; wired into UIServer.js
-- Waratah SR M7: `buildExtendedTrends_Waratah()` — new analytics dashboard features: 13-week rolling average, 26-week rolling average, day-of-week heatmap, year-to-date aggregation; auto-builds in AnalyticsDashboard
-- Waratah TM M8: `buildSLASection_()` + `sendWeeklySLASummary_Waratah()` — task SLA tracking (due dates, days open, escalation time); weekly summary posts to TEST webhook (switch to LIVE after review); TaskDashboardWaratah.gs
-- Waratah SR M9: `namedRangeHealthCheck_Waratah()` in RunWaratah.js + `pw_namedRangeHealthCheck_Waratah()` wrapper in Menu.js — Step 9 of rollover validates named range integrity; fixes stale ranges silently
-- Waratah: S1-S9 all verified complete; M1 AI shift summaries + M4-M7 analytics upgrade operational; 11 SR files + 2 TM files changed; clasp pushed to Google Apps Script
-
 **Recent Updates (Apr 2, 2026):**
 - Sakura: Dashboard layout cleanup — TOP MOD PERFORMANCE section removed; empty spacer rows eliminated; all cell references now dynamic; Extended Trends moved to row 25
 - Sakura: Menu consolidation — single "Rebuild All Dashboards (Admin)" replaces separate builder menu items; dashboard auto-builds on demand
 - Both venues: Task management — overdue summaries removed from daily maintenance; weekly active task summary changed to DM-only (no channel post)
+- Both venues: Warehouse date handling hardened — `parseCellDate_()` and `toDateOnly_()` fixes; Sakura NIGHTLY_FINANCIAL schema 17→16 cols (redundant column J deleted)
 
-**Recent Updates (Mar 22, 2026):**
-- Both venues: AI Insights parity achieved — M4 discount impact (Sakura added; Waratah unified to 0.5% threshold), M5 prompt enriched (confidence qualifier, 4-week benchmarks, discount rates, signed WoW delta, compact anomaly format, 200 char truncation), Slack titles venue-specific
-
-**Recent Updates (Mar 18, 2026):**
-- Sakura: M4–M7 AI Insights Agent upgrade — analytics engine, structured insight generation, soft launch routing, insight warehouse logging; new Script Properties AI_INSIGHTS_MODE and AI_INSIGHTS_EVAN_EMAIL
-- Sakura: M2–M9 full implementation — revenue anomaly detection, AI task classification, shift input validation, extended analytics trends, task SLA tracking, named range health monitor
-- Waratah: Named range system active; M1 AI shift summaries + M4-M7 analytics upgrade operational
-
-**Recent Updates (Mar 6, 2026):**
-- Waratah SR Phase 0+1: 3 critical bug fixes + performance/code quality improvements (6 files, net -42 lines)
-- Both venues: Git branching strategy documented in CLAUDE.md (main, sakura/develop, waratah/develop)
-- Waratah: Task Management v1.2.0 — sort order, daily maintenance decomposed, 6 menu items removed, bug fixes
-- Waratah: Data warehouse schema overhaul — NIGHTLY_FINANCIAL 22 cols; covers/labor/avgCheck removed; full B5-B29 financial breakdown added
-
-**Deployment (Mar 6, 2026):**
-- Waratah Shift Reports Phase 0+1: 6 files (IntegrationHub, NightlyExport, SlackBlockKit, UIServer, WeeklyDigest, WeeklyRollover)
-- Waratah Shift Reports: 21 files pushed (NightlyExport.js + WeeklyRolloverInPlace.js hardened)
-- Waratah Task Management: 8 files pushed (v1.2.0 restructure)
-
-**Previous Deployment (Feb 28, 2026):**
-- Sakura Shift Reports: 17 files pushed (NightlyBasicExportSakura.gs added; NIGHTLY_FINANCIAL schema 10→13 cols; rollover multi-sheet PDF + trigger safety; analytics fixes)
+*Older deployment history available in git log (`git log --oneline --since="2026-02-01"`).*
 
 **💡 To avoid "prompt too long" errors:**
 - Start with venue-specific quick references (CLAUDE_WARATAH.md or CLAUDE_SAKURA.md)

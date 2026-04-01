@@ -480,7 +480,7 @@
 
 ✅ **Deployment Status:**
 - Deployed via clasp to Apps Script (16 files)
-- Script Properties configured (13 properties)
+- Script Properties configured (16 properties, including 3 AI properties added Mar 18)
 - Menu verified working
 - Email recipients: 6 management team members
 
@@ -897,7 +897,7 @@ TASK_MANAGEMENT_SPREADSHEET_ID: "13ANpyoohs9RQMpuS026mSLjLxrH9RIVmtp5i-mRhnZk"
 ESCALATION_EMAIL: "evan@sakurahousesydney.com"
 ESCALATION_SLACK_WEBHOOK: "https://hooks.slack.com/services/..."
 SLACK_MANAGERS_CHANNEL_WEBHOOK: "https://hooks.slack.com/services/..."
-SLACK_FOH_LEADS_WEBHOOK: "https://hooks.slack.com/services/..."  // #sakura_foh_leads — DEPRECATED Apr 2026 (no longer used)
+SLACK_FOH_LEADS_WEBHOOK: "https://hooks.slack.com/services/..."  // DEPRECATED Apr 2, 2026 — FOH leads summary removed. Can be safely deleted from Script Properties via Apps Script editor.
 SLACK_DM_WEBHOOKS: '{"Evan":"...","Nick":"...","Gooch":"...","Adam":"...","Cynthia":"...","Kalisha":"...","Sabine":"..."}'
 ```
 
@@ -1200,14 +1200,12 @@ Note: `_SETUP_*` files are gitignored (they contain Slack webhook secrets). `.cl
 
 ## Resources
 
-- **Shift Report Workflow:** [`SAKURA_WORKFLOW_SHIFT_REPORTS.md`](SAKURA_WORKFLOW_SHIFT_REPORTS.md) - User + backend flow for daily nightly export
-- **Task Management Workflow:** [`SAKURA_WORKFLOW_TASK_MANAGEMENT.md`](SAKURA_WORKFLOW_TASK_MANAGEMENT.md) - Task lifecycle, automation, Slack DMs
+- **Shift Report Workflow:** [`WORKFLOW_SHIFT_REPORTS.md`](docs/_archive/WORKFLOW_SHIFT_REPORTS.md) (archived, local only — not in git)
+- **Task Management Workflow:** [`WORKFLOW_TASK_MANAGEMENT.md`](docs/_archive/WORKFLOW_TASK_MANAGEMENT.md) (archived, local only — not in git)
 - **Shared Architecture:** See `CLAUDE_SHARED.md` for patterns used by both venues
-- **Waratah Comparison:** See `CLAUDE_WARATAH.md` for hardcoded cell system
-- **Full Analysis:** See `CODE_ANALYSIS_SAKURA.md` for detailed code structure
-- **Rollover Plan:** See `docs/plans/2026-02-11-feat-in-place-weekly-rollover-plan.md`
+- **Waratah Comparison:** See `CLAUDE_WARATAH.md` for named range + hardcoded cell system
 
 ---
 
-**Last Updated:** March 18, 2026
-**Total LOC:** ~10,250 lines across 23 .gs + 5 .html files (AIInsightsSakura.gs added Mar 18; M1 AI summarisation; createRolloverTrigger_Sakura / removeRolloverTrigger_Sakura added; FILE EXPLAINER corrections)
+**Last Updated:** April 2, 2026
+**Total LOC:** ~14,996 lines across 22 .gs + 4 .html files (2 GAS script projects: Shift Reports + Task Management)

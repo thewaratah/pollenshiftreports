@@ -572,7 +572,7 @@ runIntegrations(sheetName)
 
 **Data Warehouse Sheets (4 sheets per venue):**
 
-**1. NIGHTLY_FINANCIAL** — Full financial breakdown per shift (Waratah: 22 cols A-V; Sakura: 17 cols A-Q)
+**1. NIGHTLY_FINANCIAL** — Full financial breakdown per shift (Waratah: 22 cols A-V; Sakura: 16 cols A-P)
 - Duplicate detection: date + MOD
 
 **2. OPERATIONAL_EVENTS** — TO-DOs with assignees (Waratah: 8 cols; one row per TODO)
@@ -759,7 +759,7 @@ previewArchival()                  // Preview what would be archived
 
 **Credentials Management:**
 - ✅ Stored in Script Properties (not hardcoded)
-- ⚠️ Password `chocolateteapot` hardcoded in code (move to Script Properties)
+- ✅ Password stored in Script Properties (`MENU_PASSWORD`) — read via `getMenuPassword_()` in both venues
 
 **Data Security:**
 - ✅ No PII in logs

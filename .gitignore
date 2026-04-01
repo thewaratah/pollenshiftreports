@@ -18,6 +18,12 @@ node_modules/
 docs/_archive/
 docs/_archive_analysis/
 
+# Service account keys (Google Cloud credentials)
+mcp-sheets-*.json
+
+# Session state
+.remember/
+
 # IDE
 .vscode/
 .idea/
