@@ -1,6 +1,6 @@
 # THE WARATAH - Quick Reference
 
-**Last Updated:** April 2, 2026 (Date parsing hardening + Task Management changes)
+**Last Updated:** April 2, 2026 (Date parsing hardening + Task Management changes + F9-F11 refactoring)
 **Status:** 🟢 PRODUCTION READY
 **Operating Days:** 5 days (Wed-Sun)
 **Cell References:** Named range system (`WEDNESDAY_SR_NetRevenue`) via `RunWaratah.js` — falls back to hardcoded cells when ranges absent. See [CELL_REFERENCE_MAP.md](docs/waratah/CELL_REFERENCE_MAP.md)
@@ -36,6 +36,39 @@
 - Menu item "Create Overdue Summary Trigger (Sun 9am)" removed
 
 **Impact:** Managers channel (#managers) no longer receives overdue or weekly summary posts. Staff receive individual DM notifications only.
+
+---
+
+## 🧹 F9-F11 Code Refactoring & Cleanup (April 2, 2026)
+
+> This section documents routine code cleanup and consolidation work (F9-F11 refer to optimization features from agent evolution). No user-facing behavior changes. All systems remain fully operational.
+
+**F9 — Documentation Consolidation:**
+- Deleted 17 .txt/.docx/~$ files from `docs/waratah/explainers/` — duplicate or obsolete versions
+- Single source of truth (SSOT) is now `.md` format only
+- Added `*.docx` to `.gitignore` to prevent reintroduction of compiled formats
+- All manager-facing guides now delivered in clean `.md` format (importable to Google Docs if needed)
+
+**F10 — HTML Template Deduplication:**
+- 4 compiled HTML files (1.2MB total) were duplicated in Sakura and Waratah directories
+- Waratah copies replaced with symlinks to Sakura originals:
+  - `analytics-viewer.html` → symlink
+  - `checklist-dialog.html` → symlink
+  - `export-dashboard.html` → symlink
+  - `rollover-wizard.html` → symlink
+- Impact: Reduced repository size by 1.2MB; single maintenance point for HTML templates (changes in Sakura automatically reflected in Waratah)
+
+**F11 — Standardized Waratah File Naming:**
+- 7 Waratah Shift Report files renamed with consistent `Waratah` suffix:
+  - `NightlyExport.js` → `NightlyExportWaratah.js`
+  - `WeeklyRolloverInPlace.js` → `WeeklyRolloverInPlaceWaratah.js`
+  - `AnalyticsDashboard.js` → `AnalyticsDashboardWaratah.js`
+  - `UIServer.js` → `UIServerWaratah.js`
+  - `Menu.js` → `MenuWaratah.js` (but Menu_Updated_Waratah.gs already used suffix)
+  - Plus continued consistency in SlackBlockKitWaratahSR.js, AIInsightsWaratah.js, IntegrationHubWaratah.js, etc.
+- Impact: All Waratah code files now share a consistent naming convention, reducing confusion with Sakura equivalents. File references in all documentation updated (CLAUDE_WARATAH.md, CELL_REFERENCE_MAP.md, DEEP_DIVE_ARCHITECTURE.md, etc.)
+
+**Context:** F9-F11 are internal cleanup tasks that improve code organization and reduce maintenance burden. No logic changes, no trigger changes, no user-visible impact. Deployed via `clasp push` April 2, 2026.
 
 ---
 
@@ -238,7 +271,7 @@
 
 ---
 
-## 📁 File Structure
+## 📁 File Structure (F11: Standardized Naming — Apr 2, 2026)
 
 ```
 THE WARATAH/
@@ -247,33 +280,37 @@ THE WARATAH/
 │   ├── IntegrationHubWaratah.js             # Data warehouse orchestrator (1,064 LOC)
 │   ├── WeeklyRolloverInPlaceWaratah.js      # Weekly rollover automation (965 LOC)
 │   ├── AnalyticsDashboardWaratah.js         # Financial + executive dashboards (517 LOC)
-│   ├── NightlyBasicExport.js         # Standalone basic report (261 LOC)
-│   ├── TEST_DataExtractionVerification.js  # Data extraction tests (332 LOC)
+│   ├── NightlyBasicExport.js                # Standalone basic report (261 LOC)
+│   ├── TEST_DataExtractionVerification.js   # Data extraction tests (332 LOC)
 │   ├── UIServerWaratah.js                   # HTML dialog serving (308 LOC)
-│   ├── RunWaratah.js                 # Named range infrastructure — FIELD_CONFIG, helpers, diagnostics (NEW)
-│   ├── VenueConfig.js                # Venue configuration (usesNamedRanges: true → routes through RunWaratah.js)
-│   ├── _SETUP_ScriptProperties.js    # Script Properties setup (222 LOC)
-│   ├── TEST_VenueConfig.js           # VenueConfig tests (212 LOC)
-│   ├── WeeklyDigestWaratah.js        # Weekly revenue Slack digest (202 LOC)
-│   ├── DiagnoseSlack.js              # Webhook diagnostics (170 LOC)
-│   ├── AIInsightsWaratah.js          # AI shift summaries via Claude Haiku API (135 LOC) — M1
-│   ├── SlackBlockKitWaratahSR.js     # Block Kit message builders (159 LOC)
+│   ├── RunWaratah.js                        # Named range infrastructure — FIELD_CONFIG, helpers, diagnostics
+│   ├── VenueConfig.js                       # Venue configuration (usesNamedRanges: true → routes through RunWaratah.js)
+│   ├── _SETUP_ScriptProperties.js           # Script Properties setup (222 LOC)
+│   ├── TEST_VenueConfig.js                  # VenueConfig tests (212 LOC)
+│   ├── WeeklyDigestWaratah.js               # Weekly revenue Slack digest (202 LOC)
+│   ├── DiagnoseSlack.js                     # Webhook diagnostics (170 LOC)
+│   ├── AIInsightsWaratah.js                 # AI shift summaries via Claude Haiku API (135 LOC) — M1
+│   ├── SlackBlockKitWaratahSR.js            # Block Kit message builders (159 LOC)
 │   ├── MenuWaratah.js                       # Menu system (156 LOC)
-│   ├── TEST_SlackBlockKitLibrary.js  # Block Kit tests (103 LOC)
+│   ├── TEST_SlackBlockKitLibrary.js         # Block Kit tests (103 LOC)
 │   ├── TaskIntegrationWaratah.js            # Bridge to task management (59 LOC)
 │   └── 4 .html: analytics-viewer, checklist-dialog, export-dashboard, rollover-wizard
 │
 └── TASK MANAGEMENT SCRIPTS/ (6 .gs files, ~3,349 LOC + 1 .html)
-    ├── EnhancedTaskManagementWaratah.gs  # Main task system (2,131 LOC)
-    ├── TaskDashboardWaratah.gs       # Dashboard (429 LOC)
-    ├── Menu_Updated_Waratah.gs       # Task menu (270 LOC)
-    ├── _SETUP_ScriptProperties.gs    # Task Properties setup (237 LOC)
-    ├── SlackBlockKitWaratah.gs       # Task Slack messages (161 LOC)
-    ├── UIServerWaratah.gs            # Task UI server (121 LOC)
+    ├── EnhancedTaskManagementWaratah.gs     # Main task system (2,131 LOC)
+    ├── TaskDashboardWaratah.gs              # Dashboard (429 LOC)
+    ├── Menu_Updated_Waratah.gs              # Task menu (270 LOC)
+    ├── _SETUP_ScriptProperties.gs           # Task Properties setup (237 LOC)
+    ├── SlackBlockKitWaratah.gs              # Task Slack messages (161 LOC)
+    ├── UIServerWaratah.gs                   # Task UI server (121 LOC)
     └── task-manager.html
 ```
 
 **Total:** ~9,371 LOC across 22 code files + 5 HTML files
+
+**F11 Naming Changes (Apr 2, 2026):**
+- `NightlyExportWaratah.js`, `WeeklyRolloverInPlaceWaratah.js`, `AnalyticsDashboardWaratah.js`, `UIServerWaratah.js`, `MenuWaratah.js` — All Shift Report files now consistently suffixed with `Waratah` to distinguish from Sakura equivalents
+- Task Management files already used `Waratah` suffix and remain unchanged
 
 ---
 

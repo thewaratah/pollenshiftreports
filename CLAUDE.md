@@ -233,8 +233,18 @@ main                          ← stable, merged code only
 
 ---
 
-**Last Updated:** April 2, 2026 (Dashboard layout cleanup, analytics consolidation, date handling, task management)
+**Last Updated:** April 2, 2026 (Dashboard layout cleanup, analytics consolidation, date handling, task management, F4-F11 refactoring)
 **Status:** Both venues fully operational and production-ready ✅
+
+**Deployment (Apr 2, 2026) — F4-F11 Code Refactoring & Cleanup:**
+- F4: CLAUDE.md trimmed 320→284 lines (pipeline diagram extracted, duplicate agent routing consolidated)
+- F5: Sakura: Deleted 3 dead functions from EnhancedTaskManagement_Sakura.gs (~130 lines): `sendOverdueTasksSummary_()`, `sendOverdueTasksDMs_()`, `getFohLeadsWebhook_()`
+- F6: Sakura: Fixed schema column off-by-one in AIInsightsSakura.gs (17→16 cols, matching current NIGHTLY_FINANCIAL schema)
+- F7: Sakura: Deduplicated Claude API call in AIInsightsSakura.gs — new `callClaudeApi_()` helper replaces 3 identical blocks (~45 lines saved); `mean_()` and `stddev_()` promoted to module-level
+- F8: Sakura: Deduplicated warehouse duplicate detection in IntegrationHubSakura.gs — new `isDuplicateInSheet_()` helper replaces 4 blocks (~60 lines saved)
+- F9: Deleted 17 .txt/.docx/~$ files from docs/waratah/explainers/ (SSOT is .md); added *.docx to .gitignore
+- F10: Deduplicated 4 compiled HTML files (1.2MB) — Waratah copies replaced with symlinks to Sakura originals
+- F11: Waratah: Standardized SR file naming — 7 files renamed with Waratah suffix (`AnalyticsDashboard.js`→`AnalyticsDashboardWaratah.js`, `Menu.js`→`MenuWaratah.js`, etc.)
 
 **Deployment (Apr 2, 2026) — Sakura Analytics Dashboard Layout Cleanup:**
 - Sakura: EXECUTIVE_DASHBOARD — removed TOP MOD PERFORMANCE section (Section 5)
@@ -271,10 +281,10 @@ main                          ← stable, merged code only
 - Manual action required: Fix the `1/4/2026 19:00:00` row in NIGHTLY_FINANCIAL — correct to April 1, 2026 with no time component
 
 **Recent Updates (Apr 2, 2026):**
+- F4-F11: Code refactoring & cleanup — Sakura dead functions removed, schema validation fixed, Claude API deduplicated; Waratah HTML templates symlinked (1.2MB saved), file naming standardized; documentation consolidated to .md SSOT
 - Sakura: Dashboard layout cleanup — TOP MOD PERFORMANCE section removed; empty spacer rows eliminated; all cell references now dynamic; Extended Trends moved to row 25
 - Sakura: Menu consolidation — single "Rebuild All Dashboards (Admin)" replaces separate builder menu items; dashboard auto-builds on demand
 - Both venues: Task management — overdue summaries removed from daily maintenance; weekly active task summary changed to DM-only (no channel post)
-- Both venues: Warehouse date handling hardened — `parseCellDate_()` and `toDateOnly_()` fixes; Sakura NIGHTLY_FINANCIAL schema 17→16 cols (redundant column J deleted)
 
 *Older deployment history available in git log (`git log --oneline --since="2026-02-01"`).*
 
