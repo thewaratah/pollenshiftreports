@@ -1,10 +1,54 @@
 # SAKURA HOUSE - Claude Code Project Guide
 
-**Last Updated:** April 2, 2026 (Dashboard layout cleanup + Analytics consolidation + QUERY MONTH() fix + Date parsing + Task Management changes)
+**Last Updated:** April 2, 2026 (Rollover notifications removed, 5 menu items removed, NightlyBasicExportSakura deleted, WeeklyDigest enhanced)
 **Project Type:** Google Apps Script (Hospitality Management System)
 **Venue:** Sakura House (Single-Venue Documentation)
 
 > **Note:** This is the Sakura-specific guide. For The Waratah, see `CLAUDE_WARATAH.md`. For shared architecture patterns, see `CLAUDE_SHARED.md`.
+
+---
+
+## DEPLOYMENT (April 2, 2026) -- Menu Simplification & Rollover Notification Removal
+
+**Rollover notifications removed from Step 8:**
+- `sendRolloverNotifications_()` function deleted from `WeeklyRolloverInPlace.gs`
+- `buildRolloverSlackBlocks_()` helper deleted
+- `buildRolloverEmailHtml_()` helper deleted
+- Step 8 now logs "Rollover notifications removed (email + Slack)" but sends nothing
+- PDF archive email (`emailPdfToManagement_()` in Step 3) remains unchanged
+- Context: Notifications were duplicate — PDF archive already sent via email; Step 8 added redundant Slack/email posts
+
+**5 menu items removed from MenuSakura.gs:**
+1. "Send Basic Report" — no pw_ wrapper existed; handover export removed from production menu
+2. "Weekly To-Do Summary (LIVE)" — removed from Weekly Reports submenu
+3. "Weekly To-Do Summary (TEST)" — removed from Weekly Reports submenu
+4. "Show Integration Log (Last 30 Days)" — removed from Data Warehouse submenu
+5. "Setup All SR Triggers" — removed from Setup & Diagnostics submenu
+
+**Context:** Menu simplification focuses production menu on essential operations (nightly report, rollover, dashboards). Removed items were testing/legacy functions. Underlying functions (`setupAllTriggers_Sakura()`, `namedRangeHealthCheck_Sakura()`) retained in code but no longer exposed via menu.
+
+**NightlyBasicExportSakura.gs deleted:**
+- File contained legacy `sendShiftReportBasic()` — standalone handover script with hardcoded config
+- Never updated to use Script Properties
+- Removed from production; legacy pattern replaced by main export system
+
+**WeeklyDigestSakura.gs enhanced:**
+- `computeWeeklyStats_Sakura_()` now computes:
+  - Day-of-week all-time revenue averages (Mon-Sat) vs this week's daily revenue
+  - Rolling 4-week revenue + tips comparison (each of last 4 weeks)
+- `buildWeeklyDigestBlocks_Sakura_()` updated to display:
+  - Weekly Summary (unchanged)
+  - **Day-of-Week Averages (All Time) vs This Week** — shows Monday avg $X, actual $Y, delta %Z for each day
+  - **Rolling 4-Week Comparison** — shows revenue + tips for each of last 4 weeks in table format
+  - Best Shift (unchanged)
+- Currency formatting: whole dollars only ($X,XXX not $X,XXX.XX)
+- Digest now provides managers with intra-week and inter-week trend data at a glance
+
+**Files Changed:**
+- `MenuSakura.gs` (5 menu items removed)
+- `WeeklyRolloverInPlace.gs` (Step 8 notifications deleted)
+- `NightlyBasicExportSakura.gs` (entire file deleted)
+- `WeeklyDigestSakura.gs` (analytics enhanced, formatting updated)
 
 ---
 
@@ -472,7 +516,6 @@ SAKURA HOUSE/
 │   │   ├── VenueConfigSakura.gs     # Sakura-only config (range keys updated Feb 28)
 │   │   ├── IntegrationHubSakura.gs  # Data integration (17-col schema, LockService, notifyError_)
 │   │   ├── NightlyExportSakura.gs   # PDF export (pre-send checklist dialog, batch writes)
-│   │   ├── NightlyBasicExportSakura.gs  # Standalone handover export -- no cross-file deps
 │   │   ├── WeeklyRolloverInPlace.gs # In-place rollover (multi-sheet PDF, LIVE webhook Mar 6)
 │   │   ├── MenuSakura.gs            # Custom menu (rollover wizard added Mar 6)
 │   │   ├── AnalyticsDashboardSakura.gs  # QUERY ranges A2:Q (updated Mar 6)
@@ -504,9 +547,10 @@ SAKURA HOUSE/
     └── SESSION_IMPLEMENTATION_SUMMARY.md
 ```
 
-**Total:** ~10,100 lines of code across 22 .gs + 5 .html files
+**Total:** ~9,700 lines of code across 21 .gs + 4 .html files (12 SR .gs + 8 TM .gs + _SETUP + 4 HTML; NightlyBasicExportSakura deleted Apr 2)
 
-**Removed Files (Feb 2026):**
+**Removed Files (Apr 2, 2026 & Earlier):**
+- ❌ NightlyBasicExportSakura.gs (Apr 2 — legacy handover export, never updated to Script Properties)
 - ❌ _SETUP_ScriptProperties.gs (cross-venue security risk)
 - ❌ WeeklyRolloverSakura.gs (legacy system)
 - ❌ WeeklyDuplicationSakura.gs (legacy system)
@@ -925,11 +969,10 @@ const isDuplicate = existingData.some(row => {
 **New helpers (Feb 23, 2026):**
 - `parseCellDate_(value)` — Parses `dd/MM/yyyy` strings using `Utilities.parseDate` with Australia/Sydney timezone
 - `normaliseDateKey_(v)` — Normalises Date objects OR string-stored dates to canonical `toDateString()` form for comparison
-- `showIntegrationLogStats()` — Shows a 30-day summary dialog of INTEGRATION_LOG (accessible from menu: `Admin Tools → Data Warehouse → Show Integration Log`)
+- `showIntegrationLogStats()` — Legacy function (menu item removed Apr 2); shows 30-day INTEGRATION_LOG summary (retained in code for backward compat)
 
 **Data Warehouse Menu (`Admin Tools → Data Warehouse`):**
 - Backfill This Sheet to Warehouse
-- Show Integration Log (Last 30 Days)
 - Setup Weekly Backfill Trigger
 
 **Backfill Trigger:** Monday 8am (Australia/Sydney) -- changed from 2am in Phase 4, Mar 6. `getUi().alert()` wrapped in try/catch for trigger context safety.
@@ -979,29 +1022,24 @@ Shift Report
 ├── Open Export Dashboard           ← no password
 ├── ────────────────
 └── Admin Tools ▸                   ← all items password-gated
-    ├── Weekly Reports ▸
-    │   ├── Weekly To-Do Summary (LIVE)
-    │   └── Weekly To-Do Summary (TEST)
     ├── Weekly Rollover (In-Place) ▸
-    │   ├── Open Rollover Wizard          ← NEW Mar 6 (Phase 2)
+    │   ├── Open Rollover Wizard          ← Mar 6 (Phase 2)
     │   ├── Run Rollover Now
     │   ├── Preview Rollover (Dry Run)
     │   └── Open Rollover Settings
     ├── Integrations & Analytics ▸
     │   ├── Test Integrations Now
     │   ├── Validate All Systems
-    │   ├── Rebuild All Dashboards (Admin)        ← NEW Apr 2 (consolidates separate builders)
+    │   ├── Rebuild All Dashboards (Admin)        ← Apr 2 (consolidates separate builders)
     │   └── Open Analytics
-    ├── Data Warehouse ▸                   ← NEW
+    ├── Data Warehouse ▸
     │   ├── Backfill This Sheet to Warehouse
-    │   ├── Show Integration Log (Last 30 Days)
     │   └── Setup Weekly Backfill Trigger
-    ├── Weekly Digest ▸                    ← NEW
+    ├── Weekly Digest ▸
     │   ├── Send Revenue Digest (LIVE)
     │   ├── Send Revenue Digest (TEST)
     │   └── Setup Monday Digest Trigger
     └── Setup & Diagnostics ▸
-        ├── Setup All SR Triggers                ← NEW (S1)
         ├── Check Named Ranges (This Sheet)
         ├── Check Named Ranges (ALL Sheets)
         ├── Create Named Ranges (This Sheet)

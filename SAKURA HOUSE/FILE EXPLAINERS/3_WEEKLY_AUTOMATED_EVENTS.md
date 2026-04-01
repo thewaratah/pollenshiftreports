@@ -1,6 +1,6 @@
 # Weekly Automated Events — Sakura House
 
-**Last Updated:** April 2, 2026 (Task management changes: overdue removed, weekly summary DM-only)
+**Last Updated:** April 2, 2026 (Menu items removed, rollover notifications removed, weekly digest enhanced)
 **Type:** Handover guide for managers
 
 > This document explains everything that happens automatically in the Sakura House system each week. You don't need to be technical to understand it — just know that these are all handled by scheduled triggers and rarely need your attention.
@@ -16,7 +16,7 @@
 | **Monday 2:00 AM** | Weekly backfill to Data Warehouse | Runs silently — no notification |
 | **Monday 6:00 AM** | Weekly task summary | Slack: individual staff DMs |
 | **Monday 8:00 AM** | Revenue digest (this week vs last) | Slack: #managers channel |
-| **Monday 10:00 AM** | Weekly rollover (archive + reset) | Email to management + Slack notification |
+| **Monday 10:00 AM** | Weekly rollover (archive + reset) | Email to management (PDF archive only) |
 | **Daily 7:00 AM** | Task maintenance (cleanup, archive, escalation) | Task Management spreadsheet auto-updated |
 
 All of these run on their own. You don't need to do anything unless something goes wrong.
@@ -31,12 +31,12 @@ All of these run on their own. You don't need to do anything unless something go
 
 1. **Validates the file** — Checks that it's opening the right spreadsheet for Sakura House
 2. **Generates a summary** — Prepares a record of the week's total revenue and which managers were on duty
-3. **Creates a PDF archive** — Exports all 6 days (Mon–Sat) as a single multi-page document
+3. **Creates a PDF archive** — Exports all 6 days (Mon–Sat) as a single multi-page document and emails it to management
 4. **Creates a spreadsheet backup** — Saves a complete copy of the working file to Google Drive
 5. **Clears all data fields** — Removes shift data from every day tab (only what you typed in — not formulas)
 6. **Updates all dates** — Stamps next week's dates on each tab and renames them (e.g., "MONDAY 10/03/2026")
 7. **Verifies named ranges** — Automatically repairs any that went missing during deployment
-8. **Sends notifications** — Emails a summary to management and posts confirmation to Slack
+8. **Logs completion** — No email or Slack post (Step 3 PDF archive email is the only notification)
 
 ### Important: Formula Cells Are Never Cleared
 
@@ -99,15 +99,15 @@ Both are saved automatically. You never need to do anything — just browse Goog
 
 ## The Revenue Digest — Monday 8am
 
-> A quick snapshot that posts to Slack showing how this week's revenue compares to last week. It's designed to take 30 seconds to read.
+> A quick snapshot that posts to Slack showing how this week's revenue compares to last week and to historical day-of-week averages. Designed to give managers multiple perspectives on weekly performance at a glance.
 
 ### What You'll See in Slack
 
 The digest shows:
-- **Total revenue for the week** (this week vs last week with a % change)
-- **Number of shifts reported** (how many days have nightly reports)
-- **Best shift of the week** (date, revenue amount, and MOD name)
-- **Week-over-week trend arrow** (up/down indicator)
+- **Weekly summary** — total revenue (this week vs last week with % change), number of shifts reported, best shift of the week
+- **Day-of-week averages** — for each day (Mon-Sat), shows all-time average revenue, this week's actual, and % delta
+- **Rolling 4-week comparison** — revenue and tips for each of the last 4 weeks, trending data
+- **Formatting** — whole dollars only ($X,XXX), no decimals for cleaner readability
 
 ### Where the Data Comes From
 
@@ -227,21 +227,6 @@ Use the Monday 6am summary to:
 
 ---
 
-## Sunday Overdue Summary — 9am
-
-> A quick report of any tasks that will be or are overdue at the end of the weekend. Posted to Slack #managers so the team can catch them Sunday before Monday morning.
-
-### What You'll See
-
-- Any tasks due today (Sunday) that aren't marked DONE
-- Any tasks that are already overdue
-- Assigned staff member and task description
-
-### Purpose
-
-This is an early warning. If you see a task on Sunday that's due Monday, you can chase it down Sunday night so it doesn't escalate Monday morning.
-
----
 
 ## Weekly Task SLA Summary — Monday 6am
 
@@ -325,7 +310,7 @@ You'll need the admin password. Open each menu item and select "Create [X] Trigg
 #### On the **Sakura House - Current Week** Spreadsheet:
 
 1. **Rollover Trigger (Mon 10am)**
-   - Menu: **Shift Report > Admin Tools > Weekly Rollover > Create Rollover Trigger (Mon 10am)**
+   - Menu: **Shift Report > Admin Tools > Weekly Rollover (In-Place) > Create Rollover Trigger (Mon 10am)**
    - Confirm the time is 10:00 AM
 
 2. **Revenue Digest Trigger (Mon 8am)**
@@ -347,10 +332,7 @@ You'll need the admin password. Open each menu item and select "Create [X] Trigg
 6. **Weekly Task Summary Trigger (Mon 6am)**
    - Menu: **Task Management > Admin Tools > Setup Triggers > Create Weekly Summary Trigger (Mon 6am)**
 
-7. **Overdue Summary Trigger (Sun 9am)**
-   - Menu: **Task Management > Admin Tools > Setup Triggers > Create Overdue Summary Trigger (Sun 9am)**
-
-**Do all 7.** Skipping any means that automation stays broken until you create it.
+**Do all 6 (Sakura + Task Management).** Skipping any means that automation stays broken until you create it. The overdue summary trigger was removed Apr 2.
 
 ---
 

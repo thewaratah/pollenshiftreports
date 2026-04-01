@@ -1,6 +1,6 @@
 # Task Management — Sakura House
 
-**Last Updated:** April 2, 2026
+**Last Updated:** April 2, 2026 (Overdue summaries removed, weekly summary DM-only, FOH leads summary removed)
 **Type:** Handover guide for managers
 **Audience:** Tech-savvy restaurant managers, non-developers
 
@@ -123,7 +123,7 @@ NEW → TO DO → IN PROGRESS → DONE
 
 ## What Happens Automatically (Daily at 7am)
 
-> Every morning at 7am Sydney time, the system runs a maintenance routine that keeps everything tidy and sends you a summary.
+> Every morning at 7am Sydney time, the system runs a maintenance routine that keeps everything tidy.
 
 **The daily maintenance does:**
 
@@ -131,7 +131,6 @@ NEW → TO DO → IN PROGRESS → DONE
 2. **Process recurring tasks** — checks if any completed recurring tasks need a new copy created
 3. **Archive old tasks** — moves tasks that have been DONE or CANCELLED for more than 8 days to the ARCHIVE tab (out of your way, but still there for reference)
 4. **Escalate blocked tasks** — if anything has been BLOCKED for 14+ days, sends an escalation email to Evan and posts a Slack DM
-5. **Send overdue summary** — posts a Slack message listing all tasks that are past their due date, grouped by person
 
 **What you see:** Most mornings, you won't notice anything. The sheet just looks cleaner and more organized.
 
@@ -174,7 +173,7 @@ NEW → TO DO → IN PROGRESS → DONE
 
 | When | What Gets Sent | Where | Who Sees It |
 |------|----------------|-------|------------|
-| **Monday 6am** | Summary of all active tasks (grouped by staff member) | Individual DMs to each staff member | Everyone with tasks |
+| **Monday 6am** | Summary of all active tasks (grouped by staff member) | Individual DMs to each staff member only | Everyone with tasks |
 
 **As-needed notifications:**
 
@@ -182,9 +181,7 @@ NEW → TO DO → IN PROGRESS → DONE
 |------|----------------|-------|------------|
 | **When a task is blocked 14+ days** | Escalation alert (what's blocking it, who's assigned, how long it's been blocked) | Email + Slack DM to Evan | Evan (usually) |
 
-**On-demand — you can trigger these manually:**
-
-- **Weekly Active Tasks (LIVE)** → Task Management > Admin Tools > Weekly Summary > Send Weekly Active Tasks (LIVE) — sends DMs to all staff with tasks
+**Note (Apr 2, 2026):** Overdue task summaries and FOH leads channel summaries have been removed. Staff receive only their individual Monday morning task summaries via DM.
 
 ---
 
@@ -299,14 +296,13 @@ NEW → TO DO → IN PROGRESS → DONE
 
 > Script Properties are settings stored securely in Google Apps Script. Managers normally don't need to touch these, but here's what they control.
 
-**For Task Management spreadsheet (7 properties):**
+**For Task Management spreadsheet (6 properties):**
 
 ```
 TASK_MANAGEMENT_SPREADSHEET_ID          → Points to this sheet (don't change)
 ESCALATION_EMAIL                        → Where escalation emails go (evan@...)
 ESCALATION_SLACK_WEBHOOK                → Escalation alerts post here
-SLACK_MANAGERS_CHANNEL_WEBHOOK          → #sakura_managers posts here
-SLACK_FOH_LEADS_WEBHOOK                 → #sakura_foh_leads (deprecated Apr 2026 — no longer used)
+SLACK_MANAGERS_CHANNEL_WEBHOOK          → #sakura_managers posts here (task SLA summary only; FOH removed Apr 2)
 SLACK_DM_WEBHOOKS                       → JSON object: {"Evan":"...", "Nick":"...", ...}
 MENU_PASSWORD                           → Password for Admin Tools menu
 ```

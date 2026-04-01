@@ -1,6 +1,6 @@
 # Configuration Reference — Sakura House
 
-**Last Updated:** March 18, 2026 (Sheet protection owner email, M4-M7 AI Insights Agent upgrade)
+**Last Updated:** April 2, 2026 (Menu items removed, rollover notifications removed, SLACK_FOH_LEADS_WEBHOOK deprecated)
 **Type:** Handover guide for managers
 **Audience:** Restaurant managers taking over operations, comfortable with spreadsheets, no coding required
 **Tone:** Clear, practical, friendly
@@ -14,7 +14,7 @@
 | System | Spreadsheet | Purpose | Settings Count |
 |--------|-------------|---------|-----------------|
 | **Shift Reports** | Sakura House - Current Week | Daily financial reporting and shift documentation | 16 Script Properties |
-| **Task Management** | Sakura Actionables Sheet | Team task tracking, escalation, and scheduling | 7 Script Properties |
+| **Task Management** | Sakura Actionables Sheet | Team task tracking, escalation, and scheduling | 6 Script Properties (FOH leads webhook removed) |
 
 **Critical Rule:** If you change a setting in the wrong spreadsheet, nothing will happen. Always make sure you're in the right one before making changes.
 
@@ -100,7 +100,7 @@
 
 ---
 
-## Task Management Settings (7 Properties)
+## Task Management Settings (6 Properties)
 
 > These settings control the task system — who gets alerts, which Slack channels receive notifications, and individual staff direct messages. Found in the **Sakura Actionables Sheet** spreadsheet.
 
@@ -110,8 +110,7 @@
 | `MENU_PASSWORD` | Admin Password | Admin password for task management menu (should match Shift Report password) | When you want to change the password |
 | `ESCALATION_EMAIL` | Escalation Alert Email | Who gets notified about overdue/blocked tasks | When the responsible manager changes |
 | `ESCALATION_SLACK_WEBHOOK` | Escalation Hook | Slack DM webhook for urgent task alerts | If the webhook expires or person changes |
-| `SLACK_MANAGERS_CHANNEL_WEBHOOK` | Managers Channel Hook | Slack channel for weekly task summaries | If the webhook expires or channel changes |
-| `SLACK_FOH_LEADS_WEBHOOK` | FOH Leads Hook | ~~Deprecated Apr 2026~~ — was used for FOH team summaries, no longer active | Can be removed |
+| `SLACK_MANAGERS_CHANNEL_WEBHOOK` | Managers Channel Hook | Slack channel for weekly task SLA summary (task-specific; FOH removed Apr 2) | If the webhook expires or channel changes |
 | `SLACK_DM_WEBHOOKS` | Individual Staff DMs | Slack direct message webhooks for each staff member | When staff join, leave, or webhooks expire |
 
 ---
@@ -208,8 +207,7 @@ After editing `SAKURA_EMAIL_RECIPIENTS`:
 | `SAKURA_SLACK_WEBHOOK_DATAWAREHOUSE` | Data warehouse | Weekly (if using warehouse features) |
 | `SAKURA_SLACK_WEBHOOK_CASH_NOTIFICATIONS` | Cash alerts | Varies (depends on usage) |
 | `ESCALATION_SLACK_WEBHOOK` | Escalation alerts | When overdue tasks exist |
-| `SLACK_MANAGERS_CHANNEL_WEBHOOK` | Manager summaries | Weekly (Monday mornings) |
-| `SLACK_FOH_LEADS_WEBHOOK` | ~~Deprecated Apr 2026~~ | No longer active |
+| `SLACK_MANAGERS_CHANNEL_WEBHOOK` | Task SLA summary | Weekly (Monday mornings; FOH leads removed Apr 2) |
 
 ---
 
@@ -287,8 +285,7 @@ If the staff member should appear as assignees for shift TO-DOs, update the drop
 |--------------|-------------|--------------|-------------------|
 | **Daily Maintenance** | Processes daily task updates and notifications | Daily 7:00 AM | Task Management > Admin Tools > Setup Triggers > Create Daily Trigger (7am) |
 | **Auto-sort** | Automatically sorts and formats tasks | On every edit | Task Management > Admin Tools > Setup Triggers > Create Edit Trigger (Auto-sort) |
-| **Weekly Summary** | Sends weekly task summary to Slack | Monday 6:00 AM | Task Management > Admin Tools > Setup Triggers > Create Weekly Summary Trigger (Mon 6am) |
-| **Overdue Summary** | Notifies about overdue tasks | Sunday 9:00 AM | Task Management > Admin Tools > Setup Triggers > Create Overdue Summary Trigger (Sun 9am) |
+| **Weekly Summary** | Sends weekly task summary to individual Slack DMs | Monday 6:00 AM | Task Management > Admin Tools > Setup Triggers > Create Weekly Summary Trigger (Mon 6am) |
 
 ### After Code Deployment
 
@@ -297,8 +294,9 @@ If the staff member should appear as assignees for shift TO-DOs, update the drop
 1. Open the **Shift Report** spreadsheet
 2. Go to **Shift Report > Admin Tools > Weekly Rollover (In-Place) > Create Rollover Trigger (Mon 10am)**
 3. Go to **Shift Report > Admin Tools > Weekly Digest > Setup Monday Digest Trigger**
-4. Open the **Sakura Actionables Sheet** spreadsheet
-5. Go to **Task Management > Admin Tools > Setup Triggers** and recreate all 4 triggers
+4. Go to **Shift Report > Admin Tools > Data Warehouse > Setup Weekly Backfill Trigger**
+5. Open the **Sakura Actionables Sheet** spreadsheet
+6. Go to **Task Management > Admin Tools > Setup Triggers** and recreate all 3 triggers (Daily Maintenance, Auto-sort, Weekly Summary)
 
 **How to know if it worked:**
 - The menu should show a success message (green dialog)

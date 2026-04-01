@@ -184,24 +184,6 @@ Once testing is complete, everyone will receive the `*AI Insights*` section, whi
 
 ---
 
-## The Basic Report — Emergency Fallback
-
-> If the main export system is broken for any reason, there's a simpler standalone backup you can use.
-
-**When to use this:**
-- The main "Send Nightly Report" button isn't working
-- You need to send a report but something is broken
-- It's a last-resort option only
-
-**How to use it:**
-1. Go to **Shift Report > Send Basic Report** (no password required)
-2. No checklist dialog — it goes straight through
-3. Sends a PDF email and a simple Slack message
-4. Does NOT sync TO-DOs or save data to the warehouse
-
-**Trade-offs:** This is simpler and less integrated, but it gets your report sent. Use the main export when everything's working; use this only as an emergency fallback.
-
----
 
 ## What Gets Posted to Slack
 
