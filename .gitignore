@@ -8,8 +8,10 @@
 # Node
 node_modules/
 
-# Claude Code local settings
-.claude/
+# Claude Code local settings (keep settings.local.json private, version-control agents/commands/skills)
+.claude/settings.local.json
+.claude/worktrees/
+.claude/agent-memory-local/
 
 # Setup scripts (contain Slack webhook URLs and other secrets)
 **/_SETUP_*
