@@ -50,8 +50,14 @@ function sendWeeklyRevenueDigest_Sakura_Test() {
 }
 
 /**
- * Read NIGHTLY_FINANCIAL and compute this-week vs last-week stats.
- * "This week" = Mon–Sat ending yesterday.
+ * Read NIGHTLY_FINANCIAL and compute this-week vs last-week stats,
+ * day-of-week all-time averages, and rolling 4-week comparison.
+ *
+ * Sakura NIGHTLY_FINANCIAL schema (16 cols A-P):
+ *   0=Date, 1=Day, 2=WeekEnding, 3=MOD, 4=NetRevenue, 5=CashTotal,
+ *   6=CashTips, 7=TipsTotal, 8=LoggedAt, 9=ProductionAmount,
+ *   10=Discounts, 11=Deposit, 12=FOHStaff, 13=BOHStaff, 14=CardTips, 15=SurchargeTips
+ *
  * @param {string} warehouseId
  * @returns {Object} stats
  */
@@ -63,11 +69,22 @@ function computeWeeklyStats_Sakura_(warehouseId) {
   }
 
   const rows = sheet.getDataRange().getValues().slice(1); // skip header
+  const tz = 'Australia/Sydney';
+
+  // Parse date helper — returns Date with time zeroed
+  var parseDate_ = function(val) {
+    if (val instanceof Date) {
+      var d = new Date(val);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    return parseCellDate_(String(val));
+  };
 
   // Define this week: Mon–Sat of the week just ended
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon...
-  // Days since last Monday
   const daysToMon = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   const thisMonday = new Date(today);
   thisMonday.setDate(today.getDate() - daysToMon);
@@ -76,88 +93,197 @@ function computeWeeklyStats_Sakura_(warehouseId) {
   const lastMonday = new Date(thisMonday);
   lastMonday.setDate(thisMonday.getDate() - 7);
 
-  const thisWeek = rows.filter(function(r) {
-    const d = r[0] instanceof Date ? r[0] : parseCellDate_(String(r[0]));
-    return d >= thisMonday && d < today;
-  });
+  // 4 weeks ago for rolling comparison
+  const fourWeeksAgo = new Date(thisMonday);
+  fourWeeksAgo.setDate(thisMonday.getDate() - 28);
 
-  const lastWeek = rows.filter(function(r) {
-    const d = r[0] instanceof Date ? r[0] : parseCellDate_(String(r[0]));
-    return d >= lastMonday && d < thisMonday;
-  });
+  // Parse all rows with dates once
+  var parsed = rows.map(function(r) {
+    return { date: parseDate_(r[0]), row: r };
+  }).filter(function(p) { return p.date && !isNaN(p.date.getTime()); });
 
-  const sum = function(arr, col) { return arr.reduce(function(acc, r) { return acc + (parseFloat(r[col]) || 0); }, 0); };
+  var thisWeek = parsed.filter(function(p) { return p.date >= thisMonday && p.date < today; }).map(function(p) { return p.row; });
+  var lastWeek = parsed.filter(function(p) { return p.date >= lastMonday && p.date < thisMonday; }).map(function(p) { return p.row; });
 
-  const thisRevenue = sum(thisWeek, 4);   // col E = Net Revenue
-  const lastRevenue = sum(lastWeek, 4);
-  const thisTips    = sum(thisWeek, 7);   // col H = Tips Total
-  const lastTips    = sum(lastWeek, 7);
+  var sum = function(arr, col) { return arr.reduce(function(acc, r) { return acc + (parseFloat(r[col]) || 0); }, 0); };
 
-  const revChange = lastRevenue > 0
+  var thisRevenue = sum(thisWeek, 4);
+  var lastRevenue = sum(lastWeek, 4);
+  var thisTips    = sum(thisWeek, 7);
+
+  var revChange = lastRevenue > 0
     ? ((thisRevenue - lastRevenue) / lastRevenue * 100).toFixed(1)
     : null;
 
-  const bestDay = thisWeek.reduce(function(best, r) {
+  var bestDay = thisWeek.reduce(function(best, r) {
     return (!best || parseFloat(r[4]) > parseFloat(best[4])) ? r : best;
   }, null);
 
+  // === DAY-OF-WEEK ALL-TIME AVERAGES vs THIS WEEK ===
+  // Group all historical rows by day-of-week (0=Sun..6=Sat)
+  var dowTotals = {};  // { dayNum: { sum: x, count: y } }
+  parsed.forEach(function(p) {
+    var dow = p.date.getDay();
+    if (!dowTotals[dow]) dowTotals[dow] = { sum: 0, count: 0 };
+    dowTotals[dow].sum += (parseFloat(p.row[4]) || 0);
+    dowTotals[dow].count += 1;
+  });
+
+  // Map day names (Sakura operates Mon=1 through Sat=6)
+  var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var sakuraDays = [1, 2, 3, 4, 5, 6]; // Mon-Sat
+
+  // Build this week's daily revenue map by day-of-week
+  var thisWeekByDow = {};
+  thisWeek.forEach(function(r) {
+    var d = parseDate_(r[0]);
+    if (d) thisWeekByDow[d.getDay()] = parseFloat(r[4]) || 0;
+  });
+
+  var dowComparison = sakuraDays.map(function(dow) {
+    var allTimeAvg = (dowTotals[dow] && dowTotals[dow].count > 0)
+      ? dowTotals[dow].sum / dowTotals[dow].count
+      : 0;
+    var thisWeekRev = thisWeekByDow[dow] || null; // null = no data yet
+    var delta = (thisWeekRev !== null && allTimeAvg > 0)
+      ? ((thisWeekRev - allTimeAvg) / allTimeAvg * 100)
+      : null;
+    return {
+      day: dayNames[dow],
+      allTimeAvg: allTimeAvg,
+      thisWeek: thisWeekRev,
+      delta: delta,
+      sampleSize: (dowTotals[dow] && dowTotals[dow].count) || 0
+    };
+  });
+
+  // === ROLLING 4-WEEK COMPARISON ===
+  // Split the last 4 weeks into individual weeks
+  var rolling4 = [];
+  for (var w = 0; w < 4; w++) {
+    var weekStart = new Date(thisMonday);
+    weekStart.setDate(thisMonday.getDate() - (w * 7));
+    var weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+
+    var weekRows = parsed.filter(function(p) {
+      return p.date >= weekStart && p.date < weekEnd;
+    }).map(function(p) { return p.row; });
+
+    var weekRevenue = sum(weekRows, 4);
+    var weekTips = sum(weekRows, 7);
+    var daysCount = weekRows.length;
+
+    rolling4.push({
+      label: Utilities.formatDate(weekStart, tz, 'dd/MM'),
+      revenue: weekRevenue,
+      tips: weekTips,
+      days: daysCount
+    });
+  }
+
   return {
     hasData: thisWeek.length > 0,
-    weekStarting: Utilities.formatDate(thisMonday, 'Australia/Sydney', 'dd/MM/yyyy'),
+    weekStarting: Utilities.formatDate(thisMonday, tz, 'dd/MM/yyyy'),
     daysReported: thisWeek.length,
     thisRevenue: thisRevenue,
     lastRevenue: lastRevenue,
     revChange: revChange,
     thisTips: thisTips,
-    lastTips: lastTips,
     bestDay: bestDay ? {
       date: bestDay[0] instanceof Date
-        ? Utilities.formatDate(bestDay[0], 'Australia/Sydney', 'EEE dd/MM')
+        ? Utilities.formatDate(bestDay[0], tz, 'EEE dd/MM')
         : String(bestDay[0]),
       revenue: parseFloat(bestDay[4]) || 0,
       mod: bestDay[3]
-    } : null
+    } : null,
+    dowComparison: dowComparison,
+    rolling4: rolling4
   };
 }
 
 /**
  * Build Slack Block Kit blocks for the weekly digest.
+ * Sections: Weekly Summary, Day-of-Week Averages, Rolling 4-Week, Best Shift.
  * @param {Object} stats - from computeWeeklyStats_Sakura_
  * @returns {Array} blocks
  */
 function buildWeeklyDigestBlocks_Sakura_(stats) {
   if (!stats.hasData) {
     return [
-      bk_header('🌸 Sakura House — Weekly Digest'),
+      bk_header('Sakura House — Weekly Digest'),
       bk_section('No shift data found for this week yet. Check the warehouse.')
     ];
   }
 
-  const revChange = parseFloat(stats.revChange);
-  const revArrow = stats.revChange === null ? '' :
-    revChange >= 0 ? ('▲ ' + stats.revChange + '%') : ('▼ ' + Math.abs(revChange) + '%');
+  var revChange = parseFloat(stats.revChange);
+  var revArrow = stats.revChange === null ? '' :
+    revChange >= 0 ? ('+' + stats.revChange + '%') : (stats.revChange + '%');
 
-  const formatAUD = function(n) { return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+  var fmtAUD = function(n) {
+    if (n === null || n === undefined || isNaN(n)) return 'N/A';
+    return '$' + n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
 
-  const blocks = [
-    bk_header('🌸 Sakura House — Weekly Revenue Digest'),
-    bk_context(['Week starting ' + stats.weekStarting + ' · ' + stats.daysReported + ' days reported']),
-    bk_divider(),
-    bk_fields([
-      ['This Week Revenue', formatAUD(stats.thisRevenue)],
-      ['vs Last Week', stats.revChange !== null ? revArrow : 'N/A'],
-      ['Total Tips', formatAUD(stats.thisTips)],
-      ['Days Reported', String(stats.daysReported)]
-    ])
+  var blocks = [
+    bk_header('Sakura House — Weekly Revenue Digest'),
+    bk_context(['Week starting ' + stats.weekStarting + '  ·  ' + stats.daysReported + ' days reported'])
   ];
 
+  // --- WEEKLY SUMMARY ---
+  blocks.push(bk_divider());
+  blocks.push(bk_fields([
+    ['This Week', fmtAUD(stats.thisRevenue)],
+    ['vs Last Week', stats.revChange !== null ? revArrow : 'N/A'],
+    ['Tips', fmtAUD(stats.thisTips)],
+    ['Days', String(stats.daysReported)]
+  ]));
+
+  // --- DAY-OF-WEEK AVERAGES (ALL TIME) vs THIS WEEK ---
+  if (stats.dowComparison && stats.dowComparison.length > 0) {
+    blocks.push(bk_divider());
+    blocks.push(bk_section('*Day-of-Week Averages (All Time) vs This Week*'));
+
+    var dowLines = stats.dowComparison.map(function(d) {
+      var avgStr = fmtAUD(d.allTimeAvg);
+      if (d.thisWeek === null) {
+        return '`' + d.day + '`  Avg: ' + avgStr + '  ·  _no data_';
+      }
+      var actualStr = fmtAUD(d.thisWeek);
+      var deltaStr = '';
+      if (d.delta !== null) {
+        var sign = d.delta >= 0 ? '+' : '';
+        deltaStr = '  (' + sign + d.delta.toFixed(0) + '%)';
+      }
+      return '`' + d.day + '`  Avg: ' + avgStr + '  ·  Actual: ' + actualStr + deltaStr;
+    });
+
+    blocks.push(bk_section(dowLines.join('\n')));
+  }
+
+  // --- ROLLING 4-WEEK COMPARISON ---
+  if (stats.rolling4 && stats.rolling4.length > 0) {
+    blocks.push(bk_divider());
+    blocks.push(bk_section('*Rolling 4-Week Comparison*'));
+
+    var rollingLines = stats.rolling4.map(function(w, i) {
+      var label = i === 0 ? 'This Week' : ('w/c ' + w.label);
+      var daysNote = w.days < 6 ? ' (' + w.days + 'd)' : '';
+      return '`' + label + '`' + daysNote + '  ' + fmtAUD(w.revenue) + '  ·  Tips: ' + fmtAUD(w.tips);
+    });
+
+    blocks.push(bk_section(rollingLines.join('\n')));
+  }
+
+  // --- BEST SHIFT ---
   if (stats.bestDay) {
+    blocks.push(bk_divider());
     blocks.push(bk_section(
-      '*Best shift:* ' + stats.bestDay.date + ' — ' + formatAUD(stats.bestDay.revenue) + ' (MOD: ' + stats.bestDay.mod + ')'
+      '*Best shift:*  ' + stats.bestDay.date + ' — ' + fmtAUD(stats.bestDay.revenue) + '  (MOD: ' + stats.bestDay.mod + ')'
     ));
   }
 
-  blocks.push(bk_context(['Sakura House Shift Reports 3.0 · Auto-generated weekly digest']));
+  blocks.push(bk_context(['Sakura House Shift Reports 3.0  ·  Auto-generated weekly digest']));
   return blocks;
 }
 

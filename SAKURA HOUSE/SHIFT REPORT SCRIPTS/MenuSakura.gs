@@ -55,10 +55,6 @@ function requirePassword_() {
 function pw_exportAndEmailPDF()               { if (requirePassword_()) exportAndEmailPDF(); }  // kept for backward-compat
 function pw_exportAndEmailPDF_TestToSelf()    { if (requirePassword_()) exportAndEmailPDF_TestToSelf(); }
 
-// === PASSWORD-GATED WRAPPERS: Weekly Reports ===
-function pw_sendWeeklyTodoSummary()           { if (requirePassword_()) sendWeeklyTodoSummary(); }
-function pw_sendWeeklyTodoSummary_TestToSelf() { if (requirePassword_()) sendWeeklyTodoSummary_TestToSelf(); }
-
 // === PASSWORD-GATED WRAPPERS: Weekly Rollover (In-Place) ===
 function pw_openRolloverWizard()              { if (requirePassword_()) openRolloverWizard(); }
 function pw_performInPlaceRollover()           { if (requirePassword_()) performInPlaceRollover(); }
@@ -82,7 +78,6 @@ function pw_createNamedRangesOnActiveSheet()   { if (requirePassword_()) createN
 function pw_createNamedRangesOnAllSheets()     { if (requirePassword_()) createNamedRangesOnAllSheets(); }
 function pw_testPushTodosToActionables()       { if (requirePassword_()) testPushTodosToActionables(); }
 function pw_forceUpdateNamedRangesOnAllSheets() { if (requirePassword_()) forceUpdateNamedRangesOnAllSheets(); }
-function pw_namedRangeHealthCheck_Sakura()    { if (requirePassword_()) namedRangeHealthCheck_Sakura(); }
 // === PASSWORD-GATED WRAPPERS: Sheet Protection ===
 function pw_setupAllSheetsProtection()  { if (requirePassword_()) setupAllSheetsProtection(); }
 function pw_removeAllSheetsProtection() { if (requirePassword_()) removeAllSheetsProtection(); }
@@ -93,10 +88,6 @@ function pw_pushCurrentSheetTodosToActionables() { if (requirePassword_()) pushC
 // === PASSWORD-GATED WRAPPERS: Data Warehouse ===
 function pw_backfillShiftToWarehouse()      { if (requirePassword_()) backfillShiftToWarehouse(); }
 function pw_setupWeeklyBackfillTrigger()    { if (requirePassword_()) setupWeeklyBackfillTrigger(); }
-function pw_showIntegrationLogStats()       { if (requirePassword_()) showIntegrationLogStats(); }
-
-// === PASSWORD-GATED WRAPPERS: Trigger Setup ===
-function pw_setupAllTriggers_Sakura()       { if (requirePassword_()) setupAllTriggers_Sakura(); }
 
 // === PASSWORD-GATED WRAPPERS: Weekly Digest ===
 function pw_sendWeeklyRevenueDigest_Sakura()      { if (requirePassword_()) sendWeeklyRevenueDigest_Sakura(); }
@@ -128,15 +119,11 @@ function onOpen() {
       // Daily Reports
       .addItem('Send Nightly Report', 'exportAndEmailPDF')
       .addItem('Send Test Report', 'exportAndEmailPDF_TestToSelf')
-      .addItem('Send Basic Report', 'sendShiftReportBasic')
 
       .addSeparator()
 
       // Admin Tools (all password-gated)
       .addSubMenu(ui.createMenu(adminToolsLabel)
-        .addSubMenu(ui.createMenu('Weekly Reports')
-          .addItem('Weekly To-Do Summary (LIVE)', 'pw_sendWeeklyTodoSummary')
-          .addItem('Weekly To-Do Summary (TEST)', 'pw_sendWeeklyTodoSummary_TestToSelf'))
 
         .addSubMenu(ui.createMenu('Weekly Digest')
           .addItem('Send Revenue Digest (LIVE)', 'pw_sendWeeklyRevenueDigest_Sakura')
@@ -162,15 +149,9 @@ function onOpen() {
 
         .addSubMenu(ui.createMenu('Data Warehouse')
           .addItem('Backfill This Sheet to Warehouse', 'pw_backfillShiftToWarehouse')
-          .addItem('Show Integration Log (Last 30 Days)', 'pw_showIntegrationLogStats')
-          .addSeparator()
           .addItem('Setup Weekly Backfill Trigger', 'pw_setupWeeklyBackfillTrigger'))
 
         .addSubMenu(ui.createMenu('Set Up & Diagnostics')
-          .addItem('Setup All SR Triggers', 'pw_setupAllTriggers_Sakura')
-          .addSeparator()
-          .addItem('Named Range Health Check', 'pw_namedRangeHealthCheck_Sakura')
-          .addSeparator()
           .addItem('Check Named Ranges (This Sheet)', 'pw_diagnoseNamedRanges')
           .addItem('Check Named Ranges (ALL Sheets)', 'pw_diagnoseAllSheets')
           .addItem('Create Named Ranges (This Sheet)', 'pw_createNamedRangesOnActiveSheet')

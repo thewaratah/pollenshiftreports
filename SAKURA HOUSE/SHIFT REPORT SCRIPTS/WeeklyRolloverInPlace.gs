@@ -15,7 +15,7 @@
  * 5. Clear data (preserving structure)
  * 6. Update dates to next week
  * 7. Verify named ranges
- * 8. Send notifications
+ * 8. (Removed Apr 2026) Rollover notifications
  *
  * TRIGGER: Monday 1:00 AM (Australia/Sydney)
  * MANUAL: Shift Report > Weekly Rollover (In-Place)
@@ -135,9 +135,8 @@ function performInPlaceRollover() {
     verifyAndFixNamedRanges_(spreadsheet);
     Logger.log('Named ranges verified');
 
-    // Step 8: Send notifications
-    sendRolloverNotifications_(summary, pdfResult, snapshotResult);
-    Logger.log('Notifications sent');
+    // Step 8: Notifications removed (Apr 2026) — PDF archive email in Step 3 remains
+    Logger.log('Step 8: Rollover notifications removed (email + Slack)');
 
     // Step 9: Post-rollover validation (non-blocking)
     const validation = validateRolloverResult_(spreadsheet);
@@ -853,33 +852,6 @@ function verifyAndFixNamedRanges_(spreadsheet) {
 // NOTIFICATIONS
 // ============================================================================
 
-/**
- * Sends rollover notifications via email and Slack.
- */
-function sendRolloverNotifications_(summary, pdfResult, snapshotResult) {
-  const config = getRolloverConfig_();
-
-  // Email notification
-  try {
-    const subject = `Weekly Rollover Complete - Sakura House W.E. ${summary.weekEndDate}`;
-    const htmlBody = buildRolloverEmailHtml_(summary, pdfResult, snapshotResult);
-
-    GmailApp.sendEmail(config.EVAN_EMAIL, subject, '', { htmlBody: htmlBody });
-
-    Logger.log(`Rollover email sent to ${config.EVAN_EMAIL}.`);
-  } catch (e) {
-    Logger.log(`Email notification failed: ${e.message}`);
-  }
-
-  // Slack notification (Block Kit)
-  try {
-    const blocks = buildRolloverSlackBlocks_(summary, pdfResult, snapshotResult);
-    bk_post(getSakuraSlackWebhookLive_(), blocks, "Weekly Rollover — Sakura House");
-    Logger.log("Rollover posted to Slack.");
-  } catch (e) {
-    Logger.log(`Slack notification failed: ${e.message}`);
-  }
-}
 
 /**
  * Post-rollover validation — step 9 of performInPlaceRollover().
@@ -951,86 +923,7 @@ function validateRolloverResult_(spreadsheet) {
 }
 
 
-/**
- * Builds Block Kit blocks for rollover notification.
- */
-function buildRolloverSlackBlocks_(summary, pdfResult, snapshotResult) {
-  const blocks = [bk_header("📅 Weekly Rollover — Sakura House")];
 
-  if (summary) {
-    blocks.push(bk_context(["Week Ending: " + summary.weekEndDate]));
-
-    const dayFields = [];
-    summary.days.forEach(d => {
-      const dayLabel = d.name.charAt(0) + d.name.slice(1).toLowerCase() + " (" + d.date + ")";
-      dayFields.push([dayLabel, d.mod + " — $" + d.revenue.toLocaleString()]);
-    });
-    blocks.push(bk_divider());
-    blocks.push(bk_fields(dayFields));
-
-    blocks.push(bk_divider());
-    blocks.push(bk_fields([
-      ["Total Revenue", "$" + summary.totalRevenue.toLocaleString()],
-      ["Daily Average", "$" + summary.avgRevenue.toLocaleString()],
-      ["Days Reported", summary.daysReported + " / " + summary.days.length]
-    ]));
-  }
-
-  const infoLines = [];
-  infoLines.push(":file_folder: Sheets Archive: " + snapshotResult.fileName);
-  infoLines.push(":page_facing_up: PDF: " + pdfResult.archivePath);
-  infoLines.push(":white_check_mark: Working file cleared and reset for new week");
-  blocks.push(bk_divider());
-  blocks.push(bk_context(infoLines));
-
-  blocks.push(bk_buttons([
-    { text: "Open Archived Snapshot", url: snapshotResult.fileUrl, style: "primary" }
-  ]));
-
-  return blocks;
-}
-
-/**
- * Builds HTML email body for rollover notification.
- */
-function buildRolloverEmailHtml_(summary, pdfResult, snapshotResult) {
-  let html = '<html><body style="font-family: Arial, sans-serif; color: #333;">';
-  html += '<h2 style="color: #D32F2F;">📅 Weekly Rollover Complete — Sakura House</h2>';
-  html += `<p><strong>Week Ending:</strong> ${summary.weekEndDate}</p>`;
-
-  html += '<h3>Weekly Summary</h3>';
-  html += '<table style="border-collapse: collapse; width: 100%;">';
-  html += '<tr style="background-color: #f5f5f5;"><th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Day</th><th style="border: 1px solid #ddd; padding: 8px; text-align: left;">MOD</th><th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Revenue</th></tr>';
-
-  summary.days.forEach(d => {
-    html += '<tr>';
-    html += `<td style="border: 1px solid #ddd; padding: 8px;">${d.name} (${d.date})</td>`;
-    html += `<td style="border: 1px solid #ddd; padding: 8px;">${d.mod}</td>`;
-    html += `<td style="border: 1px solid #ddd; padding: 8px; text-align: right;">$${d.revenue.toLocaleString()}</td>`;
-    html += '</tr>';
-  });
-
-  html += '</table>';
-
-  html += '<h3>Totals</h3>';
-  html += '<ul>';
-  html += `<li><strong>Total Revenue:</strong> $${summary.totalRevenue.toLocaleString()}</li>`;
-  html += `<li><strong>Daily Average:</strong> $${summary.avgRevenue.toLocaleString()}</li>`;
-  html += `<li><strong>Days Reported:</strong> ${summary.daysReported} / ${summary.days.length}</li>`;
-  html += '</ul>';
-
-  html += '<h3>Archive Details</h3>';
-  html += '<ul>';
-  html += `<li><strong>Sheets Archive:</strong> <a href="${snapshotResult.fileUrl}">${snapshotResult.fileName}</a></li>`;
-  html += `<li><strong>PDF Export:</strong> ${pdfResult.archivePath}</li>`;
-  html += '</ul>';
-
-  html += '<p style="color: #4CAF50;"><strong>✅ Working file has been cleared and reset for the new week.</strong></p>';
-
-  html += '</body></html>';
-
-  return html;
-}
 
 
 // ============================================================================
