@@ -267,8 +267,16 @@ main                          ← stable, merged code only
 
 ---
 
-**Last Updated:** April 2, 2026 (Warehouse date handling fix)
+**Last Updated:** April 2, 2026 (Analytics dashboard consolidation + Warehouse date handling + Task Management)
 **Status:** Both venues fully operational and production-ready ✅
+
+**Deployment (Apr 2, 2026) — Sakura Analytics Dashboard Consolidation:**
+- Sakura: Menu consolidation — removed separate "Build Analytics Dashboard" and "Build Executive Dashboard" items under `Shift Report > Admin Tools > Integrations & Analytics`
+- Sakura: Added single consolidated menu item "Rebuild All Dashboards (Admin)" — calls new `rebuildAllDashboards()` function that invokes both `buildFinancialDashboard()` and `buildExecutiveDashboard()` sequentially
+- Sakura: `UIServerSakura.gs` `refreshDashboard()` updated to call both dashboard builders (previously only called the former)
+- Sakura: `AnalyticsDashboardSakura.gs` file header comment updated to reflect 16-column NIGHTLY_FINANCIAL schema (deleted redundant column J)
+- Sakura: Old wrappers `pw_buildFinancialDashboard()` and `pw_buildExecutiveDashboard()` retained in `MenuSakura.gs` for backward compatibility (no longer wired to menu items)
+- Documentation: CLAUDE_SAKURA.md, docs/sakura/DEEP_DIVE_ARCHITECTURE_SAKURA.md, SAKURA HOUSE/FILE EXPLAINERS/3_WEEKLY_AUTOMATED_EVENTS.md updated
 
 **Deployment (Apr 2, 2026) — Task Management Restructuring:**
 - Both venues: `sendOverdueTasksSummary_()` removed from daily task maintenance; no longer posts overdue summaries to Slack

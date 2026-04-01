@@ -10,8 +10,8 @@
  * Data source: NIGHTLY_FINANCIAL sheet
  * Columns: A=Date, B=Day, C=WeekEnding, D=MOD,
  *   E=NetRevenue, F=CashTotal, G=CashTips, H=TipsTotal,
- *   I=LoggedAt, J=TotalTips, K=ProductionAmount, L=Discounts, M=Deposit,
- *   N=FOHStaff, O=BOHStaff, P=CardTips, Q=SurchargeTips
+ *   I=LoggedAt, J=ProductionAmount, K=Discounts, L=Deposit,
+ *   M=FOHStaff, N=BOHStaff, O=CardTips, P=SurchargeTips
  *
  * Sections:
  *   1. This Week snapshot
@@ -102,16 +102,16 @@ function buildFinancialDashboard() {
 
   row = 7;
   sheet.getRange(row, 1).setValue("Total Tips");
-  sheet.getRange(row, 2).setFormula(`=IFERROR(SUMIFS(${src}!J:J,${src}!C:C,${weekRef}),0)`);
+  sheet.getRange(row, 2).setFormula(`=IFERROR(SUMIFS(${src}!H:H,${src}!C:C,${weekRef}),0)`);
   sheet.getRange(row, 2).setNumberFormat("$#,##0");
 
   sheet.getRange(row, 4).setValue("Production Amount");
-  sheet.getRange(row, 5).setFormula(`=IFERROR(SUMIFS(${src}!K:K,${src}!C:C,${weekRef}),0)`);
+  sheet.getRange(row, 5).setFormula(`=IFERROR(SUMIFS(${src}!J:J,${src}!C:C,${weekRef}),0)`);
   sheet.getRange(row, 5).setNumberFormat("$#,##0");
 
   row = 8;
   sheet.getRange(row, 1).setValue("Total Discounts");
-  sheet.getRange(row, 2).setFormula(`=IFERROR(SUMIFS(${src}!L:L,${src}!C:C,${weekRef}),0)`);
+  sheet.getRange(row, 2).setFormula(`=IFERROR(SUMIFS(${src}!K:K,${src}!C:C,${weekRef}),0)`);
   sheet.getRange(row, 2).setNumberFormat("$#,##0");
 
   // ─── SECTION 3: WEEK-OVER-WEEK COMPARISON ──────────────────────────
@@ -135,9 +135,9 @@ function buildFinancialDashboard() {
 
   const wowMetrics = [
     { label: "Revenue", thisFormula: `=IFERROR(SUMIFS(${src}!E:E,${src}!C:C,${weekRef}),0)`, lastFormula: `=IFERROR(SUMIFS(${src}!E:E,${src}!C:C,${prevRef}),0)`, fmt: "$#,##0" },
-    { label: "Tips", thisFormula: `=IFERROR(SUMIFS(${src}!J:J,${src}!C:C,${weekRef}),0)`, lastFormula: `=IFERROR(SUMIFS(${src}!J:J,${src}!C:C,${prevRef}),0)`, fmt: "$#,##0" },
-    { label: "Production", thisFormula: `=IFERROR(SUMIFS(${src}!K:K,${src}!C:C,${weekRef}),0)`, lastFormula: `=IFERROR(SUMIFS(${src}!K:K,${src}!C:C,${prevRef}),0)`, fmt: "$#,##0" },
-    { label: "Discounts", thisFormula: `=IFERROR(SUMIFS(${src}!L:L,${src}!C:C,${weekRef}),0)`, lastFormula: `=IFERROR(SUMIFS(${src}!L:L,${src}!C:C,${prevRef}),0)`, fmt: "$#,##0" },
+    { label: "Tips", thisFormula: `=IFERROR(SUMIFS(${src}!H:H,${src}!C:C,${weekRef}),0)`, lastFormula: `=IFERROR(SUMIFS(${src}!H:H,${src}!C:C,${prevRef}),0)`, fmt: "$#,##0" },
+    { label: "Production", thisFormula: `=IFERROR(SUMIFS(${src}!J:J,${src}!C:C,${weekRef}),0)`, lastFormula: `=IFERROR(SUMIFS(${src}!J:J,${src}!C:C,${prevRef}),0)`, fmt: "$#,##0" },
+    { label: "Discounts", thisFormula: `=IFERROR(SUMIFS(${src}!K:K,${src}!C:C,${weekRef}),0)`, lastFormula: `=IFERROR(SUMIFS(${src}!K:K,${src}!C:C,${prevRef}),0)`, fmt: "$#,##0" },
   ];
 
   wowMetrics.forEach((m, i) => {
@@ -163,9 +163,9 @@ function buildFinancialDashboard() {
     const r = 20 + i;
     sheet.getRange(r, 1).setValue(day);
     sheet.getRange(r, 2).setFormula(`=IFERROR(AVERAGEIFS(${src}!E:E,${src}!B:B,"${day}"),0)`).setNumberFormat("$#,##0");
-    sheet.getRange(r, 3).setFormula(`=IFERROR(AVERAGEIFS(${src}!J:J,${src}!B:B,"${day}"),0)`).setNumberFormat("$#,##0");
-    sheet.getRange(r, 4).setFormula(`=IFERROR(AVERAGEIFS(${src}!K:K,${src}!B:B,"${day}"),0)`).setNumberFormat("$#,##0");
-    sheet.getRange(r, 5).setFormula(`=IFERROR(AVERAGEIFS(${src}!L:L,${src}!B:B,"${day}"),0)`).setNumberFormat("$#,##0");
+    sheet.getRange(r, 3).setFormula(`=IFERROR(AVERAGEIFS(${src}!H:H,${src}!B:B,"${day}"),0)`).setNumberFormat("$#,##0");
+    sheet.getRange(r, 4).setFormula(`=IFERROR(AVERAGEIFS(${src}!J:J,${src}!B:B,"${day}"),0)`).setNumberFormat("$#,##0");
+    sheet.getRange(r, 5).setFormula(`=IFERROR(AVERAGEIFS(${src}!K:K,${src}!B:B,"${day}"),0)`).setNumberFormat("$#,##0");
     sheet.getRange(r, 6).setFormula(`=COUNTIF(${src}!B:B,"${day}")`).setNumberFormat("#,##0");
   });
 
@@ -181,12 +181,12 @@ function buildFinancialDashboard() {
   sheet.getRange(5, trendCol, 1, trendHeaders.length).setFontWeight("bold").setBackground("#f3f3f3");
 
   sheet.getRange(6, trendCol).setFormula(
-    `=IFERROR(QUERY(${src}!A2:Q,` +
-    `"SELECT C, SUM(E), SUM(J), SUM(K), COUNT(A) ` +
+    `=IFERROR(QUERY(${src}!A2:P,` +
+    `"SELECT C, SUM(E), SUM(H), SUM(J), COUNT(A) ` +
     `WHERE C IS NOT NULL ` +
     `GROUP BY C ` +
     `ORDER BY C DESC ` +
-    `LABEL C 'Week Ending', SUM(E) 'Revenue', SUM(J) 'Tips', SUM(K) 'Production', COUNT(A) 'Shifts'"),"")`
+    `LABEL C 'Week Ending', SUM(E) 'Revenue', SUM(H) 'Tips', SUM(J) 'Production', COUNT(A) 'Shifts'"),"")`
   );
 
   // Format the Week Ending column (first column of the query result) as a date
@@ -321,20 +321,20 @@ function buildExecutiveDashboard() {
 
   sheet.getRange(row, 4).setValue("Total Tips");
   sheet.getRange(row, 5).setFormula(
-    `=IFERROR(SUMPRODUCT((MONTH(${src}!A2:A)=MONTH(TODAY()))*(YEAR(${src}!A2:A)=YEAR(TODAY()))*${src}!J2:J),0)`
+    `=IFERROR(SUMPRODUCT((MONTH(${src}!A2:A)=MONTH(TODAY()))*(YEAR(${src}!A2:A)=YEAR(TODAY()))*${src}!H2:H),0)`
   );
   sheet.getRange(row, 5).setNumberFormat("$#,##0");
 
   row = 8;
   sheet.getRange(row, 1).setValue("Total Production");
   sheet.getRange(row, 2).setFormula(
-    `=IFERROR(SUMPRODUCT((MONTH(${src}!A2:A)=MONTH(TODAY()))*(YEAR(${src}!A2:A)=YEAR(TODAY()))*${src}!K2:K),0)`
+    `=IFERROR(SUMPRODUCT((MONTH(${src}!A2:A)=MONTH(TODAY()))*(YEAR(${src}!A2:A)=YEAR(TODAY()))*${src}!J2:J),0)`
   );
   sheet.getRange(row, 2).setNumberFormat("$#,##0");
 
   sheet.getRange(row, 4).setValue("Total Discounts");
   sheet.getRange(row, 5).setFormula(
-    `=IFERROR(SUMPRODUCT((MONTH(${src}!A2:A)=MONTH(TODAY()))*(YEAR(${src}!A2:A)=YEAR(TODAY()))*${src}!L2:L),0)`
+    `=IFERROR(SUMPRODUCT((MONTH(${src}!A2:A)=MONTH(TODAY()))*(YEAR(${src}!A2:A)=YEAR(TODAY()))*${src}!K2:K),0)`
   );
   sheet.getRange(row, 5).setNumberFormat("$#,##0");
 
@@ -343,20 +343,22 @@ function buildExecutiveDashboard() {
   _sectionHeader_(sheet, row, "MONTHLY TREND");
 
   row = 11;
-  const monthHeaders = ["Month", "Revenue", "Tips", "Production", "Discounts", "Shifts"];
+  const monthHeaders = ["Month", "Revenue", "Tips", "Production", "Discounts", "Cash Takings", "Shifts"];
   monthHeaders.forEach((h, i) => sheet.getRange(row, i + 1).setValue(h));
   sheet.getRange(row, 1, 1, monthHeaders.length).setFontWeight("bold").setBackground("#f3f3f3");
 
   row = 12;
   sheet.getRange(row, 1).setFormula(
-    `=IFERROR(QUERY(${src}!A2:Q,` +
-    `"SELECT YEAR(A)*100+MONTH(A), SUM(E), SUM(J), SUM(K), SUM(L), COUNT(A) ` +
+    `=IFERROR(QUERY(${src}!A2:P,` +
+    `"SELECT MIN(A), SUM(E), SUM(H), SUM(J), SUM(K), SUM(F), COUNT(A) ` +
     `WHERE A IS NOT NULL ` +
     `GROUP BY YEAR(A)*100+MONTH(A) ` +
     `ORDER BY YEAR(A)*100+MONTH(A) DESC ` +
-    `LABEL YEAR(A)*100+MONTH(A) 'Month', SUM(E) 'Revenue', SUM(J) 'Tips', ` +
-    `SUM(K) 'Production', SUM(L) 'Discounts', COUNT(A) 'Shifts'"),"")`
+    `LABEL MIN(A) 'Month', SUM(E) 'Revenue', SUM(H) 'Tips', ` +
+    `SUM(J) 'Production', SUM(K) 'Discounts', SUM(F) 'Cash Takings', COUNT(A) 'Shifts'"),"")`
   );
+  // Format the Month column as "MMMM YYYY" — MIN(A) returns a date, this renders "April 2026" etc.
+  sheet.getRange(12, 1, 50, 1).setNumberFormat("MMMM YYYY");
 
   // ─── SECTION 4: ROLLING 4-WEEK COMPARISON ──────────────────────────
   row = 26;
@@ -386,7 +388,7 @@ function buildExecutiveDashboard() {
   sheet.getRange(row, 1).setValue("Tips");
   for (let w = 1; w <= 4; w++) {
     const weekCell = String.fromCharCode(65 + w) + "28";
-    sheet.getRange(row, w + 1).setFormula(`=IFERROR(SUMIFS(${src}!J:J,${src}!C:C,${weekCell}),0)`);
+    sheet.getRange(row, w + 1).setFormula(`=IFERROR(SUMIFS(${src}!H:H,${src}!C:C,${weekCell}),0)`);
     sheet.getRange(row, w + 1).setNumberFormat("$#,##0");
   }
 
@@ -394,11 +396,19 @@ function buildExecutiveDashboard() {
   sheet.getRange(row, 1).setValue("Production");
   for (let w = 1; w <= 4; w++) {
     const weekCell = String.fromCharCode(65 + w) + "28";
-    sheet.getRange(row, w + 1).setFormula(`=IFERROR(SUMIFS(${src}!K:K,${src}!C:C,${weekCell}),0)`);
+    sheet.getRange(row, w + 1).setFormula(`=IFERROR(SUMIFS(${src}!J:J,${src}!C:C,${weekCell}),0)`);
     sheet.getRange(row, w + 1).setNumberFormat("$#,##0");
   }
 
   row = 32;
+  sheet.getRange(row, 1).setValue("Discounts");
+  for (let w = 1; w <= 4; w++) {
+    const weekCell = String.fromCharCode(65 + w) + "28";
+    sheet.getRange(row, w + 1).setFormula(`=IFERROR(SUMIFS(${src}!K:K,${src}!C:C,${weekCell}),0)`);
+    sheet.getRange(row, w + 1).setNumberFormat("$#,##0");
+  }
+
+  row = 33;
   sheet.getRange(row, 1).setValue("Shifts");
   for (let w = 1; w <= 4; w++) {
     const weekCell = String.fromCharCode(65 + w) + "28";
@@ -406,14 +416,14 @@ function buildExecutiveDashboard() {
   }
 
   // WoW change rows
-  row = 33;
+  row = 34;
   sheet.getRange(row, 1).setValue("Revenue WoW $");
   sheet.getRange(row, 2).setFormula("=IFERROR(B29-C29,0)").setNumberFormat("$#,##0");
   sheet.getRange(row, 3).setFormula("=IFERROR(C29-D29,0)").setNumberFormat("$#,##0");
   sheet.getRange(row, 4).setFormula("=IFERROR(D29-E29,0)").setNumberFormat("$#,##0");
   sheet.getRange(row, 5).setValue("—");
 
-  row = 34;
+  row = 35;
   sheet.getRange(row, 1).setValue("Revenue WoW %");
   sheet.getRange(row, 2).setFormula("=IFERROR((B29-C29)/C29,0)").setNumberFormat("+0.0%;-0.0%");
   sheet.getRange(row, 3).setFormula("=IFERROR((C29-D29)/D29,0)").setNumberFormat("+0.0%;-0.0%");
@@ -434,12 +444,12 @@ function buildExecutiveDashboard() {
 
   modRow = 6;
   sheet.getRange(modRow, modCol).setFormula(
-    `=IFERROR(QUERY(${src}!A2:Q,` +
-    `"SELECT D, COUNT(D), AVG(E), AVG(J) ` +
+    `=IFERROR(QUERY(${src}!A2:P,` +
+    `"SELECT D, COUNT(D), AVG(E), AVG(H) ` +
     `WHERE D IS NOT NULL ` +
     `GROUP BY D ` +
     `ORDER BY AVG(E) DESC ` +
-    `LABEL D 'MOD', COUNT(D) 'Shifts', AVG(E) 'Avg Revenue', AVG(J) 'Avg Tips'"),"")`
+    `LABEL D 'MOD', COUNT(D) 'Shifts', AVG(E) 'Avg Revenue', AVG(H) 'Avg Tips'"),"")`
   );
 
   // ─── SECTION 6: DAY-OF-WEEK REVENUE RANKING (right side) ──────────
@@ -455,7 +465,7 @@ function buildExecutiveDashboard() {
 
   dowRow = 18;
   sheet.getRange(dowRow, modCol).setFormula(
-    `=IFERROR(QUERY(${src}!A2:Q,` +
+    `=IFERROR(QUERY(${src}!A2:P,` +
     `"SELECT B, AVG(E), SUM(E), COUNT(A) ` +
     `WHERE B IS NOT NULL ` +
     `GROUP BY B ` +
@@ -470,10 +480,10 @@ function buildExecutiveDashboard() {
   // Bold labels
   sheet.getRange("A5:A8").setFontWeight("bold");
   sheet.getRange("D6:D8").setFontWeight("bold");
-  sheet.getRange("A28:A34").setFontWeight("bold");
+  sheet.getRange("A28:A35").setFontWeight("bold");
 
   // Conditional formatting: WoW changes red/green
-  const wowChangeRange = sheet.getRange("B33:D34");
+  const wowChangeRange = sheet.getRange("B34:D35");
   sheet.setConditionalFormatRules([
     SpreadsheetApp.newConditionalFormatRule()
       .whenNumberLessThan(0)
@@ -495,6 +505,18 @@ function buildExecutiveDashboard() {
   } catch (e) {
     Logger.log('buildExecutiveDashboard: complete (UI skipped — trigger context)');
   }
+}
+
+
+/**
+ * Rebuilds BOTH the ANALYTICS and EXECUTIVE_DASHBOARD tabs.
+ * Use for first-time setup, schema changes, or corruption recovery.
+ * Not needed for daily data refresh — live formulas handle that.
+ */
+function rebuildAllDashboards() {
+  buildFinancialDashboard();
+  buildExecutiveDashboard();
+  Logger.log('rebuildAllDashboards: both dashboards rebuilt successfully');
 }
 
 

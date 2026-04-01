@@ -147,11 +147,13 @@ Broader trends:
 
 ### If Dashboards Look Broken or Blank
 
+> If the ANALYTICS or EXECUTIVE_DASHBOARD tabs show blank cells or errors, the formulas likely need to be rebuilt from scratch.
+
 This is rare, but if either dashboard looks wrong:
 
 1. Open the Data Warehouse spreadsheet
 2. Go to **Shift Report > Admin Tools > Integrations & Analytics**
-3. Choose either **Build Analytics Dashboard** or **Build Executive Dashboard**
+3. Click **Rebuild All Dashboards (Admin)**
 4. Enter the admin password
 5. The dashboard formulas will rebuild from scratch — safe to re-run anytime
 
@@ -175,7 +177,7 @@ You'll see a completion message when it's done.
 
 **When These Update:**
 - Automatically rebuild each week when the first nightly report is sent (usually Monday after first shift)
-- Safe to rebuild anytime — go to **Shift Report > Admin Tools > Integrations & Analytics > Build Analytics Dashboard**
+- Safe to rebuild anytime — go to **Shift Report > Admin Tools > Integrations & Analytics > Rebuild All Dashboards (Admin)**
 
 ---
 
@@ -427,12 +429,14 @@ Data fields like revenue, cash, and notes should be empty. Formula fields will s
 
 ### Dashboard Shows Blank or Error
 
+> If the ANALYTICS or EXECUTIVE_DASHBOARD tabs show blank cells or errors, the formulas likely need to be rebuilt from scratch.
+
 **Cause:** Dashboard formulas need to be rebuilt.
 
 **Fix:**
 1. Open **Data Warehouse** spreadsheet
 2. Go to **Shift Report > Admin Tools > Integrations & Analytics**
-3. Choose **Build Analytics Dashboard** (or **Build Executive Dashboard**)
+3. Click **Rebuild All Dashboards (Admin)**
 4. Enter admin password
 5. Wait for completion message
 
@@ -449,8 +453,8 @@ Data fields like revenue, cash, and notes should be empty. Formula fields will s
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** March 18, 2026
+**Document Version:** 1.1
+**Last Updated:** April 2, 2026 (Dashboard consolidation)
 **For:** Sakura House Managers
 **Technical Review:** gas-code-review-agent
 **Peer Review:** documentation-agent

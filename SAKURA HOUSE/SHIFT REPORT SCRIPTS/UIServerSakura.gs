@@ -251,11 +251,13 @@ function getAnalyticsData() {
 }
 
 /**
- * Refreshes the analytics dashboard tab.
+ * Refreshes both analytics dashboard tabs (ANALYTICS + EXECUTIVE_DASHBOARD).
+ * Called from the Analytics Viewer sidebar. Safe to re-run.
  */
 function refreshDashboard() {
   try {
     buildFinancialDashboard();
+    buildExecutiveDashboard();
     return true;
   } catch (e) {
     Logger.log('Dashboard refresh error: ' + e.message);

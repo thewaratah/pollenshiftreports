@@ -72,6 +72,7 @@ function pw_testIntegrations()                { if (requirePassword_()) testInte
 function pw_runValidationReport()             { if (requirePassword_()) runValidationReport(); }
 function pw_buildFinancialDashboard()         { if (requirePassword_()) buildFinancialDashboard(); }
 function pw_buildExecutiveDashboard()         { if (requirePassword_()) buildExecutiveDashboard(); }
+function pw_rebuildAllDashboards()            { if (requirePassword_()) rebuildAllDashboards(); }
 function pw_openAnalyticsViewer()             { if (requirePassword_()) openAnalyticsViewer(); }
 
 // === PASSWORD-GATED WRAPPERS: Setup & Diagnostics ===
@@ -155,9 +156,9 @@ function onOpen() {
         .addSubMenu(ui.createMenu('Integrations & Analytics')
           .addItem('Test Integrations Now', 'pw_testIntegrations')
           .addItem('Validate All Systems', 'pw_runValidationReport')
-          .addItem('Build Analytics Dashboard', 'pw_buildFinancialDashboard')
-          .addItem('Build Executive Dashboard', 'pw_buildExecutiveDashboard')
-          .addItem('Open Analytics', 'pw_openAnalyticsViewer'))
+          .addItem('Open Analytics', 'pw_openAnalyticsViewer')
+          .addSeparator()
+          .addItem('Rebuild All Dashboards (Admin)', 'pw_rebuildAllDashboards'))
 
         .addSubMenu(ui.createMenu('Data Warehouse')
           .addItem('Backfill This Sheet to Warehouse', 'pw_backfillShiftToWarehouse')

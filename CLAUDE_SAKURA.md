@@ -1,10 +1,28 @@
 # SAKURA HOUSE - Claude Code Project Guide
 
-**Last Updated:** April 2, 2026 (Date parsing + Task Management changes)
+**Last Updated:** April 2, 2026 (Analytics Dashboard consolidation + Date parsing + Task Management changes)
 **Project Type:** Google Apps Script (Hospitality Management System)
 **Venue:** Sakura House (Single-Venue Documentation)
 
 > **Note:** This is the Sakura-specific guide. For The Waratah, see `CLAUDE_WARATAH.md`. For shared architecture patterns, see `CLAUDE_SHARED.md`.
+
+---
+
+## DEPLOYMENT (April 2, 2026) -- Analytics Dashboard Consolidation
+
+**Dashboard menu restructuring:**
+- Removed separate "Build Analytics Dashboard" and "Build Executive Dashboard" menu items from `Shift Report > Admin Tools > Integrations & Analytics`
+- Added single consolidated item "Rebuild All Dashboards (Admin)" — calls new function `rebuildAllDashboards()`
+- `rebuildAllDashboards()` in `AnalyticsDashboardSakura.gs` — calls both `buildFinancialDashboard()` and `buildExecutiveDashboard()` sequentially
+- Old wrappers `pw_buildFinancialDashboard()` and `pw_buildExecutiveDashboard()` retained in `MenuSakura.gs` for backward compatibility (no longer wired to menu items)
+- `UIServerSakura.gs`: `refreshDashboard()` updated to call both `buildFinancialDashboard()` and `buildExecutiveDashboard()` (previously only called the former)
+
+**Context:** Dashboards use live QUERY/SUMIFS/AVERAGEIFS formulas — data auto-refreshes when NIGHTLY_FINANCIAL gets new rows. No trigger needed. `rebuildAllDashboards()` is a maintenance/setup tool, not a daily operation.
+
+**Files Changed:**
+- `AnalyticsDashboardSakura.gs` (new `rebuildAllDashboards()` function + file header comment updated for 16-column schema)
+- `UIServerSakura.gs` (`refreshDashboard()` now calls both dashboard builders)
+- `MenuSakura.gs` (menu consolidation + new wrapper `pw_rebuildAllDashboards()`)
 
 ---
 
@@ -33,8 +51,9 @@
 - Non-blocking: if `toDateOnly_()` receives invalid input, it returns as-is; warehouse write proceeds
 
 **NIGHTLY_FINANCIAL Schema Change (16 columns A-P):**
-- Removed column J: "Total Tips" (redundant — column H "Tips Total" from cell C32 is the authoritative field)
-- New column order: A=Date, B=Day, C=Week Ending, D=MOD, E=Net Revenue, F=Cash Total, G=Cash Tips, H=Tips Total (was column H, no change), I=Logged At, J=Total Tips (computed), K=Production Amount, L=Discounts, M=Deposit, N=FOH Staff, O=BOH Staff, P=Card Tips, Q=Surcharge Tips — **now 17 columns after March 6 expansion; column J deletion makes current count 16 after Mar 6's 17 - 1 = 16 columns**
+- Deleted column J: "Total Tips (computed)" — redundant field (column H "Tips Total" from cell C32 is the authoritative field)
+- Schema remains at 16 columns A-P (was 17 after March 6 expansion)
+- Current columns: A=Date, B=Day, C=Week Ending, D=MOD, E=Net Revenue, F=Cash Total, G=Cash Tips, H=Tips Total, I=Logged At, J=Production Amount, K=Discounts, L=Deposit, M=FOH Staff, N=BOH Staff, O=Card Tips, P=Surcharge Tips
 
 **Impact:**
 - Backfills and manual date corrections now write clean dates to warehouse
@@ -846,17 +865,16 @@ Error handling (S9):
 **Auto-Build Behavior (S8, Mar 18, 2026):**
 The ANALYTICS tab is auto-created on first warehouse write if missing. LockService re-entrancy fixed via `skipLock` parameter — when `runWeeklyBackfill_` calls `logToDataWarehouse_()`, it passes `skipLock=true` to prevent deadlock (backfill already holds the lock).
 
-**Data Warehouse Sheets (schemas current as of Mar 6, 2026):**
+**Data Warehouse Sheets (schemas current as of April 2, 2026):**
 
-**1. NIGHTLY_FINANCIAL** (17 columns A-Q -- expanded Mar 6 from 13 cols)
+**1. NIGHTLY_FINANCIAL** (16 columns A-P -- expanded Mar 6, redundant column J deleted Apr 2)
 ```
 A=Date | B=Day | C=WeekEnding | D=MOD | E=NetRevenue |
 F=CashTotal | G=CashTips | H=TipsTotal | I=LoggedAt |
-J=TotalTips | K=ProductionAmount | L=Discounts | M=Deposit |
-N=FOHStaff | O=BOHStaff | P=CardTips | Q=SurchargeTips
+J=ProductionAmount | K=Discounts | L=Deposit |
+M=FOHStaff | N=BOHStaff | O=CardTips | P=SurchargeTips
 ```
-Columns N-Q added Mar 6 (Phase 1) using append-only strategy -- no existing column letters changed.
-Duplicate key: date (A) + MOD (D)
+Columns M-P added Mar 6 (Phase 1) using append-only strategy. Column J (redundant TipsTotal) deleted Apr 2. Duplicate key: date (A) + MOD (D)
 
 **2. WASTAGE_COMPS** (5 columns — corrected Feb 28)
 ```
@@ -953,8 +971,7 @@ Shift Report
     ├── Integrations & Analytics ▸
     │   ├── Test Integrations Now
     │   ├── Validate All Systems
-    │   ├── Build Analytics Dashboard
-    │   ├── Build Executive Dashboard
+    │   ├── Rebuild All Dashboards (Admin)        ← NEW Apr 2 (consolidates separate builders)
     │   └── Open Analytics
     ├── Data Warehouse ▸                   ← NEW
     │   ├── Backfill This Sheet to Warehouse

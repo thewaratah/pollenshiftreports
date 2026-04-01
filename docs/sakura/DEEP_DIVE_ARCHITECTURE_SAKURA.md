@@ -421,8 +421,7 @@ Shift Report
     ├── Integrations & Analytics ▸
     │   ├── Test Integrations Now
     │   ├── Validate All Systems
-    │   ├── Build Analytics Dashboard
-    │   ├── Build Executive Dashboard
+    │   ├── Rebuild All Dashboards (Admin)
     │   └── Open Analytics
     ├── Data Warehouse ▸
     │   ├── Backfill This Sheet to Warehouse
