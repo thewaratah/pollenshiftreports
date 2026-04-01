@@ -117,7 +117,7 @@ function verifyDataExtraction() {
       Logger.log(`⚠️  WARNING: Card Tips ($${shiftData.cardTips.toFixed(2)}) + Cash Tips ($${shiftData.cashTips.toFixed(2)}) = $${calculatedTips.toFixed(2)}`);
       Logger.log(`        But Total Tips (${FIELD_CONFIG['totalTips'].fallback} formula) = $${shiftData.tipsTotal.toFixed(2)} (difference: $${tipsDiff.toFixed(2)})`);
       Logger.log(`        This may indicate the totalTips formula includes additional tip sources.`);
-      passCount++; // Warning, not failure — B37 is a formula
+      passCount++; // Warning, not failure — B36 is a formula
     }
 
     // Test 3: Cell reading accuracy — verify against manual reads
@@ -135,7 +135,7 @@ function verifyDataExtraction() {
       cashTakings:      { cell: FIELD_CONFIG['cashTakings'].fallback,       expected: parseFloat(sheet.getRange('B15').getValue()) || 0, actual: shiftData.cashTakings },
       cardTips:         { cell: FIELD_CONFIG['cardTips'].fallback,          expected: parseFloat(sheet.getRange('B32').getValue()) || 0, actual: shiftData.cardTips },
       cashTips:         { cell: FIELD_CONFIG['cashTips'].fallback,          expected: parseFloat(sheet.getRange('B33').getValue()) || 0, actual: shiftData.cashTips },
-      tipsTotal:        { cell: FIELD_CONFIG['totalTips'].fallback,         expected: parseFloat(sheet.getRange('B37').getValue()) || 0, actual: shiftData.tipsTotal },
+      tipsTotal:        { cell: FIELD_CONFIG['totalTips'].fallback,         expected: parseFloat(sheet.getRange('B36').getValue()) || 0, actual: shiftData.tipsTotal },
       grossSalesIncCash:{ cell: FIELD_CONFIG['grossSalesIncCash'].fallback, expected: parseFloat(sheet.getRange('B16').getValue()) || 0, actual: shiftData.grossSalesIncCash },
       totalDiscount:    { cell: FIELD_CONFIG['totalDiscount'].fallback,     expected: parseFloat(sheet.getRange('B25').getValue()) || 0, actual: shiftData.totalDiscount },
       taxes:            { cell: FIELD_CONFIG['taxes'].fallback,             expected: parseFloat(sheet.getRange('B28').getValue()) || 0, actual: shiftData.taxes },

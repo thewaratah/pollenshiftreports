@@ -424,16 +424,16 @@ function classifyTask_Sakura(taskDescription) {
  * Pure GAS math — NO Claude API calls. Non-blocking: returns
  * { hasSufficientData: false } on any error or insufficient history.
  *
- * Sakura NIGHTLY_FINANCIAL col indexes (0-based, 17 cols A-Q):
+ * Sakura NIGHTLY_FINANCIAL col indexes (0-based, 16 cols A-P):
  *   A=0 Date, B=1 Day, C=2 WeekEnding, D=3 MOD,
  *   E=4 NetRevenue, F=5 CashTotal, G=6 CashTips, H=7 TipsTotal,
- *   I=8 LoggedAt, J=9 TotalTips (computed), K=10 ProductionAmount,
- *   L=11 Discounts, M=12 Deposit, N=13 FOHStaff, O=14 BOHStaff,
- *   P=15 CardTips, Q=16 SurchargeTips
+ *   I=8 LoggedAt, J=9 ProductionAmount, K=10 Discounts,
+ *   L=11 Deposit, M=12 FOHStaff, N=13 BOHStaff,
+ *   O=14 CardTips, P=15 SurchargeTips
  *
  * Column constants used for index access:
- *   date=0, day=1, netRevenue=4, totalTips=7 (H=TipsTotal, consistent with M2),
- *   production=10, discounts=11
+ *   date=0, day=1, netRevenue=4, tipsTotal=7,
+ *   production=9, discounts=10, deposit=11
  *
  * @param {Object} shiftData   - Extracted shift data (from NightlyExport caller)
  *   {string} shiftData.netRevenue    - e.g. "4250.00"
@@ -450,7 +450,7 @@ function classifyTask_Sakura(taskDescription) {
  */
 function computeShiftAnalytics_Sakura(shiftData, warehouseId) {
   // Column index map (0-based) — matches M2 and warehouse append order exactly
-  var COLS = { date: 0, day: 1, netRevenue: 4, tipsTotal: 7, production: 10, discounts: 11, deposit: 12 };
+  var COLS = { date: 0, day: 1, netRevenue: 4, tipsTotal: 7, production: 9, discounts: 10, deposit: 11 };
 
   try {
     // --- Input guards ---

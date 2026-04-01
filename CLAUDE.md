@@ -267,8 +267,15 @@ main                          ← stable, merged code only
 
 ---
 
-**Last Updated:** March 22, 2026 (AI Insights parity refinements)
+**Last Updated:** April 2, 2026 (Warehouse date handling fix)
 **Status:** Both venues fully operational and production-ready ✅
+
+**Deployment (Apr 2, 2026) — Warehouse Date Fix:**
+- Both venues: `parseCellDate_()` fallback hardened — `new Date(str)` replaced with `new Date('')` to prevent US-format misparse of AU dd/mm/yyyy dates; Logger.log warning added
+- Both venues: New `toDateOnly_(d)` helper — strips time component from dates before warehouse writes; guards against Invalid Date input
+- Both venues: All `appendRow()` calls in `logToDataWarehouse_()` now wrap `shiftData.date` and `shiftData.weekEnding` with `toDateOnly_()` — NIGHTLY_FINANCIAL, OPERATIONAL_EVENTS, WASTAGE_COMPS, QUALITATIVE_NOTES
+- Manual action required: Set Sakura Data Warehouse spreadsheet locale to Australia (File → Settings → Locale) to display dates as dd/mm/yyyy
+- Manual action required: Fix the `1/4/2026 19:00:00` row in NIGHTLY_FINANCIAL — correct to April 1, 2026 with no time component
 
 **Deployment (Mar 22, 2026) — AI Insights Refinement:**
 - Sakura: M4 discount impact metrics added to `computeShiftAnalytics_Sakura()` — discounts/netRevenue today vs 8w avg; M5 prompt enriched with confidence qualifier, 4-week benchmarks, discount rates, signed WoW delta, compact anomaly format with z-scores, truncation standardized to 200 chars (matches Waratah); Slack title `*Sakura House Analytics Insights*`; all numeric returns standardized to `parseFloat(x.toFixed(2))`

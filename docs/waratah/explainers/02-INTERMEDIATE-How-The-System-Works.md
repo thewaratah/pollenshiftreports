@@ -207,7 +207,7 @@ This is where the money goes. Every night's financial figures are logged as a si
 | Cash Returns, CD Discount, Refunds, CD Redeem | From cells B17-B24 |
 | Total Discount | From cell B25 |
 | Discounts/Comps exc CD, Gross Taxable, Taxes, Net Sales w/ Tips | From cells B26-B29 |
-| Card Tips, Cash Tips, Total Tips | From cells B32, B33, B37 |
+| Card Tips, Cash Tips, Total Tips | From cells B32, B33, B36 |
 | Logged At | Timestamp when this row was written |
 
 ### OPERATIONAL_EVENTS (8 columns)

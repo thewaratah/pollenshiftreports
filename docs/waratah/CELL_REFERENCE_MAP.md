@@ -1,6 +1,6 @@
 # THE WARATAH - Cell Reference Map
 
-**Last Updated:** March 18, 2026
+**Last Updated:** April 2, 2026 (Cell reference correction: Total Tips B36, Covers B37)
 **Type:** Authoritative Reference
 **Purpose:** Complete mapping of cell references for all Waratah day sheets
 
@@ -55,11 +55,11 @@ Card Tips:             B32
 Cash Tips:             B33
 Net Revenue:           B34
 Cash Total:            B35      (NOT warehoused)
-Covers:                B36      (NOT warehoused)
-Total Tips:            B37      (formula)
+Total Tips:            B36      (formula)
+Covers:                B37      (NOT warehoused)
 Labor Hours:           B38      (formula, NOT warehoused)
 Labor Cost:            B39      (formula, NOT warehoused)
-B37:B40 = FORMULA CELLS — DO NOT CLEAR during rollover
+B36, B38:B39 = FORMULA CELLS — DO NOT CLEAR during rollover
 ```
 
 ### Narrative Fields (merged A:F, odd rows = data)
@@ -125,7 +125,7 @@ This is the single source of truth. All consumer files call `getFieldValue()`, `
 | `cardTips` | `SR_CardTips` | `B32` | false | `WEDNESDAY_SR_CardTips` |
 | `cashTips` | `SR_CashTips` | `B33` | false | `WEDNESDAY_SR_CashTips` |
 | `netRevenue` | `SR_NetRevenue` | `B34` | **true** | `WEDNESDAY_SR_NetRevenue` |
-| `totalTips` | `SR_TotalTips` | `B37` | **true** | `WEDNESDAY_SR_TotalTips` |
+| `totalTips` | `SR_TotalTips` | `B36` | **true** | `WEDNESDAY_SR_TotalTips` |
 | `shiftSummary` | `SR_ShiftSummary` | `A43:F43` | false | `WEDNESDAY_SR_ShiftSummary` |
 | `guestsOfNote` | `SR_GuestsOfNote` | `A45:F45` | false | `WEDNESDAY_SR_GuestsOfNote` |
 | `theGood` | `SR_TheGood` | `A47:F47` | false | `WEDNESDAY_SR_TheGood` |
@@ -138,7 +138,7 @@ This is the single source of truth. All consumer files call `getFieldValue()`, `
 
 **Clearable fields (isFormula: false):** date, mod, staff, productionAmount, deposit, airbnbCovers, cancellations, cashReturns, cdDiscount, refunds, cdRedeem, totalDiscount, pettyCash, cardTips, cashTips, shiftSummary, guestsOfNote, theGood, theBad, kitchenNotes, todoTasks, todoAssignees, wastageComps, rsaIncidents (24 fields)
 
-**Formula cells — never clear:** cashTakings(B15), grossSalesIncCash(B16), discountsCompsExcCD(B26), grossTaxableSales(B27), taxes(B28), netSalesWTips(B29), netRevenue(B34), totalTips(B37) (8 fields)
+**Formula cells — never clear:** cashTakings(B15), grossSalesIncCash(B16), discountsCompsExcCD(B26), grossTaxableSales(B27), taxes(B28), netSalesWTips(B29), netRevenue(B34), totalTips(B36) (8 fields)
 
 ## VenueConfig.js (Legacy)
 
@@ -241,8 +241,8 @@ U=TotalTips, V=LoggedAt
 | Cash Tips | B33 | Number | Yes (col T) | Yes |
 | Net Revenue | B34 | Number | Yes (col F) | Yes |
 | Cash Total | B35 | Number | No | No |
-| Covers | B36 | Number | No | No |
-| Total Tips | B37 | Formula | Yes (col U) | No (formula) |
+| Total Tips | B36 | Formula | Yes (col U) | No (formula) |
+| Covers | B37 | Number | No | No |
 | Labor Hours | B38 | Formula | No | No (formula) |
 | Labor Cost | B39 | Formula | No | No (formula) |
 | Shift Report | A43:F43 | Text | Yes (col D) | Yes |
@@ -263,7 +263,7 @@ Protects structural cells (headers, labels, formula cells) while keeping all inp
 
 **Mode:** `setWarningOnly(true)` — staff see a warning if they accidentally edit protected cells but are not hard-blocked. GAS scripts (rollover, exports) always have full write access.
 
-**Editable ranges:** All `FIELD_CONFIG` entries where `isFormula: false` (24 fields). The 8 formula cells are protected: cashTakings(B15), grossSalesIncCash(B16), discountsCompsExcCD(B26), grossTaxableSales(B27), taxes(B28), netSalesWTips(B29), netRevenue(B34), totalTips(B37).
+**Editable ranges:** All `FIELD_CONFIG` entries where `isFormula: false` (24 fields). The 8 formula cells are protected: cashTakings(B15), grossSalesIncCash(B16), discountsCompsExcCD(B26), grossTaxableSales(B27), taxes(B28), netSalesWTips(B29), netRevenue(B34), totalTips(B36).
 
 **Menu:** `Waratah Tools → Admin Tools → Setup & Utilities → Sheet Protection`
 - `Apply Protection (All Sheets)` — calls `setupAllSheetsProtection()`

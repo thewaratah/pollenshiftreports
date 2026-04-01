@@ -1,6 +1,6 @@
 # SAKURA HOUSE - Integration Flows
 
-**Last Updated:** March 18, 2026
+**Last Updated:** April 2, 2026
 **Type:** Detailed Integration Documentation
 **Load:** On-demand only (reference material)
 
@@ -86,18 +86,23 @@ const shiftData = {
 
 ### Date Parsing
 
-> Dates can arrive as Date objects (if the cell is date-formatted) or as strings like "03/02/2025" (if staff typed it manually). The parser handles both cases and avoids the MM/DD vs DD/MM ambiguity by using `Utilities.parseDate` with the Australian locale.
+> Dates can arrive as Date objects (if the cell is date-formatted) or as strings like "03/02/2025" (if staff typed it manually). The parser handles both cases and avoids the MM/DD vs DD/MM ambiguity by using `Utilities.parseDate` with the Australian locale. If parsing fails, it returns Invalid Date (not a fallback to `new Date()` which mis-parses AU-format strings).
 
 ```javascript
 function parseCellDate_(value) {
   if (value instanceof Date) return value;
+  if (!value) return new Date('');
+  const str = value.toString().trim();
   try {
     return Utilities.parseDate(str, 'Australia/Sydney', 'dd/MM/yyyy');
   } catch (e) {
-    return new Date(str);  // Fallback
+    Logger.log('parseCellDate_: could not parse "' + str + '" as dd/MM/yyyy — returning Invalid Date');
+    return new Date(''); // Force invalid rather than US-format misparse via new Date(str)
   }
 }
 ```
+
+**Critical fix (April 2, 2026):** Removed the fallback to `new Date(str)` which silently mis-parses Australian-format dates as US-format (e.g., "03/04/2026" becomes April 3 instead of March 4). Now returns Invalid Date on parse failure, with a Logger warning. The `normaliseDateKey_()` function (used in duplicate prevention) checks for `isNaN(d.getTime())`, so invalid dates don't match existing rows — preventing false duplicate skips.
 
 ### Task Extraction
 
@@ -134,43 +139,45 @@ const todoAssignValues = getFieldValues(sheet, "todoAssignees"); // D69:D84
 
 ### Sheet 1: NIGHTLY_FINANCIAL (13 columns A-M)
 
-> The main financial record — one row per shift, tracking revenue, tips, production, and discounts.
+> The main financial record — one row per shift, tracking revenue, tips, production, and discounts. Dates are wrapped with `toDateOnly_()` to strip any time components.
 
 ```javascript
 financialSheet.appendRow([
-  shiftData.date,             // A: Date
-  shiftData.dayOfWeek,        // B: Day
-  shiftData.weekEnding,       // C: Week Ending
-  shiftData.mod,              // D: MOD
-  shiftData.netRevenue,       // E: Net Revenue
-  shiftData.cashTotal,        // F: Cash Total (C19)
-  shiftData.cashTips,         // G: Cash Tips (C29)
-  shiftData.tipsTotal,        // H: Tips Total (C32)
-  new Date(),                 // I: Logged At
-  shiftData.totalTips,        // J: Total Tips (computed)
-  shiftData.productionAmount, // K: Production Amount
-  shiftData.discounts,        // L: Discounts
-  shiftData.deposit           // M: Deposit
+  toDateOnly_(shiftData.date),    // A: Date (midnight, no time component)
+  shiftData.dayOfWeek,            // B: Day
+  toDateOnly_(shiftData.weekEnding), // C: Week Ending (midnight, no time component)
+  shiftData.mod,                  // D: MOD
+  shiftData.netRevenue,           // E: Net Revenue
+  shiftData.cashTotal,            // F: Cash Total (C19)
+  shiftData.cashTips,             // G: Cash Tips (C29)
+  shiftData.tipsTotal,            // H: Tips Total (C32)
+  new Date(),                     // I: Logged At
+  shiftData.totalTips,            // J: Total Tips (computed)
+  shiftData.productionAmount,     // K: Production Amount
+  shiftData.discounts,            // L: Discounts
+  shiftData.deposit               // M: Deposit
 ]);
 ```
 
 **Duplicate key:** Date (A) + MOD (D)
 
+**Note:** The `toDateOnly_()` helper was added April 2, 2026 to ensure dates have no time components when written to warehouse — preventing ambiguity when dates are manually edited or backfilled.
+
 ### Sheet 2: OPERATIONAL_EVENTS (9 columns A-I)
 
-> One row per TO-DO task. This creates a running history of every task assigned across all shifts — useful for spotting recurring issues.
+> One row per TO-DO task. This creates a running history of every task assigned across all shifts — useful for spotting recurring issues. Dates are wrapped with `toDateOnly_()`.
 
 ```javascript
 eventsSheet.appendRow([
-  shiftData.date,     // A: Date
-  "New",              // B: Type
-  todo.description,   // C: Item
-  "",                 // D: Quantity
-  "MEDIUM",           // E: Value (default priority)
-  todo.assignee,      // F: Staff
-  "",                 // G: Reason
-  "TO-DO",            // H: Category
-  "Shift Report"      // I: Source
+  toDateOnly_(shiftData.date),  // A: Date (midnight, no time component)
+  "New",                        // B: Type
+  todo.description,             // C: Item
+  "",                           // D: Quantity
+  "MEDIUM",                     // E: Value (default priority)
+  todo.assignee,                // F: Staff
+  "",                           // G: Reason
+  "TO-DO",                      // H: Category
+  "Shift Report"                // I: Source
 ]);
 ```
 
@@ -178,15 +185,15 @@ eventsSheet.appendRow([
 
 ### Sheet 3: WASTAGE_COMPS (5 columns A-E)
 
-> Records any wastage, comps, or discount notes the MOD wrote. Only logged if the field has content.
+> Records any wastage, comps, or discount notes the MOD wrote. Only logged if the field has content. Dates are wrapped with `toDateOnly_()`.
 
 ```javascript
 wastageSheet.appendRow([
-  shiftData.date,        // A: Date
-  shiftData.dayOfWeek,   // B: Day
-  shiftData.weekEnding,  // C: Week Ending
-  shiftData.mod,         // D: MOD
-  shiftData.wastageComps // E: COMMENTS
+  toDateOnly_(shiftData.date),       // A: Date (midnight, no time component)
+  shiftData.dayOfWeek,               // B: Day
+  toDateOnly_(shiftData.weekEnding), // C: Week Ending (midnight, no time component)
+  shiftData.mod,                     // D: MOD
+  shiftData.wastageComps             // E: COMMENTS
 ]);
 ```
 
@@ -194,21 +201,21 @@ wastageSheet.appendRow([
 
 ### Sheet 4: QUALITATIVE_LOG (11 columns A-K)
 
-> All the narrative content from the shift — summary, good/bad highlights, kitchen notes, maintenance, RSA incidents. This creates a searchable text archive of what happened each night.
+> All the narrative content from the shift — summary, good/bad highlights, kitchen notes, maintenance, RSA incidents. This creates a searchable text archive of what happened each night. Dates are wrapped with `toDateOnly_()`.
 
 ```javascript
 qualSheet.appendRow([
-  shiftData.date,          // A: Date
-  shiftData.dayOfWeek,     // B: Day
-  shiftData.mod,           // C: MOD
-  shiftData.shiftSummary,  // D: Shift Summary
-  shiftData.guestsOfNote,  // E: Guests of Note
-  shiftData.theGood,       // F: The Good
-  shiftData.theBad,        // G: The Bad / Issues
-  shiftData.kitchenNotes,  // H: Kitchen Notes
-  shiftData.maintenance,   // I: Maintenance
-  shiftData.rsaIncidents,  // J: RSA/Incidents
-  new Date()               // K: Logged At
+  toDateOnly_(shiftData.date),   // A: Date (midnight, no time component)
+  shiftData.dayOfWeek,           // B: Day
+  shiftData.mod,                 // C: MOD
+  shiftData.shiftSummary,        // D: Shift Summary
+  shiftData.guestsOfNote,        // E: Guests of Note
+  shiftData.theGood,             // F: The Good
+  shiftData.theBad,              // G: The Bad / Issues
+  shiftData.kitchenNotes,        // H: Kitchen Notes
+  shiftData.maintenance,         // I: Maintenance
+  shiftData.rsaIncidents,        // J: RSA/Incidents
+  new Date()                     // K: Logged At
 ]);
 ```
 
@@ -477,5 +484,5 @@ backfillShiftToWarehouse()  // Active sheet → warehouse (menu-accessible)
 
 ---
 
-**Last Updated:** March 18, 2026
-**Key Insight:** All integrations are non-blocking — warehouse, Slack, and task push failures are logged but never prevent the email from being sent.
+**Last Updated:** April 2, 2026
+**Key Insight:** All integrations are non-blocking — warehouse, Slack, and task push failures are logged but never prevent the email from being sent. Date parsing and warehouse writes are hardened against AU-format date misinterpretation via `parseCellDate_()` and `toDateOnly_()` helpers.

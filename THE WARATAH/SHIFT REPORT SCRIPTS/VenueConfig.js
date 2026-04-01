@@ -53,7 +53,7 @@ function getVenueConfig_() {
         netRevenue: 'B34',
         cardTips: 'B32',
         cashTips: 'B33',
-        totalTips: 'B37',
+        totalTips: 'B36',
         productionAmount: 'B8',
         cashTakings: 'B15',
         grossSalesIncCash: 'B16',

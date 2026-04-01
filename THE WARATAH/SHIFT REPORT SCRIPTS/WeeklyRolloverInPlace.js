@@ -34,7 +34,7 @@ const DAY_SHEETS = [
  *
  * Excluded formula cells: cashTakings (B15), grossSalesIncCash (B16),
  * discountsCompsExcCD (B26), grossTaxableSales (B27), taxes (B28),
- * netSalesWTips (B29), netRevenue (B34), totalTips (B37).
+ * netSalesWTips (B29), netRevenue (B34), totalTips (B36).
  *
  * During transition: if named ranges don't exist, getFieldRange() falls back
  * to the hardcoded cells in FIELD_CONFIG automatically.

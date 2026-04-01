@@ -1,6 +1,6 @@
 # Weekly Automated Events — The Waratah
 
-**Last Updated:** March 18, 2026
+**Last Updated:** April 2, 2026 (Cell reference correction: Total Tips B36, Covers B37)
 **Type:** Handover guide for managers
 
 > This document explains everything that happens automatically in The Waratah system each week. You don't need to be technical to understand it — just know that these are all handled by scheduled triggers and rarely need your attention.
@@ -44,7 +44,7 @@ All of these run on their own. You don't need to do anything unless something go
 
 > The system is smart about what it clears. It only removes data you typed in — never formulas.
 
-Cells like **Net Revenue** (B34), **Covers** (B36), **Total Tips** (B37), and **Labor Hours/Cost** (B38–B39) contain calculation formulas and are preserved. They'll automatically recalculate when you enter new shift data.
+Cells like **Net Revenue** (B34), **Total Tips** (B36), and **Labor Hours/Cost** (B38–B39) contain calculation formulas and are preserved. They'll automatically recalculate when you enter new shift data.
 
 **Example:** If Net Revenue on Wednesday shows $4,200 after rollover, that's correct — it's a formula that will recalculate when you enter sales data.
 
@@ -315,8 +315,7 @@ You'll need the admin password. Open each menu item and select "Create [X] Trigg
 
 **Examples:**
 - Net Revenue B34 (a formula that calculates from other inputs)
-- Covers B36 (a formula)
-- Total Tips B37 (a formula)
+- Total Tips B36 (a formula)
 - Labor Hours B38, Labor Cost B39 (formulas)
 
 Data fields like revenue, cash, and notes should be empty. Formula fields will show a number — that's correct.
@@ -391,7 +390,7 @@ Data fields like revenue, cash, and notes should be empty. Formula fields will s
 ---
 
 **Document Version:** 1.0
-**Last Updated:** March 18, 2026
+**Last Updated:** April 2, 2026 (Cell reference correction: Total Tips B36, Covers B37)
 **For:** Waratah Managers
 **Technical Review:** gas-code-review-agent
 **Peer Review:** documentation-agent

@@ -165,7 +165,7 @@ function getExportStatus() {
 
   // Quick pre-checks (full validation runs in IntegrationHub.gs during export)
   var cashTotal = Number(sheet.getRange('B15').getValue()) || 0;
-  var tipsTotal = Number(sheet.getRange('B37').getValue()) || 0;
+  var tipsTotal = Number(sheet.getRange('B36').getValue()) || 0;
   if (revenue > 0 && cashTotal === 0 && tipsTotal === 0) {
     warnings.push('Cash and tips are both zero — double-check before exporting');
   }

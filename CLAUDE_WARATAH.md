@@ -1,10 +1,24 @@
 # THE WARATAH - Quick Reference
 
-**Last Updated:** March 22, 2026 (AI Insights parity: M4 threshold, Slack title)
+**Last Updated:** April 2, 2026 (Date parsing hardening in IntegrationHub)
 **Status:** 🟢 PRODUCTION READY
 **Operating Days:** 5 days (Wed-Sun)
 **Cell References:** Named range system (`WEDNESDAY_SR_NetRevenue`) via `RunWaratah.js` — falls back to hardcoded cells when ranges absent. See [CELL_REFERENCE_MAP.md](docs/waratah/CELL_REFERENCE_MAP.md)
 **Rollover:** In-place system ✅ Automated
+
+---
+
+## 🐛 Date Handling Hardening (April 2, 2026)
+
+**File:** `IntegrationHub.js`
+
+- **`parseCellDate_(value)`** — Fallback parser no longer uses `new Date(str)`, which silently mis-parses dd/mm/yyyy dates as mm/dd/yyyy in JavaScript. Now returns `Invalid Date` with a `Logger.log()` warning when parsing fails (e.g., `parseCellDate_("25/03/2026")` on systems that interpret dd/MM/yyyy as MM/dd/yyyy). Non-blocking — system continues to function but invalid dates are flagged for debugging.
+
+- **`toDateOnly_(d)`** — New helper strips time components from Date objects before warehouse writes. Prevents time component leakage from raw JS Date objects into NIGHTLY_FINANCIAL and other warehouse sheets. Guards against Invalid Date input with a fallback.
+
+- **Warehouse writes updated** — All `appendRow()` calls in `logToDataWarehouse_()` now wrap `shiftData.date` and `shiftData.weekEnding` with `toDateOnly_()` before writing. Affects: NIGHTLY_FINANCIAL (columns A, C), OPERATIONAL_EVENTS (column A), WASTAGE_COMPS (column A), QUALITATIVE_NOTES (column A). **Impact:** Dates in warehouse are now consistently midnight (00:00:00), matching Google Sheets date format conventions.
+
+**Context:** Dates were previously written as raw JS Date objects from `getValue()` calls, risking time component inclusion during backfill operations and fallback parsing. The AU-format parser `new Date("dd/mm/yyyy")` is unreliable across timezones and browser environments — it silently converts to UTC and may mis-parse. Hardening removes the ambiguity.
 
 ---
 
@@ -307,7 +321,7 @@ runValidationReport()    // Full system validation
 
 6. **Formula Cells — DO NOT CLEAR** (enforced automatically by `isFormula: true` in FIELD_CONFIG)
    - B15 (cashTakings), B16 (grossSalesIncCash), B26-B29 (financial breakdown formulas)
-   - B34 (netRevenue), B37 (totalTips)
+   - B34 (netRevenue), B36 (totalTips)
    - `getClearableFieldKeys_()` auto-excludes all formula cells — no manual list needed
    - B38/B39 (Labor Hours/Cost) are formulas — NOT warehoused (ignored entirely)
 
@@ -698,7 +712,7 @@ const netRevenue = sheet.getRange('B34').getValue();
 
 **Clear content (rollover — handled automatically via CLEARABLE_FIELD_KEYS):**
 ```javascript
-// Formula cells (B34, B37, etc.) are automatically excluded via isFormula flag
+// Formula cells (B34, B36, etc.) are automatically excluded via isFormula flag
 getFieldRange(sheet, 'mod').clearContent();  // NOT clear()!
 ```
 

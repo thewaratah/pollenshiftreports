@@ -175,8 +175,23 @@ function parseCellDate_(value) {
   try {
     return Utilities.parseDate(str, 'Australia/Sydney', 'dd/MM/yyyy');
   } catch (e) {
-    return new Date(str); // Fallback for unexpected formats
+    Logger.log('parseCellDate_: could not parse "' + str + '" as dd/MM/yyyy — returning Invalid Date');
+    return new Date(''); // Force invalid rather than US-format misparse via new Date(str)
   }
+}
+
+
+/**
+ * Strip time component from a Date, returning midnight Australia/Sydney.
+ * Prevents timezone-induced time leakage into warehouse date columns.
+ *
+ * @param {Date} d - Date object (may include time component)
+ * @returns {Date} Date at midnight Australia/Sydney
+ */
+function toDateOnly_(d) {
+  if (!d || isNaN(d.getTime())) return d;
+  const str = Utilities.formatDate(d, 'Australia/Sydney', 'yyyy-MM-dd');
+  return Utilities.parseDate(str, 'Australia/Sydney', 'yyyy-MM-dd');
 }
 
 
@@ -311,7 +326,7 @@ function extractShiftData_(sheetName, config) {
     // Tips
     cardTips: finNum(32),           // B32
     cashTips: finNum(33),           // B33
-    tipsTotal: finNum(37),          // B37 (formula)
+    tipsTotal: finNum(36),          // B36 (formula)
 
     // Operational events
     todos: todos,
@@ -425,9 +440,9 @@ function logToDataWarehouse_(shiftData, config, skipLock) {
     logResult.financialSkipped = true;
   } else {
     financialSheet.appendRow([
-      shiftData.date,               // A: Date
-      shiftData.dayOfWeek,          // B: Day
-      shiftData.weekEnding,         // C: Week Ending
+      toDateOnly_(shiftData.date),       // A: Date (midnight, no time component)
+      shiftData.dayOfWeek,               // B: Day
+      toDateOnly_(shiftData.weekEnding), // C: Week Ending (midnight, no time component)
       shiftData.mod,                // D: MOD
       shiftData.staff,              // E: Staff
       shiftData.netRevenue,         // F: Net Revenue
@@ -445,7 +460,7 @@ function logToDataWarehouse_(shiftData, config, skipLock) {
       shiftData.netSalesWTips,      // R: Net Sales w Tips (B29)
       shiftData.cardTips,           // S: Card Tips (B32)
       shiftData.cashTips,           // T: Cash Tips (B33)
-      shiftData.tipsTotal,          // U: Total Tips (B37)
+      shiftData.tipsTotal,          // U: Total Tips (B36)
       new Date()                    // V: Logged At
     ]);
     Logger.log(`  → Logged financial data to warehouse (22 cols)`);
@@ -473,7 +488,7 @@ function logToDataWarehouse_(shiftData, config, skipLock) {
         return;
       }
       newEventRows.push([
-        shiftData.date,       // A: Date
+        toDateOnly_(shiftData.date),       // A: Date
         shiftData.dayOfWeek,  // B: Day
         shiftData.mod,        // C: MOD
         todo.description,     // D: Description
@@ -505,9 +520,9 @@ function logToDataWarehouse_(shiftData, config, skipLock) {
       });
       if (!wastDup) {
         wastageSheet.appendRow([
-          shiftData.date,           // A: Date
-          shiftData.dayOfWeek,      // B: Day
-          shiftData.weekEnding,     // C: Week Ending
+          toDateOnly_(shiftData.date),           // A: Date
+          shiftData.dayOfWeek,                   // B: Day
+          toDateOnly_(shiftData.weekEnding),     // C: Week Ending
           shiftData.mod,            // D: MOD
           shiftData.wastageComps,   // E: Notes
           new Date()                // F: Logged At
@@ -532,7 +547,7 @@ function logToDataWarehouse_(shiftData, config, skipLock) {
     });
     if (!qualDup) {
       qualSheet.appendRow([
-        shiftData.date,           // A: Date
+        toDateOnly_(shiftData.date),           // A: Date
         shiftData.dayOfWeek,      // B: Day
         shiftData.mod,            // C: MOD
         shiftData.shiftSummary,   // D: Shift Summary

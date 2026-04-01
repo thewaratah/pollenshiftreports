@@ -186,7 +186,7 @@ const FIELD_CONFIG = {
   // --- TOTAL TIPS (formula — do NOT clear) ---
   totalTips: {
     suffix: "SR_TotalTips",
-    fallback: "B37",
+    fallback: "B36",
     isFormula: true,
     description: "Total tips (formula — do not clear)"
   },

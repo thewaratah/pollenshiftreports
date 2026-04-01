@@ -1,6 +1,6 @@
 # THE WARATAH - Integration Flows
 
-**Last Updated:** March 6, 2026
+**Last Updated:** April 2, 2026 (Date parsing hardening: `parseCellDate_()`, `toDateOnly_()`)
 **Type:** Detailed Integration Documentation
 **Purpose:** Data orchestration, warehouse logging, and external integrations
 
@@ -52,7 +52,7 @@ const shiftData = {
   netRevenue: sheet.getRange('B34').getValue(),       // Net revenue
   cashTips: sheet.getRange('B33').getValue(),         // Cash tips
   cardTips: sheet.getRange('B32').getValue(),         // Card tips
-  totalTips: sheet.getRange('B37').getValue(),        // Total tips (formula)
+  totalTips: sheet.getRange('B36').getValue(),        // Total tips (formula)
   productionAmount: sheet.getRange('B8').getValue(),  // Production amount
   cashTakings: sheet.getRange('B15').getValue(),      // Cash takings (formula)
 
@@ -189,6 +189,68 @@ if (warnings.length > 0) {
   }
 }
 ```
+
+---
+
+## 2b. Date Parsing & Warehouse Formatting (April 2, 2026)
+
+> Dates extracted from Google Sheets cells can include time components or be mis-parsed if fallback conversion is needed. These helpers ensure warehouse dates are consistently formatted (midnight, no time) and that parsing errors are caught early.
+
+### Function: `parseCellDate_(value)`
+
+**Purpose:** Parse cell date values safely, handling both Date objects and string representations.
+
+```javascript
+function parseCellDate_(value) {
+  // If already a Date object, return as-is
+  if (value instanceof Date) {
+    return value;
+  }
+
+  // String fallback: try parsing as dd/MM/yyyy
+  // NOTE: JavaScript new Date() is locale-unaware and unreliable for dd/MM/yyyy
+  // If parsing fails, return Invalid Date + warn
+  const str = value.toString().trim();
+  // Parsing logic here...
+  Logger.log('parseCellDate_: could not parse "' + str + '" as dd/MM/yyyy — returning Invalid Date');
+  return new Date('invalid');
+}
+```
+
+**Behavior:**
+- Returns the Date object unchanged if input is already a Date
+- For string inputs, attempts dd/MM/yyyy parsing
+- Returns `Invalid Date` (not null or undefined) if parsing fails
+- Logs a warning for debugging; non-blocking — system continues to operate
+
+**Why:** `new Date("dd/mm/yyyy")` is unreliable across browsers and timezones; it silently assumes mm/dd/yyyy in some environments and UTC in others. Hardening removes the ambiguity by rejecting unparseable dates early.
+
+### Function: `toDateOnly_(d)`
+
+**Purpose:** Strip time component from Date objects before warehouse writes.
+
+```javascript
+function toDateOnly_(d) {
+  if (!(d instanceof Date) || isNaN(d.getTime())) {
+    Logger.log('toDateOnly_: invalid Date input, returning Invalid Date');
+    return new Date('invalid');
+  }
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+```
+
+**Behavior:**
+- Takes a Date object
+- Returns a new Date at midnight (00:00:00) of that same day
+- Rejects Invalid Date input with a warning
+
+**Applied to:** All warehouse writes in `logToDataWarehouse_()`:
+- NIGHTLY_FINANCIAL: columns A (Date), C (Week Ending)
+- OPERATIONAL_EVENTS: column A (Date)
+- WASTAGE_COMPS: column A (Date)
+- QUALITATIVE_NOTES: column A (Date)
+
+**Impact:** Warehouse dates are now consistently midnight, matching Google Sheets date-only conventions.
 
 ---
 

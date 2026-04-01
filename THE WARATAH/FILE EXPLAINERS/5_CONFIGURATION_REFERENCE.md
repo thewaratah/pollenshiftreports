@@ -1,6 +1,6 @@
 # Configuration Reference — The Waratah
 
-**Last Updated:** March 18, 2026
+**Last Updated:** April 2, 2026
 **Type:** Handover guide for managers
 **Audience:** Restaurant managers taking over operations, comfortable with spreadsheets, no coding required
 **Tone:** Clear, practical, friendly
@@ -378,8 +378,8 @@ If you need to access archives:
 | Cell | Formula | Why | What It Calculates |
 |------|---------|-----|-------------------|
 | **B34** | Net Revenue | Automatic calculation | Total revenue minus tips and adjustments |
-| **B36** | Covers | Automatic calculation | Guest count for the shift |
-| **B37** | Total Tips | Automatic calculation | Card tips + Cash tips |
+| **B36** | Total Tips | Automatic calculation | Card tips + Cash tips |
+| **B37** | Covers | Manual entry | Guest count for the shift |
 | **B38** | Labor Hours | Automatic calculation | Total staff hours worked |
 | **B39** | Labor Cost | Automatic calculation | Total payroll cost |
 | **B15, B16** | Cash calculations | Automatic calculations | Cash takings breakdown |
@@ -554,6 +554,6 @@ These menu items do NOT require the password:
 
 ---
 
-**Last Updated:** March 18, 2026 (AI Insights Agent upgrade: AI_INSIGHTS_MODE, AI_INSIGHTS_EVAN_EMAIL properties added; total 21)
+**Last Updated:** April 2, 2026 (AI Insights Agent upgrade: AI_INSIGHTS_MODE, AI_INSIGHTS_EVAN_EMAIL properties added; total 21)
 **Version:** 1.1 — Manager Handover Edition
 **Status:** Ready for production use

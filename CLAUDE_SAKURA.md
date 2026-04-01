@@ -1,10 +1,39 @@
 # SAKURA HOUSE - Claude Code Project Guide
 
-**Last Updated:** March 22, 2026 (AI Insights parity: M4 discount impact, M5 prompt enrichment, Slack titles)
+**Last Updated:** April 2, 2026 (Date parsing hardening and warehouse write safety)
 **Project Type:** Google Apps Script (Hospitality Management System)
 **Venue:** Sakura House (Single-Venue Documentation)
 
 > **Note:** This is the Sakura-specific guide. For The Waratah, see `CLAUDE_WARATAH.md`. For shared architecture patterns, see `CLAUDE_SHARED.md`.
+
+---
+
+## DEPLOYMENT (April 2, 2026) -- Date Parsing & Warehouse Write Safety
+
+**Date Parsing Hardening:**
+- New function `parseCellDate_()` in `IntegrationHubSakura.gs` — parses Australian dd/MM/yyyy format safely
+- **CRITICAL FIX:** Removed fallback to `new Date(str)` which silently mis-parses AU-format dates as US-format (e.g., "03/04/2026" becomes April 3 instead of April 3). Now returns Invalid Date with Logger warning on parse failure.
+- Used in `extractShiftData_()` to parse the date cell value before warehouse write
+
+**New `toDateOnly_()` Helper:**
+- New function `toDateOnly_(d)` in `IntegrationHubSakura.gs` — strips time component from Date objects
+- Guards against Invalid Date input; returns the input unchanged if invalid
+- Applies Australia/Sydney timezone context before stripping time
+- Returns Date object at midnight (no time component)
+
+**Warehouse Write Safety:**
+- All `appendRow()` calls in `logToDataWarehouse_()` now wrap `shiftData.date` and `shiftData.weekEnding` with `toDateOnly_()`
+- Affects 4 warehouse sheets: NIGHTLY_FINANCIAL, OPERATIONAL_EVENTS, WASTAGE_COMPS, QUALITATIVE_NOTES
+- Ensures dates written to warehouse have no time components (prevents spreadsheet display ambiguity during manual edits and backfills)
+- Non-blocking: if `toDateOnly_()` receives invalid input, it returns as-is; warehouse write proceeds
+
+**Impact:**
+- Backfills and manual date corrections now write clean dates to warehouse
+- AU-format date parsing no longer fails silently with US-format misinterpretation
+- Data warehouse dates remain consistent across all 4 sheets
+
+**Files Changed:**
+- `IntegrationHubSakura.gs` (2 new functions + 6 updated `appendRow()` calls in `logToDataWarehouse_()`)
 
 ---
 

@@ -90,8 +90,8 @@ function computeWeeklyStats_Sakura_(warehouseId) {
 
   const thisRevenue = sum(thisWeek, 4);   // col E = Net Revenue
   const lastRevenue = sum(lastWeek, 4);
-  const thisTips    = sum(thisWeek, 9);   // col J = Total Tips
-  const lastTips    = sum(lastWeek, 9);
+  const thisTips    = sum(thisWeek, 7);   // col H = Tips Total
+  const lastTips    = sum(lastWeek, 7);
 
   const revChange = lastRevenue > 0
     ? ((thisRevenue - lastRevenue) / lastRevenue * 100).toFixed(1)

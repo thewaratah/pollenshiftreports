@@ -235,8 +235,8 @@ Every cell the system reads from or writes to on a shift report sheet.
 | B32 | Card tips | Manual entry | S: CardTips |
 | B33 | Cash tips | Manual entry | T: CashTips |
 | B34 | Net revenue | Manual entry | F: NetRevenue |
-| B36 | Covers | Manual entry | Not warehoused |
-| B37 | Total tips | **Formula** (DO NOT CLEAR) | U: TotalTips |
+| B36 | Total tips | **Formula** (DO NOT CLEAR) | U: TotalTips |
+| B37 | Covers | Manual entry | Not warehoused |
 | B38 | Labour hours | **Formula** (DO NOT CLEAR) | Not warehoused |
 | B39 | Labour cost | **Formula** (DO NOT CLEAR) | Not warehoused |
 
@@ -382,7 +382,7 @@ These are the system constraints that matter when anyone is maintaining or troub
 
 ### Formula Cells Must Never Be Cleared
 
-Cells B15, B16, B26, B27, B28, B29, B37, B38, and B39 contain formulas. They are deliberately excluded from the rollover's clear operation. If a formula is accidentally deleted, it must be restored from an archived copy.
+Cells B15, B16, B26, B27, B28, B29, B36, B38, and B39 contain formulas. They are deliberately excluded from the rollover's clear operation. If a formula is accidentally deleted, it must be restored from an archived copy.
 
 ### Merged Cells Require Full-Range References
 
@@ -424,7 +424,7 @@ Some functions can run both from a menu click (interactive) and from an automati
 | R | NetSalesWTips | B29 |
 | S | CardTips | B32 |
 | T | CashTips | B33 |
-| U | TotalTips | B37 |
+| U | TotalTips | B36 |
 | V | LoggedAt | Timestamp |
 
 ### OPERATIONAL_EVENTS (8 columns)
