@@ -383,17 +383,21 @@ function buildExecutiveDashboard() {
   sheet.getRange(row, 1, 1, monthHeaders.length).setFontWeight("bold").setBackground("#f3f3f3");
 
   row = 11;
+  // Monthly Trend QUERY: group by YEAR/MONTH using YEAR(A)*100+(MONTH(A)+1).
+  // QUERY MONTH() is 0-indexed (Jan=0), so +1 corrects to human months.
+  // SELECT must use the same expression as GROUP BY for reliable results.
+  // YEAR(A) > 2020 guards against text/invalid dates. headers=0 since range starts at row 2.
   sheet.getRange(row, 1).setFormula(
-    `=IFERROR(QUERY(${src}!A2:P,` +
-    `"SELECT MIN(A), SUM(E), SUM(H), SUM(J), SUM(K), SUM(F), COUNT(A) ` +
-    `WHERE A IS NOT NULL ` +
-    `GROUP BY YEAR(A)*100+MONTH(A) ` +
-    `ORDER BY YEAR(A)*100+MONTH(A) DESC ` +
-    `LABEL MIN(A) 'Month', SUM(E) 'Revenue', SUM(H) 'Tips', ` +
-    `SUM(J) 'Production', SUM(K) 'Discounts', SUM(F) 'Cash Takings', COUNT(A) 'Shifts'"),"")`
+    `=IFERROR(QUERY(${src}!A2:P, ` +
+    `"SELECT YEAR(A)*100+(MONTH(A)+1), SUM(E), SUM(H), SUM(J), SUM(K), SUM(F), COUNT(A) ` +
+    `WHERE A IS NOT NULL AND YEAR(A) > 2020 ` +
+    `GROUP BY YEAR(A)*100+(MONTH(A)+1) ` +
+    `ORDER BY YEAR(A)*100+(MONTH(A)+1) DESC ` +
+    `LABEL YEAR(A)*100+(MONTH(A)+1) 'Month', SUM(E) 'Revenue', SUM(H) 'Tips', ` +
+    `SUM(J) 'Production', SUM(K) 'Discounts', SUM(F) 'Cash Takings', COUNT(A) 'Shifts'", 0),"")`
   );
-  // Format the Month column as "MMMM YYYY" — MIN(A) returns a date, this renders "April 2026" etc.
-  sheet.getRange(11, 1, 50, 1).setNumberFormat("MMMM YYYY");
+  // Format Month column as "0000/00" so 202604 renders as "2026/04"
+  sheet.getRange(11, 1, 50, 1).setNumberFormat('0000"/"00');
 
   // ─── SECTION 4: ROLLING 4-WEEK COMPARISON ──────────────────────────
   // MONTHLY TREND QUERY starts at row 11 and can spill up to ~12 rows (rows 11-22).
