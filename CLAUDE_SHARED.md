@@ -405,7 +405,7 @@ NEW → TO DO → IN PROGRESS → DONE
 **Automation Setup (venue-specific):**
 - Waratah: Daily maintenance decomposed into individual triggers (bi-hourly cleanup, daily staff workload, Monday archive). Sunday overdue summary trigger removed (Apr 2, 2026). See `CLAUDE_WARATAH.md` for full schedule.
 - Sakura: Bundled `runDailyTaskMaintenance()` trigger (daily 7am) removes overdue summary function call (Apr 2, 2026).
-- Both: `createOnEditTrigger()` for auto-sort; `createWeeklyActiveTasksSummary()` for Monday summaries (DM-only to staff; Sakura FOH leads channel post kept).
+- Both: `createOnEditTrigger()` for auto-sort; `createWeeklyActiveTasksSummary()` for Monday summaries (DM-only to individual staff).
 
 **Conditional Formatting:**
 - Status column: Color-coded
@@ -487,8 +487,8 @@ SLACK_MANAGERS_CHANNEL_WEBHOOK
 // Individual DMs (JSON object)
 SLACK_DM_WEBHOOKS: '{"Evan":"...", "Nick":"...", "Gooch":"..."}'
 
-// Sakura only: FOH leads channel (Evan, Gooch, Sabine, Kalisha)
-SLACK_FOH_LEADS_WEBHOOK: "https://hooks.slack.com/services/..."
+// Sakura only: FOH leads channel — DEPRECATED Apr 2026 (no longer used; getFohLeadsWebhook_() is dead code)
+// SLACK_FOH_LEADS_WEBHOOK: "https://hooks.slack.com/services/..."
 ```
 
 ---

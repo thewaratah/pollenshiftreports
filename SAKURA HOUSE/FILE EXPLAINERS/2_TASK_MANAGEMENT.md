@@ -306,7 +306,7 @@ TASK_MANAGEMENT_SPREADSHEET_ID          → Points to this sheet (don't change)
 ESCALATION_EMAIL                        → Where escalation emails go (evan@...)
 ESCALATION_SLACK_WEBHOOK                → Escalation alerts post here
 SLACK_MANAGERS_CHANNEL_WEBHOOK          → #sakura_managers posts here
-SLACK_FOH_LEADS_WEBHOOK                 → #sakura_foh_leads posts here
+SLACK_FOH_LEADS_WEBHOOK                 → #sakura_foh_leads (deprecated Apr 2026 — no longer used)
 SLACK_DM_WEBHOOKS                       → JSON object: {"Evan":"...", "Nick":"...", ...}
 MENU_PASSWORD                           → Password for Admin Tools menu
 ```

@@ -111,7 +111,7 @@
 | `ESCALATION_EMAIL` | Escalation Alert Email | Who gets notified about overdue/blocked tasks | When the responsible manager changes |
 | `ESCALATION_SLACK_WEBHOOK` | Escalation Hook | Slack DM webhook for urgent task alerts | If the webhook expires or person changes |
 | `SLACK_MANAGERS_CHANNEL_WEBHOOK` | Managers Channel Hook | Slack channel for weekly task summaries | If the webhook expires or channel changes |
-| `SLACK_FOH_LEADS_WEBHOOK` | FOH Leads Hook | Slack channel for front-of-house team (Evan, Gooch, Sabine, Kalisha) | If the webhook expires or team changes |
+| `SLACK_FOH_LEADS_WEBHOOK` | FOH Leads Hook | ~~Deprecated Apr 2026~~ — was used for FOH team summaries, no longer active | Can be removed |
 | `SLACK_DM_WEBHOOKS` | Individual Staff DMs | Slack direct message webhooks for each staff member | When staff join, leave, or webhooks expire |
 
 ---
@@ -209,7 +209,7 @@ After editing `SAKURA_EMAIL_RECIPIENTS`:
 | `SAKURA_SLACK_WEBHOOK_CASH_NOTIFICATIONS` | Cash alerts | Varies (depends on usage) |
 | `ESCALATION_SLACK_WEBHOOK` | Escalation alerts | When overdue tasks exist |
 | `SLACK_MANAGERS_CHANNEL_WEBHOOK` | Manager summaries | Weekly (Monday mornings) |
-| `SLACK_FOH_LEADS_WEBHOOK` | FOH team summaries | Weekly (Monday mornings) |
+| `SLACK_FOH_LEADS_WEBHOOK` | ~~Deprecated Apr 2026~~ | No longer active |
 
 ---
 

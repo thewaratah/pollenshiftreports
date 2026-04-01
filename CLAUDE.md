@@ -267,8 +267,15 @@ main                          ← stable, merged code only
 
 ---
 
-**Last Updated:** April 2, 2026 (Analytics dashboard consolidation + QUERY MONTH() fix + Warehouse date handling + Task Management)
+**Last Updated:** April 2, 2026 (Dashboard layout cleanup, analytics consolidation, date handling, task management)
 **Status:** Both venues fully operational and production-ready ✅
+
+**Deployment (Apr 2, 2026) — Sakura Analytics Dashboard Layout Cleanup:**
+- Sakura: EXECUTIVE_DASHBOARD — removed TOP MOD PERFORMANCE section (Section 5)
+- Sakura: Dashboard layout compression — empty spacer rows removed between sections; all cell references dynamically computed instead of hardcoded
+- Sakura: ANALYTICS tab — THIS WEEK starts row 3, WoW starts row 8, DoW heatmap starts row 15, Extended Trends starts row 25; Weekly Trend (right side) starts row 3
+- Sakura: EXECUTIVE_DASHBOARD tab — CURRENT MONTH starts row 3, MONTHLY TREND starts row 9, ROLLING 4-WEEK starts row 24; REVENUE BY DAY (right side) starts row 3
+- Sakura: Code refactor — `modCol` renamed to `rightCol` in dashboard builders
 
 **Deployment (Apr 2, 2026) — Sakura Analytics Dashboard Consolidation & QUERY MONTH() Fix:**
 - Sakura: Menu consolidation — removed separate "Build Analytics Dashboard" and "Build Executive Dashboard" items under `Shift Report > Admin Tools > Integrations & Analytics`
@@ -284,7 +291,7 @@ main                          ← stable, merged code only
 - Both venues: `sendWeeklyActiveTasksSummary()` changed to DM-only (no longer posts to managers channel)
 - Waratah: `runScheduledOverdueSummary()` trigger (Sun 9am) gutted to no-op; kept for backward compatibility but does nothing
 - Sakura: Daily `runDailyTaskMaintenance()` trigger updated (removed overdue summary call)
-- Sakura: FOH leads summary (`sendWeeklyFohLeadsSummary_Live()`) retained; posts to #sakura_foh_leads Monday
+- Sakura: FOH leads summary (`sendWeeklyFohLeadsSummary_Live()` and `_sendWeeklyFohLeadsSummary_()`) removed; #sakura_foh_leads channel post discontinued
 - Both venues: Menu items "Send Overdue Summary Now" and "Create Overdue Summary Trigger" removed
 - Documentation: CLAUDE_SHARED.md, CLAUDE_SAKURA.md, CLAUDE_WARATAH.md updated; FILE EXPLAINERS task management sections refreshed
 
@@ -328,14 +335,18 @@ main                          ← stable, merged code only
 - Waratah SR M9: `namedRangeHealthCheck_Waratah()` in RunWaratah.js + `pw_namedRangeHealthCheck_Waratah()` wrapper in Menu.js — Step 9 of rollover validates named range integrity; fixes stale ranges silently
 - Waratah: S1-S9 all verified complete; M1 AI shift summaries + M4-M7 analytics upgrade operational; 11 SR files + 2 TM files changed; clasp pushed to Google Apps Script
 
+**Recent Updates (Apr 2, 2026):**
+- Sakura: Dashboard layout cleanup — TOP MOD PERFORMANCE section removed; empty spacer rows eliminated; all cell references now dynamic; Extended Trends moved to row 25
+- Sakura: Menu consolidation — single "Rebuild All Dashboards (Admin)" replaces separate builder menu items; dashboard auto-builds on demand
+- Both venues: Task management — overdue summaries removed from daily maintenance; weekly active task summary changed to DM-only (no channel post)
+
 **Recent Updates (Mar 22, 2026):**
-- Both venues: AI Insights parity achieved — M4 discount impact (Sakura added; Waratah unified to 0.5% threshold), M5 prompt enriched (confidence qualifier, 4-week benchmarks, discount rates, signed WoW delta, compact anomaly format, 200 char truncation), Slack titles venue-specific (`*Sakura House Analytics Insights*`, `*The Waratah Analytics Insights*`), numeric standardization (`parseFloat(x.toFixed(2))`)
+- Both venues: AI Insights parity achieved — M4 discount impact (Sakura added; Waratah unified to 0.5% threshold), M5 prompt enriched (confidence qualifier, 4-week benchmarks, discount rates, signed WoW delta, compact anomaly format, 200 char truncation), Slack titles venue-specific
 
 **Recent Updates (Mar 18, 2026):**
-- Sakura: M4–M7 AI Insights Agent upgrade — analytics engine (`computeShiftAnalytics_Sakura`), structured insight generation (`generateShiftInsight_Sakura`), soft launch routing (`deliverAIInsights_Sakura`, 'evan_only' mode), insight warehouse logging (`logInsightToWarehouse_Sakura`); new Script Properties AI_INSIGHTS_MODE and AI_INSIGHTS_EVAN_EMAIL
-- Sakura: M2–M9 full implementation — revenue anomaly detection, AI task classification, shift input validation, extended analytics trends, task SLA tracking, named range health monitor (all 9 files integrated, auto-wiring in rollover Step 10, graceful degradation if ANTHROPIC_API_KEY missing)
-- Waratah: Named range system active — `usesNamedRanges: true` in `VenueConfig.js`; named ranges operational via `RunWaratah.js` (32-field `FIELD_CONFIG`, self-healing rollover, graceful fallback); M1 AI shift summaries + M4-M7 analytics upgrade operational
-- Both venues: Sheet protection upgraded — only SHEET_PROTECTION_OWNER_EMAIL can edit protected areas; GAS scripts (rollover, triggers) unaffected
+- Sakura: M4–M7 AI Insights Agent upgrade — analytics engine, structured insight generation, soft launch routing, insight warehouse logging; new Script Properties AI_INSIGHTS_MODE and AI_INSIGHTS_EVAN_EMAIL
+- Sakura: M2–M9 full implementation — revenue anomaly detection, AI task classification, shift input validation, extended analytics trends, task SLA tracking, named range health monitor
+- Waratah: Named range system active; M1 AI shift summaries + M4-M7 analytics upgrade operational
 
 **Recent Updates (Mar 6, 2026):**
 - Waratah SR Phase 0+1: 3 critical bug fixes + performance/code quality improvements (6 files, net -42 lines)

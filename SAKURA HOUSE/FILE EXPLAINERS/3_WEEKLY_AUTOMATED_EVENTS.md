@@ -143,7 +143,7 @@ Broader trends:
 - Month-to-date snapshot
 - Monthly trends
 - Rolling 4-week comparison
-- Top MOD performance (ranked by average revenue)
+- Revenue by day breakdown (ranked performance)
 
 ### If Dashboards Look Broken or Blank
 

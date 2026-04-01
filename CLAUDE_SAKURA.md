@@ -1,6 +1,6 @@
 # SAKURA HOUSE - Claude Code Project Guide
 
-**Last Updated:** April 2, 2026 (Analytics Dashboard consolidation + QUERY MONTH() fix + Date parsing + Task Management changes)
+**Last Updated:** April 2, 2026 (Dashboard layout cleanup + Analytics consolidation + QUERY MONTH() fix + Date parsing + Task Management changes)
 **Project Type:** Google Apps Script (Hospitality Management System)
 **Venue:** Sakura House (Single-Venue Documentation)
 
@@ -17,10 +17,19 @@
 - Old wrappers `pw_buildFinancialDashboard()` and `pw_buildExecutiveDashboard()` retained in `MenuSakura.gs` for backward compatibility (no longer wired to menu items)
 - `UIServerSakura.gs`: `refreshDashboard()` updated to call both `buildFinancialDashboard()` and `buildExecutiveDashboard()` (previously only called the former)
 
+**Dashboard layout cleanup:**
+- Removed TOP MOD PERFORMANCE section from EXECUTIVE_DASHBOARD (formerly Section 5)
+- Removed empty spacer rows between sections for more compact layout
+- All cell references (weekRef, prevRef, monthly, etc.) now computed dynamically instead of hardcoded strings
+- ANALYTICS tab: THIS WEEK starts row 3, WoW starts row 8, DoW heatmap starts row 15, Extended Trends starts row 25; Weekly Trend on right side starts row 3
+- EXECUTIVE_DASHBOARD tab: CURRENT MONTH starts row 3, MONTHLY TREND starts row 9, ROLLING 4-WEEK starts row 24; REVENUE BY DAY (right side) starts row 3
+- Code refactor: `modCol` renamed to `rightCol` in dashboard builders for consistency
+- `buildExtendedTrends_Sakura()` start row changed from 29 to 25
+
 **Context:** Dashboards use live QUERY/SUMIFS/AVERAGEIFS formulas — data auto-refreshes when NIGHTLY_FINANCIAL gets new rows. No trigger needed. `rebuildAllDashboards()` is a maintenance/setup tool, not a daily operation.
 
 **Files Changed:**
-- `AnalyticsDashboardSakura.gs` (new `rebuildAllDashboards()` function + file header comment updated for 16-column schema)
+- `AnalyticsDashboardSakura.gs` (new `rebuildAllDashboards()` function + file header comment updated for 16-column schema + TOP MOD PERFORMANCE section removal + layout cleanup)
 - `UIServerSakura.gs` (`refreshDashboard()` now calls both dashboard builders)
 - `MenuSakura.gs` (menu consolidation + new wrapper `pw_rebuildAllDashboards()`)
 
@@ -76,10 +85,10 @@
 **Weekly active tasks now DM-only:**
 - `sendWeeklyActiveTasksSummary()` no longer posts to managers channel (Monday)
 - Now sends direct messages to individual staff members only
-- FOH leads channel post (`#sakura_foh_leads`) is retained — FOH-only summary still posts Monday
-- Menu items for weekly summary updated accordingly
+- FOH leads channel post (`#sakura_foh_leads`) also removed — `sendWeeklyFohLeadsSummary_Live()` and `_sendWeeklyFohLeadsSummary_()` deleted
+- Menu items for weekly summary updated accordingly (FOH menu item removed)
 
-**Impact:** Managers channel no longer receives overdue or team weekly summary posts. Staff receive individual DM notifications. FOH leads still get their dedicated Monday summary.
+**Impact:** Managers channel and FOH leads channel no longer receive task summary posts. Staff receive individual DM notifications only.
 
 ---
 
@@ -380,14 +389,12 @@
 - Sets 6 properties: `TASK_MANAGEMENT_SPREADSHEET_ID`, `ESCALATION_EMAIL`, `ESCALATION_SLACK_WEBHOOK`, `SLACK_MANAGERS_CHANNEL_WEBHOOK`, `SLACK_FOH_LEADS_WEBHOOK`, `SLACK_DM_WEBHOOKS`
 - **Note:** These are properties for the Actionables Sheet project — separate from Shift Reports project properties
 
-🎯 **New: FOH Leads Summary**
-- New function: `sendWeeklyFohLeadsSummary_Live()` — posts to `#sakura_foh_leads` channel
-- Audience: Evan, Gooch, Sabine, Kalisha only
-- Menu item added: `Task Management → Weekly Summary → Send Weekly Active Tasks (FOH)`
-- New Script Property: `SLACK_FOH_LEADS_WEBHOOK`
+🎯 ~~FOH Leads Summary~~ — **Removed Apr 2026**
+- `sendWeeklyFohLeadsSummary_Live()` and `_sendWeeklyFohLeadsSummary_()` deleted
+- Menu item "Send Weekly Active Tasks (FOH)" removed
+- `SLACK_FOH_LEADS_WEBHOOK` Script Property now unused (can be removed)
 
 📋 **`Menu_Updated_Sakura.gs` — Updated task management menu**
-- Added FOH leads summary menu item
 - Added Slack actionables poster (second menu: `Custom Scripts`)
 - Admin password read from Script Properties via `getMenuPassword_()` (line 19) — property key: `MENU_PASSWORD` in the Sakura Actionables Sheet project
 
@@ -846,7 +853,7 @@ TASK_MANAGEMENT_SPREADSHEET_ID: "13ANpyoohs9RQMpuS026mSLjLxrH9RIVmtp5i-mRhnZk"
 ESCALATION_EMAIL: "evan@sakurahousesydney.com"
 ESCALATION_SLACK_WEBHOOK: "https://hooks.slack.com/services/..."
 SLACK_MANAGERS_CHANNEL_WEBHOOK: "https://hooks.slack.com/services/..."
-SLACK_FOH_LEADS_WEBHOOK: "https://hooks.slack.com/services/..."  // #sakura_foh_leads
+SLACK_FOH_LEADS_WEBHOOK: "https://hooks.slack.com/services/..."  // #sakura_foh_leads — DEPRECATED Apr 2026 (no longer used)
 SLACK_DM_WEBHOOKS: '{"Evan":"...","Nick":"...","Gooch":"...","Adam":"...","Cynthia":"...","Kalisha":"...","Sabine":"..."}'
 ```
 
