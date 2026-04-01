@@ -18,7 +18,7 @@
  *   - Daily 6am: runScheduledStaffWorkload()
  *   - Weekly Mon 6am: runScheduledArchive()
  *   - Weekly Mon 10am: sendWeeklyActiveTasksSummary() [optional]
- *   - Weekly Sun 9am: runScheduledOverdueSummary()
+ *   - Weekly Sun 9am: runScheduledOverdueSummary() [DISABLED Apr 2026 — overdue summaries removed]
  *   - onEdit: onTaskSheetEditWithAutoSort(e) [installable trigger]
  *
  * @author Claude (Anthropic) for Pollen Hospitality
@@ -1603,9 +1603,7 @@ function runDailyTaskMaintenance() {
     Logger.log("Checking blocked tasks for escalation...");
     escalateBlockedTasks_();
     
-    // 5. Send overdue summary
-    Logger.log("Sending overdue tasks summary...");
-    sendOverdueTasksSummary_();
+    // 5. Overdue summary removed — was clogging management Slack channel (Apr 2026)
     
     Logger.log("=== Daily Task Maintenance Complete ===");
     
@@ -1777,9 +1775,10 @@ function _sendWeeklyActiveTasksSummaryCore(webhookUrl, isTest) {
   weeklyBlocks.push(bk_context([`${totalCount} active task(s) across ${staffOrder.length} staff member(s)`]));
   weeklyBlocks.push(bk_buttons([{ text: "Open Task Sheet", url: `https://docs.google.com/spreadsheets/d/${getTaskSpreadsheetId_()}` }]));
 
-  bk_post(webhookUrl, weeklyBlocks,
-    `${titlePrefix}Waratah Weekly: ${totalCount} active tasks`);
-  Logger.log(`Weekly active tasks summary posted to Slack (${isTest ? "TEST" : "LIVE"}).`);
+  // Channel post removed — weekly summary now DM-only (Apr 2026)
+  // bk_post(webhookUrl, weeklyBlocks,
+  //   `${titlePrefix}Waratah Weekly: ${totalCount} active tasks`);
+  Logger.log(`Weekly active tasks summary — channel post skipped, sending DMs only (${isTest ? "TEST" : "LIVE"}).`);
 
   logAuditEntry_("WEEKLY_SUMMARY", "System", `Posted ${totalCount} active tasks to Slack (${isTest ? "TEST" : "LIVE"})`);
 
@@ -2056,35 +2055,7 @@ function runScheduledArchive() {
  * Runs weekly (Sunday).
  */
 function runScheduledOverdueSummary() {
-  const lock = LockService.getScriptLock();
-  if (!lock.tryLock(30000)) {
-    Logger.log('Could not acquire lock — skipping scheduled overdue summary');
-    return;
-  }
-  try {
-    sendOverdueTasksSummary_();
-  } catch (e) {
-    Logger.log('❌ [runScheduledOverdueSummary] failed: ' + e.message + '\n' + e.stack);
-    try {
-      const webhook = getEscalationSlackWebhook_();
-      if (webhook) {
-        const slackResp = UrlFetchApp.fetch(webhook, {
-          method: 'post',
-          contentType: 'application/json',
-          payload: JSON.stringify({ text: '❌ [runScheduledOverdueSummary] Waratah overdue summary failed: ' + e.message }),
-          muteHttpExceptions: true
-        });
-        const slackCode = slackResp.getResponseCode();
-        if (slackCode < 200 || slackCode >= 300) {
-          Logger.log('❌ HTTP error ' + slackCode + ': ' + slackResp.getContentText());
-        }
-      }
-    } catch (slackErr) {
-      Logger.log('❌ Slack notification also failed: ' + slackErr.message);
-    }
-  } finally {
-    lock.releaseLock();
-  }
+  Logger.log('runScheduledOverdueSummary — disabled (Apr 2026). Remove this trigger via Admin Tools menu.');
 }
 
 
@@ -2175,30 +2146,11 @@ function createWeeklyArchiveTrigger() {
 
 
 /**
- * Creates a weekly trigger for runScheduledOverdueSummary() every Sunday.
- * Safe to re-run — removes existing trigger first.
+ * DISABLED (Apr 2026) — Overdue summaries no longer sent to Slack.
+ * Previously created a weekly trigger for runScheduledOverdueSummary() every Sunday.
  */
 function createWeeklyOverdueSummaryTrigger() {
-  ScriptApp.getProjectTriggers().forEach(trigger => {
-    if (trigger.getHandlerFunction() === 'runScheduledOverdueSummary') {
-      ScriptApp.deleteTrigger(trigger);
-    }
-  });
-
-  ScriptApp.newTrigger('runScheduledOverdueSummary')
-    .timeBased()
-    .onWeekDay(ScriptApp.WeekDay.SUNDAY)
-    .atHour(9)
-    .create();
-
-  Logger.log('Created weekly overdue summary trigger (Sunday 9am).');
-  try {
-    SpreadsheetApp.getUi().alert(
-      '✅ Weekly Overdue Summary Trigger Created',
-      'Overdue task summary will be posted to Slack every Sunday at 9am.',
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
-  } catch (e) { Logger.log('UI alert skipped — trigger context'); }
+  Logger.log('createWeeklyOverdueSummaryTrigger — disabled (Apr 2026). Overdue summaries no longer sent to Slack.');
 }
 
 

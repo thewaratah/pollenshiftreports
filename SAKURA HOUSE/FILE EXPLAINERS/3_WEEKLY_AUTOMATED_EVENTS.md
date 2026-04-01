@@ -1,6 +1,6 @@
 # Weekly Automated Events — Sakura House
 
-**Last Updated:** March 18, 2026 (M7 extended analytics, M8 SLA tracking)
+**Last Updated:** April 2, 2026 (Task management changes: overdue removed, weekly summary DM-only)
 **Type:** Handover guide for managers
 
 > This document explains everything that happens automatically in the Sakura House system each week. You don't need to be technical to understand it — just know that these are all handled by scheduled triggers and rarely need your attention.
@@ -14,11 +14,10 @@
 | Day & Time | What Happens | Where You'll See It |
 |---|---|---|
 | **Monday 2:00 AM** | Weekly backfill to Data Warehouse | Runs silently — no notification |
-| **Monday 6:00 AM** | Weekly task summary | Slack: #managers channel + team DMs |
+| **Monday 6:00 AM** | Weekly task summary | Slack: individual staff DMs |
 | **Monday 8:00 AM** | Revenue digest (this week vs last) | Slack: #managers channel |
 | **Monday 10:00 AM** | Weekly rollover (archive + reset) | Email to management + Slack notification |
-| **Daily 7:00 AM** | Task maintenance (cleanup, archive, escalation) | Slack DMs for urgent overdue items |
-| **Sunday 9:00 AM** | Overdue task summary | Slack: #managers channel |
+| **Daily 7:00 AM** | Task maintenance (cleanup, archive, escalation) | Task Management spreadsheet auto-updated |
 
 All of these run on their own. You don't need to do anything unless something goes wrong.
 

@@ -87,12 +87,6 @@ function protected_escalateBlockedTasks() {
   }
 }
 
-function protected_sendOverdueTasksSummary() {
-  if (requirePassword_('send overdue summary')) {
-    sendOverdueTasksSummary_();
-  }
-}
-
 // Testing
 function protected_testCreateTask() {
   if (requirePassword_('create test task')) {
@@ -131,11 +125,7 @@ function protected_createWeeklySummaryTrigger() {
   }
 }
 
-function protected_sendWeeklyFohLeadsSummary_Live() {
-  if (requirePassword_('send FOH leads weekly tasks (LIVE)')) {
-    sendWeeklyFohLeadsSummary_Live();
-  }
-}
+// protected_sendWeeklyFohLeadsSummary_Live() removed (Apr 2026) — FOH leads channel post discontinued
 
 // Reapply Formatting
 function protected_reapplyFormattingAndValidation() {
@@ -183,8 +173,7 @@ function onOpen() {
       .addSubMenu(ui.createMenu('Admin Tools')
         .addSubMenu(ui.createMenu('Weekly Summary')
           .addItem('Send Weekly Active Tasks (LIVE)', 'protected_sendWeeklyActiveTasksSummary')
-          .addItem('Send Weekly Active Tasks (TEST to Evan)', 'protected_sendWeeklyActiveTasksSummary_Test')
-          .addItem('Send Weekly Active Tasks (FOH)', 'protected_sendWeeklyFohLeadsSummary_Live'))
+          .addItem('Send Weekly Active Tasks (TEST to Evan)', 'protected_sendWeeklyActiveTasksSummary_Test'))
         .addSubMenu(ui.createMenu('Dashboard')
           .addItem('Build / Rebuild Task Dashboard', 'protected_buildTaskDashboard')
           .addItem('Refresh Staff Workload Stats', 'protected_refreshStaffWorkload'))
@@ -201,8 +190,7 @@ function onOpen() {
           .addSeparator()
           .addItem('Archive Old Tasks Now', 'protected_archiveOldCompletedTasks')
           .addItem('Process Recurring Tasks Now', 'protected_processRecurringTasks')
-          .addItem('Check Blocked Escalations Now', 'protected_escalateBlockedTasks')
-          .addItem('Send Overdue Summary Now', 'protected_sendOverdueTasksSummary'))
+          .addItem('Check Blocked Escalations Now', 'protected_escalateBlockedTasks'))
         .addSubMenu(ui.createMenu('Testing')
           .addItem('Create Test Task', 'protected_testCreateTask')
           .addItem('Test Audit Log Entry', 'protected_testAuditLog')

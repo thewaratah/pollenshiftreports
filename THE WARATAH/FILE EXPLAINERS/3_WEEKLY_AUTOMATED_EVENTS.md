@@ -15,12 +15,11 @@
 |---|---|---|
 | **Monday 2:00 AM** | Weekly backfill to Data Warehouse | Runs silently — no notification |
 | **Monday 6:00 AM** | Weekly task archive | Task Management spreadsheet auto-updated |
-| **Monday 10:00 AM** | Weekly task summary | Slack: #managers channel + team DMs |
+| **Monday 10:00 AM** | Weekly task summary | Slack: individual staff DMs |
 | **Monday 10:00 AM** | Weekly rollover (archive + reset) | Email to management + Slack notification |
 | **Wednesday 8:00 AM** | Revenue digest (this week vs last) | Slack: #managers channel |
 | **Every 2 hours** | Task cleanup & auto-sort | Task Management spreadsheet auto-updated |
 | **Daily 6:00 AM** | Staff workload refresh | Task Management spreadsheet auto-updated |
-| **Sunday 9:00 AM** | Overdue task summary | Slack: #managers channel |
 
 All of these run on their own. You don't need to do anything unless something goes wrong.
 

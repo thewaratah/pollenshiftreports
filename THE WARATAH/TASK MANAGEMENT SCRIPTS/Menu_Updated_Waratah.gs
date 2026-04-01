@@ -81,12 +81,6 @@ function protected_escalateBlockedTasks() {
   }
 }
 
-function protected_sendOverdueTasksSummary() {
-  if (requirePassword_('send overdue summary')) {
-    sendOverdueTasksSummary_();
-  }
-}
-
 // Testing
 function protected_testAuditLog() {
   if (requirePassword_('test audit log')) {
@@ -165,12 +159,6 @@ function protected_createWeeklyArchiveTrigger() {
   }
 }
 
-function protected_createWeeklyOverdueSummaryTrigger() {
-  if (requirePassword_('create weekly overdue summary trigger')) {
-    createWeeklyOverdueSummaryTrigger();
-  }
-}
-
 // ============ MENU ============
 
 function onOpen() {
@@ -203,14 +191,12 @@ function onOpen() {
           .addItem('Create Bi-Hourly Cleanup Trigger (Every 2hrs)', 'protected_createBiHourlyCleanupTrigger')
           .addItem('Create Daily Staff Workload Trigger (6am)', 'protected_createDailyStaffWorkloadTrigger')
           .addItem('Create Weekly Archive Trigger (Mon 6am)', 'protected_createWeeklyArchiveTrigger')
-          .addItem('Create Overdue Summary Trigger (Sun 9am)', 'protected_createWeeklyOverdueSummaryTrigger')
           .addSeparator()
           .addItem('Remove All Task Triggers', 'protected_removeAllTaskTriggers'))
         .addSeparator()
         .addSubMenu(ui.createMenu('Manual Actions')
           .addItem('Archive Old Tasks Now', 'protected_archiveOldCompletedTasks')
-          .addItem('Check Blocked Escalations Now', 'protected_escalateBlockedTasks')
-          .addItem('Send Overdue Summary Now', 'protected_sendOverdueTasksSummary'))
+          .addItem('Check Blocked Escalations Now', 'protected_escalateBlockedTasks'))
         .addSeparator()
         .addSubMenu(ui.createMenu('Testing')
           .addItem('Test Audit Log Entry', 'protected_testAuditLog')

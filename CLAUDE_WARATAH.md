@@ -1,6 +1,6 @@
 # THE WARATAH - Quick Reference
 
-**Last Updated:** April 2, 2026 (Date parsing hardening in IntegrationHub)
+**Last Updated:** April 2, 2026 (Date parsing hardening + Task Management changes)
 **Status:** 🟢 PRODUCTION READY
 **Operating Days:** 5 days (Wed-Sun)
 **Cell References:** Named range system (`WEDNESDAY_SR_NetRevenue`) via `RunWaratah.js` — falls back to hardcoded cells when ranges absent. See [CELL_REFERENCE_MAP.md](docs/waratah/CELL_REFERENCE_MAP.md)
@@ -19,6 +19,23 @@
 - **Warehouse writes updated** — All `appendRow()` calls in `logToDataWarehouse_()` now wrap `shiftData.date` and `shiftData.weekEnding` with `toDateOnly_()` before writing. Affects: NIGHTLY_FINANCIAL (columns A, C), OPERATIONAL_EVENTS (column A), WASTAGE_COMPS (column A), QUALITATIVE_NOTES (column A). **Impact:** Dates in warehouse are now consistently midnight (00:00:00), matching Google Sheets date format conventions.
 
 **Context:** Dates were previously written as raw JS Date objects from `getValue()` calls, risking time component inclusion during backfill operations and fallback parsing. The AU-format parser `new Date("dd/mm/yyyy")` is unreliable across timezones and browser environments — it silently converts to UTC and may mis-parse. Hardening removes the ambiguity.
+
+---
+
+## 📋 Task Management Changes (April 2, 2026)
+
+**Overdue summaries removed:**
+- `sendOverdueTasksSummary_()` removed from daily task maintenance
+- Waratah's Sunday 9am trigger (`runScheduledOverdueSummary`) gutted to no-op
+- Menu item "Send Overdue Summary Now" removed
+
+**Weekly active tasks now DM-only:**
+- `sendWeeklyActiveTasksSummary()` no longer posts to managers channel
+- Now sends direct messages to individual staff members only
+- Trigger timing unchanged: Monday 10am
+- Menu item "Create Overdue Summary Trigger (Sun 9am)" removed
+
+**Impact:** Managers channel (#managers) no longer receives overdue or weekly summary posts. Staff receive individual DM notifications only.
 
 ---
 
@@ -162,7 +179,7 @@
 
 **Task Management Restructure (Mar 6) — EnhancedTaskManagementWaratah.gs v1.2.0 + Menu_Updated_Waratah.gs:**
 - Sort order changed: Active/Completed → Priority → **Status → Staff** (was Staff → Status)
-- Daily maintenance decomposed: `runDailyTaskMaintenance()` removed; replaced with individual triggers (staff workload daily 6am, archive Monday 6am, overdue summary Sunday 9am)
+- Daily maintenance decomposed: `runDailyTaskMaintenance()` removed; replaced with individual triggers (staff workload daily 6am, archive Monday 6am). Overdue summary trigger removed Apr 2, 2026.
 - Menu items removed: Migrate to Enhanced Schema, Run Daily Maintenance Now, Remove Daily Maintenance Trigger, Process Recurring Tasks Now, Create Test Task, Preview What Would Archive
 - Bug fixes: `MailApp` → `GmailApp` in `escalateBlockedTasks_()`, `sheet.clear()` → `sheet.getDataRange().clearContent()`, LockService on `cleanupAndSortMasterActionables()`, try/catch + Slack error notification on all trigger-fired functions, `getUi()` wrapped for trigger context safety
 
@@ -176,6 +193,7 @@
 
 2. **EnhancedTaskManagementWaratah.gs `sendWeeklyActiveTasksSummary()`**
    - Trigger timing: 6am → **10am** (`.atHour(10).nearMinute(0)`)
+   - Changed Apr 2, 2026: sends DMs to individual staff only (no longer posts to managers channel)
    - BLOCKED tasks remain excluded from weekly summary (by design)
 
 3. **WeeklyRolloverInPlace.js `performWeeklyRollover()`**
@@ -594,8 +612,7 @@ NEW → TO DO → IN PROGRESS → DONE
 | Bi-hourly Cleanup | Every 2hrs | `cleanupAndSortMasterActionables()` |
 | Staff Workload Refresh | Daily 6am | `runScheduledStaffWorkload()` |
 | Archive Old Tasks | Monday 6am | `runScheduledArchive()` |
-| Overdue Summary | Sunday 9am | `runScheduledOverdueSummary()` |
-| Weekly Summary | Mon 10am (optional) | `sendWeeklyActiveTasksSummary()` |
+| Weekly Summary (DMs) | Mon 10am | `sendWeeklyActiveTasksSummary()` — sends to individual staff only |
 | onEdit Auto-sort | Every edit | `onTaskSheetEditWithAutoSort()` |
 | Weekly Rollover | Monday 10am | `performWeeklyRollover()` |
 

@@ -1,6 +1,6 @@
 # Task Management — The Waratah
 
-**Last Updated:** March 18, 2026
+**Last Updated:** April 2, 2026
 **Type:** Handover guide for managers
 **Audience:** Tech-savvy restaurant managers, non-developers
 
@@ -144,14 +144,9 @@ NEW → TO DO → IN PROGRESS → DONE
 - If anything has been BLOCKED for 14+ days, sends an escalation email to Evan and posts a Slack DM
 - Helps surface problems that need leadership attention
 
-**Overdue summary (Sunday 9am):**
-- Posts a Slack message listing all tasks that are past their due date
-- Groups tasks by person so everyone sees their own overdue items
-- Sent to the managers channel
-
-**Weekly summary (Monday 9am, optional):**
-- Posts a summary of all active tasks to the managers channel
-- Groups tasks by staff member
+**Weekly summary (Monday 10am, DM-only):**
+- Sends a summary of all active tasks to individual staff members via Slack DM
+- Groups each person's own tasks by status and priority
 - Can be run manually anytime via Task Management > Admin Tools > Weekly Summary > Send Weekly Active Tasks (LIVE)
 
 **On-edit auto-sort (instant):**
@@ -198,8 +193,7 @@ NEW → TO DO → IN PROGRESS → DONE
 | When | What Gets Sent | Where | Who Sees It |
 |------|----------------|-------|------------|
 | **Monday 6am** | Staff workload snapshot (tasks per person) | Managers channel | All managers |
-| **Monday 9am** | Summary of all active tasks (grouped by staff member) | Managers channel | All managers |
-| **Sunday 9am** | List of overdue tasks (past their due date) | Managers channel | All managers |
+| **Monday 10am** | Summary of each person's active tasks | Direct Slack DM to each staff member | Individual staff only |
 
 **As-needed notifications:**
 

@@ -1391,9 +1391,7 @@ function runDailyTaskMaintenance() {
     Logger.log("Checking blocked tasks for escalation...");
     escalateBlockedTasks_();
 
-    // 5. Send overdue summary
-    Logger.log("Sending overdue tasks summary...");
-    sendOverdueTasksSummary_();
+    // 5. Overdue summary removed — was clogging management Slack channel (Apr 2026)
 
     Logger.log("=== Daily Task Maintenance Complete ===");
 
@@ -1543,18 +1541,17 @@ function _sendWeeklyActiveTasksSummaryCore(webhookUrl, isTest) {
   weeklyBlocks.push(bk_context([`${totalCount} active task(s) across ${staffOrder.length} staff member(s)`]));
   weeklyBlocks.push(bk_buttons([{ text: "Open Task Sheet", url: `https://docs.google.com/spreadsheets/d/${getTaskSpreadsheetId_()}` }]));
 
-  bk_post(webhookUrl, weeklyBlocks,
-    `${titlePrefix}Sakura Weekly: ${totalCount} active tasks`);
-  Logger.log(`Weekly active tasks summary posted to Slack (${isTest ? "TEST" : "LIVE"}).`);
+  // Channel post removed — weekly summary now DM-only (Apr 2026)
+  // bk_post(webhookUrl, weeklyBlocks,
+  //   `${titlePrefix}Sakura Weekly: ${totalCount} active tasks`);
+  Logger.log(`Weekly active tasks summary — channel post skipped, sending DMs only (${isTest ? "TEST" : "LIVE"}).`);
 
   logAuditEntry_("WEEKLY_SUMMARY", "System", `Posted ${totalCount} active tasks to Slack (${isTest ? "TEST" : "LIVE"})`);
 
   // Send individual DMs to each staff member with their tasks
   _sendWeeklyActiveTasksDMs_(staffMap, today, tz, isTest);
 
-  // Post FOH leads summary (Evan, Gooch, Sabine, Kalisha) to #sakura_foh_leads
-  // In test mode, redirects to Evan's DM so he can preview the FOH post
-  _sendWeeklyFohLeadsSummary_(staffMap, today, tz, isTest);
+  // FOH leads channel post removed (Apr 2026) — weekly summary now DM-only
 }
 
 
@@ -1621,98 +1618,8 @@ function _sendWeeklyActiveTasksDMs_(staffMap, today, tz, isTest) {
 /**
  * Standalone entry point: post FOH leads summary live (called from menu).
  */
-function sendWeeklyFohLeadsSummary_Live() {
-  const ss = SpreadsheetApp.openById(getTaskSpreadsheetId_());
-  const sheet = ss.getSheetByName(TASK_CONFIG.sheets.master);
-  if (!sheet || sheet.getLastRow() < 2) {
-    Logger.log("No tasks found for FOH leads summary.");
-    return;
-  }
-
-  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, TOTAL_COLS).getValues();
-  const today = new Date();
-  const excludedStatuses = [STATUSES.DONE, STATUSES.BLOCKED, STATUSES.CANCELLED];
-  const staffMap = {};
-
-  data.forEach(row => {
-    const status = (row[COLS.STATUS] || "").toString().trim().toUpperCase();
-    if (excludedStatuses.includes(status)) return;
-    const description = (row[COLS.DESCRIPTION] || "").toString().trim();
-    if (!description) return;
-    const staff = (row[COLS.STAFF] || "").toString().trim() || "Unassigned";
-    const priority = (row[COLS.PRIORITY] || "").toString().trim();
-    const dueDate = row[COLS.DUE_DATE];
-    const source = (row[COLS.SOURCE] || "").toString().trim();
-    if (!staffMap[staff]) staffMap[staff] = [];
-    staffMap[staff].push({ description, priority, status, dueDate, source });
-  });
-
-  _sendWeeklyFohLeadsSummary_(staffMap, today, TASK_CONFIG.timezone, false);
-}
-
-/**
- * Posts a filtered weekly task summary to #sakura_foh_leads.
- * Only includes tasks assigned to FOH lead staff: Evan, Gooch, Sabine, Kalisha.
- * In test mode, posts to Evan's DM so he can preview before it goes live.
- */
-function _sendWeeklyFohLeadsSummary_(staffMap, today, tz, isTest) {
-  const FOH_STAFF = ["Evan", "Gooch", "Sabine", "Kalisha"];
-
-  // Filter staffMap to FOH leads only
-  const fohMap = {};
-  FOH_STAFF.forEach(name => {
-    if (staffMap[name] && staffMap[name].length > 0) {
-      fohMap[name] = staffMap[name];
-    }
-  });
-
-  const staffWithTasks = Object.keys(fohMap);
-  if (staffWithTasks.length === 0) {
-    Logger.log("FOH leads summary: no active tasks for FOH staff.");
-    return;
-  }
-
-  const webhook = isTest ? getSlackDmWebhooks_()["Evan"] : getFohLeadsWebhook_();
-  const titlePrefix = isTest ? "TEST — " : "";
-  const dateStr = Utilities.formatDate(today, tz, "dd/MM/yyyy");
-  const priorityOrder = { "URGENT": 1, "HIGH": 2, "MEDIUM": 3, "LOW": 4 };
-  let totalCount = 0;
-
-  const blocks = [
-    bk_header(`${titlePrefix}Sakura FOH Leads — Weekly Tasks`),
-    bk_context([`Week starting ${dateStr}`])
-  ];
-
-  FOH_STAFF.forEach(staff => {
-    const tasks = fohMap[staff];
-    if (!tasks || tasks.length === 0) return;
-    totalCount += tasks.length;
-
-    tasks.sort((a, b) => (priorityOrder[a.priority] || 99) - (priorityOrder[b.priority] || 99));
-
-    blocks.push(bk_divider());
-    let section = `*${staff}* (${tasks.length}):\n`;
-    tasks.forEach(t => {
-      const emoji = PRIORITY_EMOJI[t.priority] || "";
-      let line = `${emoji} ${t.description}`;
-      if (t.dueDate instanceof Date) {
-        const dueFmt = Utilities.formatDate(t.dueDate, tz, "dd/MM");
-        const isOverdue = t.dueDate < today;
-        line += isOverdue ? ` _(due ${dueFmt} — OVERDUE)_` : ` _(due ${dueFmt})_`;
-      }
-      section += line + "\n";
-    });
-    blocks.push(bk_section(section));
-  });
-
-  blocks.push(bk_divider());
-  blocks.push(bk_context([`${totalCount} active task(s) across FOH leads`]));
-  blocks.push(bk_buttons([{ text: "Open Task Sheet", url: `https://docs.google.com/spreadsheets/d/${getTaskSpreadsheetId_()}` }]));
-
-  const dest = isTest ? "Evan's DM (TEST)" : "#sakura_foh_leads";
-  const sent = bk_post(webhook, blocks, `${titlePrefix}Sakura FOH Leads Weekly: ${totalCount} active tasks`);
-  Logger.log(sent ? `FOH leads summary posted to ${dest}` : `Failed to post FOH leads summary to ${dest}`);
-}
+// sendWeeklyFohLeadsSummary_Live() and _sendWeeklyFohLeadsSummary_() removed (Apr 2026)
+// FOH leads channel post discontinued — weekly tasks now sent as individual DMs only
 
 
 /* ==========================================================================

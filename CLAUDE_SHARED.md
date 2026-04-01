@@ -342,18 +342,18 @@ NEW → TO DO → IN PROGRESS → DONE
 **4. Auto-Archival (Waratah: Monday 6am; Sakura: Daily 7am)**
 - DONE/CANCELLED tasks > 30 days → move to ARCHIVE sheet
 
-**5. Overdue Tracking (Waratah: Sunday 9am; Sakura: Daily 7am)**
-- Summary posted to Slack #managers
-- Individual DMs to assignees
+**5. Overdue Task DMs (Removed Apr 2, 2026)**
+- Overdue summary removed from daily maintenance; no longer posts to Slack
+- Previous behavior: posted to #managers channel and sent individual DMs (both removed)
 
 **6. Audit Logging (On Edit)**
 - Every edit logged to AUDIT LOG sheet
 - Tracks: Timestamp, Action, User, Task ID, Field Changed, Details
 
 **Automation Setup (venue-specific):**
-- Waratah: Daily maintenance decomposed into individual triggers (bi-hourly cleanup, daily staff workload, Monday archive, Sunday overdue). See `CLAUDE_WARATAH.md` for full schedule.
-- Sakura: Bundled `runDailyTaskMaintenance()` trigger (daily 7am) still in use.
-- Both: `createOnEditTrigger()` for auto-sort; `createWeeklySummaryTrigger()` for Monday summaries.
+- Waratah: Daily maintenance decomposed into individual triggers (bi-hourly cleanup, daily staff workload, Monday archive). Sunday overdue summary trigger removed (Apr 2, 2026). See `CLAUDE_WARATAH.md` for full schedule.
+- Sakura: Bundled `runDailyTaskMaintenance()` trigger (daily 7am) removes overdue summary function call (Apr 2, 2026).
+- Both: `createOnEditTrigger()` for auto-sort; `createWeeklyActiveTasksSummary()` for Monday summaries (DM-only to staff; Sakura FOH leads channel post kept).
 
 **Conditional Formatting:**
 - Status column: Color-coded
@@ -405,15 +405,15 @@ const blocks = [
 bk_post(escalationWebhook, blocks, "Task Escalation");
 ```
 
-**3. Weekly Active Tasks:**
+**3. Weekly Active Tasks (DM-only as of Apr 2, 2026):**
 ```javascript
 const blocks = [
-  bk_header("Venue Name — Weekly Active Tasks"),
+  bk_header("Your Active Tasks This Week"),
   bk_context([`Week starting ${date}`]),
-  bk_section(`*${staff}* (${count}):\n🔴 ${urgentTask}\n🟠 ${highTask}`),
+  bk_section(`*Tasks for you:*\n🔴 ${urgentTask}\n🟠 ${highTask}`),
   bk_buttons([{text: "Open Task Sheet", url: spreadsheetUrl}])
 ];
-bk_post(managersWebhook, blocks, "Weekly Tasks");
+bk_post(dmWebhook, blocks, "Weekly Tasks");  // Sent to individual staff member DMs only
 ```
 
 **Webhook Configuration (Script Properties):**
@@ -770,5 +770,5 @@ previewArchival()                  // Preview what would be archived
 
 ---
 
-**Last Updated:** March 18, 2026 (S1-S9 small items pass)
+**Last Updated:** April 2, 2026 (Removed overdue summaries, weekly active tasks now DM-only)
 **Applies To:** Both Sakura House and The Waratah

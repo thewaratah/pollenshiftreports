@@ -1,6 +1,6 @@
 # Task Management — Sakura House
 
-**Last Updated:** March 18, 2026
+**Last Updated:** April 2, 2026
 **Type:** Handover guide for managers
 **Audience:** Tech-savvy restaurant managers, non-developers
 
@@ -174,8 +174,7 @@ NEW → TO DO → IN PROGRESS → DONE
 
 | When | What Gets Sent | Where | Who Sees It |
 |------|----------------|-------|------------|
-| **Monday 6am** | Summary of all active tasks (grouped by staff member) | Managers channel + individual DMs to each staff member | Everyone with tasks |
-| **Sunday 9am** | List of overdue tasks (past their due date) | Managers channel | All managers |
+| **Monday 6am** | Summary of all active tasks (grouped by staff member) | Individual DMs to each staff member | Everyone with tasks |
 
 **As-needed notifications:**
 
@@ -185,8 +184,7 @@ NEW → TO DO → IN PROGRESS → DONE
 
 **On-demand — you can trigger these manually:**
 
-- **Weekly Active Tasks (LIVE)** → Task Management > Admin Tools > Weekly Summary > Send Weekly Active Tasks (LIVE) — posts to managers channel
-- **Weekly Active Tasks (FOH)** → Task Management > Admin Tools > Weekly Summary > Send Weekly Active Tasks (FOH) — posts to #sakura_foh_leads (Evan, Gooch, Sabine, Kalisha only)
+- **Weekly Active Tasks (LIVE)** → Task Management > Admin Tools > Weekly Summary > Send Weekly Active Tasks (LIVE) — sends DMs to all staff with tasks
 
 ---
 
